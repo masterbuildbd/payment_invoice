@@ -1,0 +1,600 @@
+import { 
+  collection, 
+  getDocs, 
+  addDoc, 
+  setDoc,
+  updateDoc, 
+  deleteDoc, 
+  doc, 
+  query as firestoreQuery, 
+  orderBy, 
+  onSnapshot
+} from 'firebase/firestore';
+import { db, auth } from './firebase';
+import firebaseConfig from '../../firebase-applet-config.json';
+import { Invoice, CompanySettings, ActivityLog } from '../types';
+
+export const logActivity = async (activity: Omit<ActivityLog, 'id' | 'timestamp' | 'user'>) => {
+  try {
+    const logData = {
+      ...activity,
+      timestamp: new Date().toISOString(),
+      user: auth.currentUser?.email || 'System'
+    };
+    // Use low-level addDoc to avoid recursion
+    await addDoc(collection(db, 'activities'), logData);
+  } catch (error) {
+    console.error('Error logging activity:', error instanceof Error ? error.message : String(error));
+  }
+};
+
+export enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  }
+}
+
+export function safeStringify(obj: any) {
+  const cache = new Set();
+  try {
+    return JSON.stringify(obj, (_key, value) => {
+      if (typeof value === 'object' && value !== null) {
+        // If it's a DOM element, window, or Firebase Auth/Firestore/Maps objects, avoid deep serialization
+        if (
+          typeof HTMLElement !== 'undefined' && value instanceof HTMLElement || 
+          typeof Window !== 'undefined' && value instanceof Window || 
+          typeof Document !== 'undefined' && value instanceof Document ||
+          (value.constructor && (
+            value.constructor.name === 'FirebaseAppImpl' ||
+            value.constructor.name === 'AuthImpl' ||
+            value.constructor.name === 'Firestore' ||
+            value.constructor.name === 'Database' ||
+            value.constructor.name === 'Y2' ||
+            value.constructor.name === 'Ka' ||
+            value.constructor.name === 'S' ||
+            value.constructor.name === 'O'
+          ))
+        ) {
+          return '[Complex/Native Object]';
+        }
+        if (cache.has(value)) {
+          return '[Circular]';
+        }
+        cache.add(value);
+      }
+      return value;
+    });
+  } catch (err) {
+    console.warn('Failed to fully serialize circular/complex object, returning lightweight fallback:', err);
+    try {
+      if (obj && typeof obj === 'object') {
+        const simple: Record<string, any> = {};
+        for (const k in obj) {
+          try {
+            const val = obj[k];
+            if (typeof val !== 'object' || val === null) {
+              simple[k] = val;
+            } else {
+              simple[k] = `[${typeof val}]`;
+            }
+          } catch (e) {
+            simple[k] = '[Unreadable]';
+          }
+        }
+        return JSON.stringify(simple);
+      }
+      return String(obj);
+    } catch {
+      return '[Unserializable]';
+    }
+  }
+}
+
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const errInfo: FirestoreErrorInfo = {
+    error: errorMessage,
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  };
+  const serialized = safeStringify(errInfo);
+
+  // Gracefully handle temporary offline, unreachable, or latency errors 
+  // on read, list or subscribe operations to prevent fatal React UI crashes.
+  const lowercaseError = errorMessage.toLowerCase();
+  const isOfflineOrNetworkIssue = 
+    lowercaseError.includes('offline') || 
+    lowercaseError.includes('unreachable') || 
+    lowercaseError.includes('unavailable') ||
+    lowercaseError.includes('network') ||
+    lowercaseError.includes('failed to get document because the client is offline');
+
+  if (isOfflineOrNetworkIssue) {
+    console.warn(`[Firestore Offline/Network Handled Gracefully] Operation: ${operationType}, Path: ${path}. Error: ${errorMessage}`);
+    return; // Do not crash the application
+  }
+
+  console.error('Firestore Error: ', serialized);
+  throw new Error(serialized);
+}
+
+export const mockInvoices: Invoice[] = [
+  { id: 'INV-001', customerName: 'Apex Corp', customerNumber: '+256 701 234 567', paymentMethod: 'bKash', transactionId: 'TXN-882194', amount: 1540.00, paidAmount: 1540.00, dueAmount: 0, status: 'paid', createdAt: '2024-05-01', items: [], cashierName: 'Master Admin', type: 'Reporters' },
+  { id: 'INV-002', customerName: 'Luminary Systems', customerNumber: '+256 782 990 112', paymentMethod: 'Binance', transactionId: '0x882...91a', amount: 890.50, paidAmount: 0, dueAmount: 890.50, status: 'pending', createdAt: '2024-05-03', items: [], cashierName: 'Master Admin', type: 'User Panel' },
+  { id: 'INV-003', customerName: 'Zenith Ventures', customerNumber: '+256 750 443 221', paymentMethod: 'PayPal', transactionId: 'PAY-882199', amount: 2100.00, paidAmount: 1000.00, dueAmount: 1100.00, status: 'overdue', createdAt: '2024-04-20', items: [], cashierName: 'Master Admin', type: 'Reporter' },
+  { id: 'INV-004', customerName: 'Nova Retail', customerNumber: '+256 702 334 556', paymentMethod: 'Nagad', transactionId: 'TXN-991122', amount: 450.00, paidAmount: 450.00, dueAmount: 0, status: 'paid', createdAt: '2024-05-05', items: [], cashierName: 'Master Admin', type: 'User Panel' },
+];
+
+// Fallback for types that might still use synchronous getInvoices
+// In a real migration, we move everything to async/realtime
+export const getInvoicesSync = (): Invoice[] => {
+  const saved = localStorage.getItem('master_invoices');
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch (e) {
+      return mockInvoices;
+    }
+  }
+  return mockInvoices;
+};
+
+// --- Firebase Operations ---
+
+export const subscribeToInvoices = (callback: (invoices: Invoice[]) => void) => {
+  return subscribeToCollection<Invoice>('invoices', callback, 'createdAt');
+};
+
+export const createInvoice = async (invoice: Invoice) => {
+  const path = 'invoices';
+  try {
+    const isPlaceholder = !firebaseConfig.projectId || firebaseConfig.projectId.includes('remixed-');
+    if (isPlaceholder) throw new Error('Offline mode');
+
+    const docRef = doc(db, 'invoices', invoice.id);
+    await setDoc(docRef, invoice);
+    
+    await logActivity({
+      type: 'create',
+      category: 'invoices',
+      message: `Generated invoice #${invoice.id} for ${invoice.customerName}`
+    });
+
+    return invoice;
+  } catch (error) {
+    try {
+      const storageKey = 'local_invoices';
+      const localInvoicesStr = localStorage.getItem(storageKey) || '[]';
+      const localInvoices = JSON.parse(localInvoicesStr);
+      localInvoices.push(invoice);
+      localStorage.setItem(storageKey, safeStringify(localInvoices));
+      window.dispatchEvent(new Event('local_users_updated'));
+    } catch (e) {
+      console.error('Offline invoice creation failed:', e);
+    }
+    return invoice;
+  }
+};
+
+export const updateInvoice = async (id: string, data: Partial<Invoice>) => {
+  const path = `invoices/${id}`;
+  const isLocalId = id.startsWith('local');
+  const isPlaceholder = !firebaseConfig.projectId || firebaseConfig.projectId.includes('remixed-');
+
+  if (isLocalId || isPlaceholder) {
+    try {
+      const storageKey = 'local_invoices';
+      const localInvoicesStr = localStorage.getItem(storageKey) || '[]';
+      const localInvoices = JSON.parse(localInvoicesStr).map((inv: any) => {
+        if (inv.id === id) {
+          return { ...inv, ...data, id, updatedAt: new Date().toISOString() };
+        }
+        return inv;
+      });
+      localStorage.setItem(storageKey, safeStringify(localInvoices));
+      window.dispatchEvent(new Event('local_users_updated'));
+      return;
+    } catch (e) {
+      console.error('Offline invoice update failed:', e);
+    }
+  }
+
+  try {
+    const docRef = doc(db, 'invoices', id);
+    await updateDoc(docRef, data as any);
+
+    await logActivity({
+      type: 'update',
+      category: 'invoices',
+      message: `Updated status of invoice #${id}`
+    });
+  } catch (error) {
+    try {
+      const storageKey = 'local_invoices';
+      const localInvoicesStr = localStorage.getItem(storageKey) || '[]';
+      const localInvoices = JSON.parse(localInvoicesStr).map((inv: any) => {
+        if (inv.id === id) {
+          return { ...inv, ...data, id, updatedAt: new Date().toISOString() };
+        }
+        return inv;
+      });
+      localStorage.setItem(storageKey, safeStringify(localInvoices));
+      window.dispatchEvent(new Event('local_users_updated'));
+    } catch (e) {
+      handleFirestoreError(error, OperationType.WRITE, path);
+    }
+  }
+};
+
+export const deleteInvoice = async (id: string) => {
+  const path = `invoices/${id}`;
+  const isLocalId = id.startsWith('local');
+  const isPlaceholder = !firebaseConfig.projectId || firebaseConfig.projectId.includes('remixed-');
+
+  if (isLocalId || isPlaceholder) {
+    try {
+      const storageKey = 'local_invoices';
+      const localInvoicesStr = localStorage.getItem(storageKey) || '[]';
+      const localInvoices = JSON.parse(localInvoicesStr).filter((inv: any) => inv.id !== id);
+      localStorage.setItem(storageKey, safeStringify(localInvoices));
+      window.dispatchEvent(new Event('local_users_updated'));
+      return;
+    } catch (e) {
+      console.error('Offline invoice delete failed:', e);
+    }
+  }
+
+  try {
+    const docRef = doc(db, 'invoices', id);
+    await deleteDoc(docRef);
+  } catch (error) {
+    try {
+      const storageKey = 'local_invoices';
+      const localInvoicesStr = localStorage.getItem(storageKey) || '[]';
+      const localInvoices = JSON.parse(localInvoicesStr).filter((inv: any) => inv.id !== id);
+      localStorage.setItem(storageKey, safeStringify(localInvoices));
+      window.dispatchEvent(new Event('local_users_updated'));
+    } catch (e) {
+      handleFirestoreError(error, OperationType.DELETE, path);
+    }
+  }
+};
+
+// --- Settings Operations ---
+
+export const subscribeToSettings = (callback: (settings: CompanySettings) => void) => {
+  const path = 'settings/global';
+  try {
+    return onSnapshot(doc(db, 'settings', 'global'), (snapshot) => {
+      if (snapshot.exists()) {
+        callback({ ...snapshot.data() as CompanySettings, id: snapshot.id });
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, path);
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, path);
+  }
+};
+
+export const saveSettings = async (settings: CompanySettings) => {
+  const path = 'settings/global';
+  try {
+    await updateDoc(doc(db, 'settings', 'global'), settings as any);
+  } catch (error) {
+    // If document doesn't exist, use setDoc (or just handle error if rules allow create)
+    // For simplicity, we assume 'global' exists or we can create it
+    try {
+      const { setDoc } = await import('firebase/firestore');
+      await setDoc(doc(db, 'settings', 'global'), settings);
+    } catch (innerError) {
+      handleFirestoreError(innerError, OperationType.WRITE, path);
+    }
+  }
+};
+
+// --- Generic Operations ---
+
+export const getDocumentById = async <T extends { id: string }>(collectionName: string, id: string) => {
+  const path = `${collectionName}/${id}`;
+  try {
+    const { getDoc } = await import('firebase/firestore');
+    const docSnap = await getDoc(doc(db, collectionName, id));
+    if (docSnap.exists()) {
+      return { ...docSnap.data() as T, id: docSnap.id };
+    }
+    return null;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, path);
+    return null;
+  }
+};
+
+export const getInvoiceById = (id: string) => getDocumentById<Invoice>('invoices', id);
+
+export const subscribeToCollection = <T extends { id: string }>(
+  collectionName: string, 
+  callback: (items: T[]) => void,
+  sortField: string = 'createdAt'
+) => {
+  const getMergedItems = (firestoreItems: T[]): T[] => {
+    // Generate localStorage key for this specific collection
+    const storageKey = `local_${collectionName}`;
+    let localItems: any[] = [];
+    try {
+      const localStr = localStorage.getItem(storageKey) || '[]';
+      localItems = JSON.parse(localStr).map((item: any) => ({
+        ...item,
+        id: item.id || `local-${collectionName}-${Math.random().toString(36).substring(2, 7)}`
+      }));
+    } catch (e) {
+      console.warn(`Error loading localStorage items for ${collectionName}:`, e);
+    }
+
+    const merged = [...firestoreItems];
+    for (const localItem of localItems) {
+      const isDuplicate = firestoreItems.some((fi: any) => {
+        if (collectionName === 'users') {
+          return (fi.phone && localItem.phone && fi.phone.trim() === localItem.phone.trim()) ||
+                 (fi.email && localItem.email && fi.email.trim().toLowerCase() === localItem.email.trim().toLowerCase()) ||
+                 (fi.username && localItem.username && fi.username.trim() === localItem.username.trim());
+        }
+        return fi.id === localItem.id || (fi.transactionId && localItem.transactionId && fi.transactionId === localItem.transactionId);
+      });
+      if (!isDuplicate) {
+        merged.push(localItem);
+      }
+    }
+    return merged as T[];
+  };
+
+  let currentFirestoreItems: T[] = [];
+
+  const publishItems = () => {
+    callback(getMergedItems(currentFirestoreItems));
+  };
+
+  // Listen to custom window events for local updates
+  const handleLocalUpdate = () => {
+    publishItems();
+  };
+  window.addEventListener('local_users_updated', handleLocalUpdate);
+
+  // Instantly publish current items (which includes offline/locally registered users)
+  // so the UI gets rendered immediately without waiting on slow Firestore handshake
+  publishItems();
+
+  let unsubscribe: (() => void) | undefined;
+
+  try {
+    const q = firestoreQuery(collection(db, collectionName), orderBy(sortField, 'desc'));
+    unsubscribe = onSnapshot(q, (snapshot) => {
+      currentFirestoreItems = snapshot.docs.map(docSnap => ({
+        ...docSnap.data() as T,
+        id: docSnap.id
+      }));
+      publishItems();
+    }, (error) => {
+      console.warn(`[Firestore sync failed/timeout/permission] Falling back to offline lists for collection ${collectionName}:`, error instanceof Error ? error.message : String(error));
+      publishItems();
+    });
+  } catch (error) {
+    console.warn(`[Firestore subscription query failed] Falling back to offline lists for collection ${collectionName}:`, error instanceof Error ? error.message : String(error));
+    publishItems();
+  }
+
+  return () => {
+    if (unsubscribe) unsubscribe();
+    window.removeEventListener('local_users_updated', handleLocalUpdate);
+  };
+};
+
+export const createDocument = async <T extends { id: string }>(collectionName: string, data: Omit<T, 'id'>) => {
+  const timestamp = new Date().toISOString();
+  const docData = {
+    ...data,
+    createdAt: timestamp,
+    updatedAt: timestamp
+  };
+
+  let savedToFirestore = false;
+  let docId = '';
+
+  const isPlaceholder = !firebaseConfig.projectId || firebaseConfig.projectId.includes('remixed-');
+
+  if (!isPlaceholder) {
+    try {
+      // Avoid infinite pending promise hangs if client has connectivity lag/rules block
+      const writePromise = addDoc(collection(db, collectionName), docData);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Write timeout')), 1500)
+      );
+
+      const docRef = (await Promise.race([writePromise, timeoutPromise])) as any;
+      docId = docRef.id;
+      savedToFirestore = true;
+    } catch (dbErr) {
+      console.warn(`Firestore write failed for ${collectionName}, falling back to local storage:`, dbErr);
+    }
+  }
+
+  if (!savedToFirestore) {
+    docId = 'local-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
+    const storageKey = `local_${collectionName}`;
+    try {
+      const localItemsStr = localStorage.getItem(storageKey) || '[]';
+      const localItems = JSON.parse(localItemsStr);
+      localItems.push({ ...docData, id: docId });
+      localStorage.setItem(storageKey, safeStringify(localItems));
+      window.dispatchEvent(new Event('local_users_updated'));
+    } catch (e) {
+      console.error(`Offline item creation failed for ${collectionName}:`, e);
+    }
+  }
+
+  if (collectionName !== 'activities') {
+    await logActivity({
+      type: 'create',
+      category: collectionName as any,
+      message: `Created new record in ${collectionName}`
+    });
+  }
+
+  return { ...docData, id: docId } as unknown as T;
+};
+
+export const updateDocument = async <T extends { id: string }>(collectionName: string, id: string, data: Partial<T>) => {
+  const path = `${collectionName}/${id}`;
+  const isLocalId = id.startsWith('local');
+  const isPlaceholder = !firebaseConfig.projectId || firebaseConfig.projectId.includes('remixed-');
+
+  if (isLocalId || isPlaceholder) {
+    try {
+      const storageKey = `local_${collectionName}`;
+      const localItemsStr = localStorage.getItem(storageKey) || '[]';
+      const localItems = JSON.parse(localItemsStr).map((item: any) => {
+        const itemId = item.id || '';
+        if (itemId === id) {
+          return { ...item, ...data, id: itemId, updatedAt: new Date().toISOString() };
+        }
+        return item;
+      });
+      localStorage.setItem(storageKey, safeStringify(localItems));
+      window.dispatchEvent(new Event('local_users_updated'));
+
+      await logActivity({
+        type: 'update',
+        category: collectionName as any,
+        message: `Updated offline record #${id} in ${collectionName}`
+      });
+      return;
+    } catch (e) {
+      console.error(`LocalStorage update failed for ${collectionName}:`, e);
+    }
+  }
+
+  try {
+    const docRef = doc(db, collectionName, id);
+    const docData = {
+      ...data,
+      updatedAt: new Date().toISOString()
+    };
+    await updateDoc(docRef, docData as any);
+
+    if (collectionName !== 'activities') {
+      await logActivity({
+        type: 'update',
+        category: collectionName as any,
+        message: `Updated record #${id} in ${collectionName}`
+      });
+    }
+  } catch (error) {
+    try {
+      const storageKey = `local_${collectionName}`;
+      const localItemsStr = localStorage.getItem(storageKey) || '[]';
+      const localItems = JSON.parse(localItemsStr).map((item: any) => {
+        const itemId = item.id || '';
+        if (itemId === id) {
+          return { ...item, ...data, id: itemId, updatedAt: new Date().toISOString() };
+        }
+        return item;
+      });
+      localStorage.setItem(storageKey, safeStringify(localItems));
+      window.dispatchEvent(new Event('local_users_updated'));
+    } catch (e) {
+      handleFirestoreError(error, OperationType.WRITE, path);
+    }
+  }
+};
+
+export const deleteDocument = async (collectionName: string, id: string) => {
+  const path = `${collectionName}/${id}`;
+  const isLocalId = id.startsWith('local');
+  const isPlaceholder = !firebaseConfig.projectId || firebaseConfig.projectId.includes('remixed-');
+
+  if (isLocalId || isPlaceholder) {
+    try {
+      const storageKey = `local_${collectionName}`;
+      const localItemsStr = localStorage.getItem(storageKey) || '[]';
+      const localItems = JSON.parse(localItemsStr).filter((item: any) => {
+        const itemId = item.id || '';
+        return itemId !== id;
+      });
+      localStorage.setItem(storageKey, safeStringify(localItems));
+      window.dispatchEvent(new Event('local_users_updated'));
+
+      await logActivity({
+        type: 'delete',
+        category: collectionName as any,
+        message: `Deleted offline record #${id} in ${collectionName}`
+      });
+      return;
+    } catch (e) {
+      console.error(`LocalStorage delete failed for ${collectionName}:`, e);
+    }
+  }
+
+  try {
+    const docRef = doc(db, collectionName, id);
+    await deleteDoc(docRef);
+
+    if (collectionName !== 'activities') {
+      await logActivity({
+        type: 'delete',
+        category: collectionName as any,
+        message: `Deleted record #${id} from ${collectionName}`
+      });
+    }
+  } catch (error) {
+    try {
+      const storageKey = `local_${collectionName}`;
+      const localItemsStr = localStorage.getItem(storageKey) || '[]';
+      const localItems = JSON.parse(localItemsStr).filter((item: any) => {
+        const itemId = item.id || '';
+        return itemId !== id;
+      });
+      localStorage.setItem(storageKey, safeStringify(localItems));
+      window.dispatchEvent(new Event('local_users_updated'));
+    } catch (e) {
+      handleFirestoreError(error, OperationType.DELETE, path);
+    }
+  }
+};
+
+// Legacy support (to be replaced gradually)
+export const getInvoices = getInvoicesSync;
+export const saveInvoices = (invoices: Invoice[]) => {
+  localStorage.setItem('master_invoices', safeStringify(invoices));
+  window.dispatchEvent(new Event('invoices_updated'));
+};

@@ -1,0 +1,141 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net (first rule catch-all)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        // Check database-stored users or bootstrapped secure Google/Owner IDs
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        request.auth.token.email == 'foysolahmed0273@gmail.com' ||
+        request.auth.token.email == 'foysolahmedtapader@gmail.com'
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Entity shapes validation helpers
+    function isValidInvoice(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.customerName is string && data.customerName.size() <= 200
+        && (data.status == 'paid' || data.status == 'pending' || data.status == 'overdue')
+        && data.amount is number;
+    }
+
+    function isValidApp(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 200
+        && (data.status == 'active' || data.status == 'inactive');
+    }
+
+    function isValidDecoder(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.serialNumber is string && data.serialNumber.size() <= 100
+        && (data.status == 'online' || data.status == 'offline');
+    }
+
+    function isValidPanel(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.name is string && data.name.size() <= 200
+        && (data.status == 'active' || data.status == 'maintenance');
+    }
+
+    function isValidSystemUser(data) {
+      return data.username is string && data.username.size() <= 100
+        && (data.role == 'admin' || data.role == 'reseller' || data.role == 'user');
+    }
+
+    function isValidInvestment(data) {
+      return data.id is string && data.id.size() <= 128
+        && data.title is string && data.title.size() <= 200
+        && data.amount is number;
+    }
+
+    function isValidActivityLog(data) {
+      return data.timestamp is string && data.timestamp.size() <= 100;
+    }
+
+    // Invoices matched rules
+    match /invoices/{invoiceId} {
+      allow get: if true; // Guest self-service and verified invoice verification
+      allow list: if isSignedIn(); // Logged-in dashboard users/resellers can query billing sheets
+      allow create: if isValidId(invoiceId) && isValidInvoice(incoming());
+      allow update: if isValidId(invoiceId) && isValidInvoice(incoming()) && (
+        isAdmin() ||
+        // User/Reseller payment submission (Update gap control)
+        (incoming().diff(existing()).affectedKeys().hasOnly(['paidAmount', 'dueAmount', 'status', 'paymentMethod', 'transactionId', 'updatedAt']))
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Apps collection rules
+    match /apps/{appId} {
+      allow read: if true;
+      allow create, update: if isValidId(appId) && isValidApp(incoming()) && isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Panels collection rules
+    match /panels/{panelId} {
+      allow read: if true;
+      allow create, update: if isValidId(panelId) && isValidPanel(incoming()) && isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Decoders rules matching
+    match /decoders/{decoderId} {
+      allow read: if true;
+      allow create, update: if isValidId(decoderId) && isValidDecoder(incoming()) && isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Users rules matching
+    match /users/{userId} {
+      allow read: if true; // Needed to discover existing account registration details
+      allow create: if isValidId(userId) && isValidSystemUser(incoming());
+      allow update: if isValidId(userId) && isValidSystemUser(incoming()) && (
+        isAdmin() ||
+        // User/Customer updates their profile (No privilege/role modification allowed)
+        (incoming().diff(existing()).affectedKeys().hasOnly(['name', 'password', 'phone', 'whatsapp', 'email', 'updatedAt']))
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Settings matched rules
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Investments rules
+    match /investments/{id} {
+      allow read: if true;
+      allow write: if isValidId(id) && isValidInvestment(incoming()) && isAdmin();
+    }
+
+    // Activities audits logs rules
+    match /activities/{id} {
+      allow read: if isAdmin();
+      allow create: if isValidId(id) && isValidActivityLog(incoming());
+      allow update, delete: if false; // Audit logs must be tamper-proof and immutable
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "Remix: Remix: Remix: Remix: Remix: Remix: Remix: Nexus Admin Panel",
+  "description": "A comprehensive administrative dashboard for managing invoices, applications, decoders, and user accounts with real-time analytics and tracking.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

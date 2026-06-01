@@ -1,0 +1,171 @@
+{
+  "entities": {
+    "Invoice": {
+      "title": "Invoice",
+      "description": "A billing document for a customer",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerNumber": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "transactionId": { "type": "string" },
+        "amount": { "type": "number" },
+        "paidAmount": { "type": "number" },
+        "dueAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["paid", "pending", "overdue"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "cashierName": { "type": "string" },
+        "type": { "type": "string" },
+        "items": {
+          "type": "array",
+          "items": {
+             "type": "object",
+             "properties": {
+               "description": { "type": "string" },
+               "quantity": { "type": "number" },
+               "price": { "type": "number" }
+             }
+          }
+        }
+      },
+      "required": ["id", "customerName", "amount", "status", "createdAt"]
+    },
+    "App": {
+      "title": "Management App",
+      "description": "An application being managed",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "packageName": { "type": "string" },
+        "protocol": { "type": "string" },
+        "appType": { "type": "string", "enum": ["Free", "Paid"] },
+        "category": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive"] }
+      },
+      "required": ["id", "name", "status"]
+    },
+    "Decoder": {
+      "title": "Decoder",
+      "description": "A hardware or software decoder device",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "model": { "type": "string" },
+        "serialNumber": { "type": "string" },
+        "username": { "type": "string" },
+        "duration": { "type": "string" },
+        "price": { "type": "number" },
+        "status": { "type": "string", "enum": ["online", "offline"] }
+      },
+      "required": ["id", "serialNumber", "status"]
+    },
+    "Panel": {
+      "title": "Panel",
+      "description": "A management panel",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "url": { "type": "string" },
+        "region": { "type": "string" },
+        "duration": { "type": "string" },
+        "price": { "type": "number" },
+        "panelType": { "type": "string", "enum": ["New", "Rent", "Try"] },
+        "tier": { "type": "string", "enum": ["basic", "pro", "enterprise"] },
+        "status": { "type": "string", "enum": ["active", "maintenance"] }
+      },
+      "required": ["id", "name", "status"]
+    },
+    "SystemUser": {
+      "title": "User",
+      "description": "A user of the management portal with custom registration, status approval, and payment tracking",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "username": { "type": "string" },
+        "password": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "reseller", "user"] },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "price": { "type": "number" },
+        "paidAmount": { "type": "number" },
+        "dueAmount": { "type": "number" },
+        "phone": { "type": "string" },
+        "countryCode": { "type": "string" },
+        "region": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "transactionId": { "type": "string" },
+        "note": { "type": "string" }
+      },
+      "required": ["id", "username", "role"]
+    },
+    "Settings": {
+      "title": "Company Settings",
+      "description": "Global configuration for the platform",
+      "type": "object",
+      "properties": {
+        "companyName": { "type": "string" },
+        "slogan": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "website": { "type": "string" },
+        "address": { "type": "string" },
+        "bankName": { "type": "string" },
+        "branchName": { "type": "string" },
+        "accountNo": { "type": "string" },
+        "terms": { "type": "string" },
+        "logoUrl": { "type": "string" }
+      }
+    },
+    "Investment": {
+      "title": "Investment",
+      "description": "A business investment or expense",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "amount": { "type": "number" },
+        "date": { "type": "string", "format": "date" },
+        "category": { "type": "string" },
+        "note": { "type": "string" }
+      },
+      "required": ["id", "title", "amount", "date", "category"]
+    }
+  },
+  "firestore": {
+    "invoices": {
+      "schema": "Invoice",
+      "description": "Collection of invoices"
+    },
+    "apps": {
+      "schema": "App",
+      "description": "Collection of managed apps"
+    },
+    "panels": {
+      "schema": "Panel",
+      "description": "Collection of panels"
+    },
+    "decoders": {
+      "schema": "Decoder",
+      "description": "Collection of decoders"
+    },
+    "users": {
+      "schema": "SystemUser",
+      "description": "Collection of application users"
+    },
+    "settings": {
+      "schema": "Settings",
+      "description": "Company settings document (usually just one called 'global')"
+    },
+    "investments": {
+      "schema": "Investment",
+      "description": "Collection of business investments"
+    },
+    "activities": {
+      "schema": "ActivityLog",
+      "description": "System activity logs for auditing"
+    }
+  }
+}
