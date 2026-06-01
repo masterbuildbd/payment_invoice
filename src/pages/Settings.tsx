@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Globe, Building2, Landmark, FileText, Save, CheckCircle2, Lock, Shield, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { Settings as SettingsIcon, Globe, Building2, Landmark, FileText, Save, CheckCircle2, Lock, Shield, Eye, EyeOff, Sparkles, MessageSquare, Plus, Trash2, Edit3, PlusCircle, Info } from 'lucide-react';
 import { CompanySettings } from '../types';
 import { useLanguage } from '../lib/language';
 import { subscribeToSettings, saveSettings } from '../lib/storage';
@@ -72,6 +72,28 @@ const DEFAULT_SETTINGS: CompanySettings = {
   decoderPrice5m: 5500,
   decoderPrice6m: 6500,
   decoderPrice12m: 8600,
+  smsTemplates: [
+    {
+      id: 'welcome',
+      label: '🎉 স্বাগতম মেসেজ (Welcome Welcoming)',
+      text: 'প্রিয় {name}, আমাদের প্ল্যাটফর্মে আপনাকে স্বাগতম! আপনার অ্যাকাউন্ট সফলভাবে অনুমোদিত হয়েছে। ধন্যবাদ।'
+    },
+    {
+      id: 'payment_approve',
+      label: '✅ পেমেন্ট সফল নোটিফিকেশন (Payment Received)',
+      text: 'প্রিয় {name}, আপনার পেমেন্ট ৳{paid} সফলভাবে গৃহীত ও সিস্টেমে যোগ হয়েছে। আপনার অবশিষ্ট বকেয়া: ৳{due}। ধন্যবাদ!'
+    },
+    {
+      id: 'due_alert',
+      label: '⚠️ বকেয়া বিল পরিশোধের তাগিদ (Due Invoice Alert)',
+      text: 'প্রিয় {name}, আপনার অ্যাকাউন্ট বিল/সার্ভিস চার্জ ৳{due} এখনো বকেয়া রয়েছে। অনুগ্রহ করে দ্রুত বিল পরিশোধ করুন। ধন্যবাদ!'
+    },
+    {
+      id: 'promo',
+      label: '🚀 অফার ও প্রোমোশনাল মেসেজ (Promotional Notice)',
+      text: 'প্রিয় {name}, আমাদের নতুন সার্ভিসে আজই যুক্ত হোন! বিস্তারিত জানতে যোগাযোগ করুন। - {company}'
+    }
+  ],
 };
 
 const BANGLADESH_BANKS = [
@@ -115,6 +137,81 @@ export function Settings() {
   const [settings, setSettings] = useState<CompanySettings>(DEFAULT_SETTINGS);
   const [isSaving, setIsSaving] = useState(false);
   const [showSavedToast, setShowSavedToast] = useState(false);
+
+  // Custom SMS Templates Local States
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
+  const [templateLabel, setTemplateLabel] = useState('');
+  const [templateText, setTemplateText] = useState('');
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [smsError, setSmsError] = useState('');
+
+  const handleEditTemplate = (tpl: { id: string; label: string; text: string }) => {
+    setEditingTemplateId(tpl.id);
+    setTemplateLabel(tpl.label);
+    setTemplateText(tpl.text);
+    setIsAddingNew(false);
+    setSmsError('');
+  };
+
+  const handleStartAddTemplate = () => {
+    setEditingTemplateId(null);
+    setTemplateLabel('');
+    setTemplateText('');
+    setIsAddingNew(true);
+    setSmsError('');
+  };
+
+  const handleCancelTemplateEdit = () => {
+    setEditingTemplateId(null);
+    setIsAddingNew(false);
+    setTemplateLabel('');
+    setTemplateText('');
+    setSmsError('');
+  };
+
+  const handleSaveTemplate = () => {
+    if (!templateLabel.trim()) {
+      setSmsError('Template Title/Label is required');
+      return;
+    }
+    if (!templateText.trim()) {
+      setSmsError('Template message content is required');
+      return;
+    }
+
+    const currentTemplates = settings.smsTemplates || DEFAULT_SETTINGS.smsTemplates || [];
+    let updatedTemplates = [...currentTemplates];
+
+    if (editingTemplateId) {
+      // update existing
+      updatedTemplates = updatedTemplates.map(t => 
+        t.id === editingTemplateId ? { ...t, label: templateLabel, text: templateText } : t
+      );
+    } else {
+      // create new
+      const uniqueId = `custom_${Date.now()}`;
+      updatedTemplates.push({
+        id: uniqueId,
+        label: templateLabel,
+        text: templateText
+      });
+    }
+
+    setSettings(prev => ({ ...prev, smsTemplates: updatedTemplates }));
+    
+    // reset editor states
+    setEditingTemplateId(null);
+    setIsAddingNew(false);
+    setTemplateLabel('');
+    setTemplateText('');
+    setSmsError('');
+  };
+
+  const handleDeleteTemplate = (idToDelete: string) => {
+    const currentTemplates = settings.smsTemplates || DEFAULT_SETTINGS.smsTemplates || [];
+    const updatedTemplates = currentTemplates.filter(t => t.id !== idToDelete);
+    setSettings(prev => ({ ...prev, smsTemplates: updatedTemplates }));
+  };
 
   // Password Change State
   const [passwordData, setPasswordData] = useState({
@@ -1136,6 +1233,228 @@ export function Settings() {
           </div>
         </div>
       </div>
+
+        {/* SMS Templates Configuration */}
+        <div id="sms-templates-section" className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6 animate-in fade-in duration-300">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                <MessageSquare size={20} />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-900">Predefined SMS Templates (এসএমএস টেমপ্লেট কনফিগারেশন)</h2>
+                <p className="text-xs text-slate-500 font-medium">Configure and customize dynamic text templates for quick-send SMS notifications</p>
+              </div>
+            </div>
+            {!editingTemplateId && !isAddingNew && (
+              <button
+                type="button"
+                onClick={handleStartAddTemplate}
+                className="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all shadow-sm shadow-indigo-100 active:scale-95"
+              >
+                <Plus size={14} className="stroke-[2.5]" />
+                Add Template (টেমপ্লেট যোগ করুন)
+              </button>
+            )}
+          </div>
+
+          {/* Placeholders Guide info block */}
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col md:flex-row md:items-start gap-4">
+            <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 mt-0.5">
+              <Info size={16} />
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold text-indigo-900">ডাইনামিক প্লেসহোল্ডার কোডসমূহ (Available Template Tags)</h4>
+              <p className="text-[11px] text-slate-500 leading-relaxed font-semibold">
+                আপনার তৈরি করা মেসেজগুলোতে নিচের ব্র্যাকেট কোডগুলো ব্যবহার করলে এসএমএস পাঠানোর সময় সেগুলো স্বয়ংক্রিয়ভাবে পরিবর্তিত হয়ে গ্রাহকের রিয়েল-টাইম তথ্য দেখাবে:
+              </p>
+              <div className="flex flex-wrap gap-2 pt-1 font-mono text-[10px]">
+                <span className="bg-indigo-100/60 text-indigo-800 px-2.5 py-1 rounded-md font-bold">
+                  {"{name}"} &rarr; গ্রাহকের নাম (Customer Name)
+                </span>
+                <span className="bg-rose-100/60 text-rose-800 px-2.5 py-1 rounded-md font-bold">
+                  {"{due}"} &rarr; বকেয়া টাকার পরিমাণ (Due Amount)
+                </span>
+                <span className="bg-emerald-100/60 text-emerald-800 px-2.5 py-1 rounded-md font-bold">
+                  {"{paid}"} &rarr; পেমেন্ট বা জমাকৃত টাকা (Paid Amount)
+                </span>
+                <span className="bg-amber-100/60 text-amber-800 px-2.5 py-1 rounded-md font-bold">
+                  {"{company}"} &rarr; কোম্পানির নাম (Company Brand)
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* If Editing or Adding, show Form */}
+          {(editingTemplateId || isAddingNew) ? (
+            <div className="bg-indigo-50/40 p-5 rounded-2xl border border-indigo-100 space-y-4 animate-in slide-in-from-top-2 duration-300">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xs font-black text-indigo-700 tracking-wider uppercase">
+                  {editingTemplateId ? 'Edit Predefined Template' : 'Add New SMS Template'}
+                </h3>
+                <span className="text-[10px] font-bold text-slate-400 capitalize">
+                  {editingTemplateId ? `ID: ${editingTemplateId}` : 'New Custom Template'}
+                </span>
+              </div>
+
+              {smsError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-600 text-xs font-bold">
+                  {smsError}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-black text-slate-550 uppercase tracking-widest ms-1">
+                    Template Title / Label * (টেমপ্লেট টাইটেল)
+                  </label>
+                  <input
+                    type="text"
+                    value={templateLabel}
+                    onChange={(e) => setTemplateLabel(e.target.value)}
+                    placeholder="e.g. 🎉 স্বাগতম বার্তা (Welcome Notification)"
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm font-semibold text-slate-800"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <div className="flex justify-between items-center ms-1">
+                    <label className="block text-[10px] font-black text-slate-550 uppercase tracking-widest">
+                      Template Message Content * (টেমপ্লেট বার্তা)
+                    </label>
+                    <span className="text-[10px] text-slate-400">
+                      Length: <span className="font-bold text-indigo-600">{templateText.length}</span> chars
+                    </span>
+                  </div>
+                  <textarea
+                    rows={4}
+                    value={templateText}
+                    onChange={(e) => setTemplateText(e.target.value)}
+                    placeholder="প্রিয় {name}, আপনার মোট বিল ৳{due} বকেয়া রয়েছে..."
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-sm font-medium text-slate-800"
+                  />
+
+                  {/* Tap buttons to insert dynamic shortcuts */}
+                  <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                    <span className="text-[10px] text-slate-400 me-2 font-bold">Tap to insert variable:</span>
+                    <button
+                      type="button"
+                      onClick={() => setTemplateText(prev => prev + '{name}')}
+                      className="px-2.5 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-[10px] font-bold text-indigo-600 transition-all hover:scale-105 active:scale-95"
+                    >
+                      + Name {"{name}"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTemplateText(prev => prev + '{due}')}
+                      className="px-2.5 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-[10px] font-bold text-indigo-600 transition-all hover:scale-105 active:scale-95"
+                    >
+                      + Due {"{due}"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTemplateText(prev => prev + '{paid}')}
+                      className="px-2.5 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-[10px] font-bold text-indigo-600 transition-all hover:scale-105 active:scale-95"
+                    >
+                      + Paid {"{paid}"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTemplateText(prev => prev + '{company}')}
+                      className="px-2.5 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg text-[10px] font-bold text-indigo-600 transition-all hover:scale-105 active:scale-95"
+                    >
+                      + Company {"{company}"}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={handleCancelTemplateEdit}
+                  className="px-4 py-2 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 active:scale-95 transition-all"
+                >
+                  Cancel (বাতিল)
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveTemplate}
+                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold active:scale-95 transition-all shadow-sm"
+                >
+                  Confirm Template (নিশ্চিত করুন)
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Templates Grid List */}
+          <div className="space-y-3.5">
+            <h3 className="text-xs font-black text-slate-400 tracking-wider uppercase">
+              Current predefined templates (বিদ্যমান টেমপ্লেটসমূহ)
+            </h3>
+
+            {(() => {
+              const currentTemplates = settings.smsTemplates || DEFAULT_SETTINGS.smsTemplates || [];
+              if (currentTemplates.length === 0) {
+                return (
+                  <div className="text-center py-8 bg-slate-50 border border-dashed border-slate-200 rounded-2xl">
+                    <p className="text-sm font-semibold text-slate-400">কোন এসএমএস টেমপ্লেট পাওয়া যায়নি। টেমপ্লেট যুক্ত করুন।</p>
+                    <p className="text-xs text-slate-400/80 font-medium">No SMS templates found. Start by creating one!</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {currentTemplates.map((tpl) => (
+                    <div 
+                      key={tpl.id} 
+                      className="bg-slate-50/50 p-4 rounded-2xl border border-slate-200 relative hover:border-slate-300 hover:bg-white transition-all duration-300 group flex flex-col justify-between"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div className="space-y-0.5">
+                            <h4 className="text-xs font-bold text-slate-800 tracking-tight pr-14 leading-snug">
+                              {tpl.label}
+                            </h4>
+                            <span className="inline-block px-1.5 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[8px] font-mono font-black uppercase tracking-wider">
+                              ID: {tpl.id}
+                            </span>
+                          </div>
+
+                          {/* Controls */}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleEditTemplate(tpl)}
+                              className="p-1.5 bg-white text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 border border-slate-150 rounded-lg transition-all"
+                              title="Edit"
+                            >
+                              <Edit3 size={12} className="stroke-[2.5]" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTemplate(tpl.id)}
+                              className="p-1.5 bg-white text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-slate-150 rounded-lg transition-all"
+                              title="Delete"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <p className="text-[11px] text-slate-500 bg-white/60 p-3 rounded-xl border border-slate-100 font-semibold leading-relaxed pr-2 break-words">
+                          "{tpl.text}"
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
 
         {/* Security / Password Change */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">

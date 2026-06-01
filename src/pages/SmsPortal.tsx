@@ -86,8 +86,8 @@ export function SmsPortal() {
     };
   }, []);
 
-  // Standard SMS Templates
-  const templates = [
+  // Standard SMS Templates (Reads custom settings or falls back to system standards)
+  const templates = settings.smsTemplates || [
     {
       id: 'welcome',
       label: '🎉 স্বাগতম মেসেজ (Welcome Announcement)',

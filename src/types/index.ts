@@ -78,6 +78,7 @@ export type CompanySettings = {
   decoderPrice5m?: number;
   decoderPrice6m?: number;
   decoderPrice12m?: number;
+  smsTemplates?: { id: string; label: string; text: string }[];
 };
 
 export type User = {
