@@ -8,17 +8,29 @@ import { useToast } from '../components/Toast';
 
 const getWhatsAppUrl = (user: User) => {
   let number = user.whatsapp || user.phone || '';
-  // Remove spaces, dashes, +, parentheses
   number = number.replace(/[+\s-()]/g, '');
-  
-  // If BD number starts with 01 and length is 11, prepend 88
+  if (number.startsWith('01') && number.length === 11) {
+    number = '88' + number;
+  }
+  const textMessage = `Hello *${user.name}*! 🎉\n\nYour account on our system has been successfully completed and *APPROVED*! Here are your credentials:\n\n👤 *Name:* ${user.name}\n📧 *Email:* ${user.email || 'N/A'}\n🆔 *Username:* ${user.username}\n🔑 *Password:* ${user.password || '******'}\n\n🔗 *Login here:* ${window.location.origin}\n\nHave a great experience with our system!`;
+  return `https://api.whatsapp.com/send?phone=${number}&text=${encodeURIComponent(textMessage)}`;
+};
+
+const getWhatsAppUrls = (user: User) => {
+  let number = user.whatsapp || user.phone || '';
+  number = number.replace(/[+\s-()]/g, '');
   if (number.startsWith('01') && number.length === 11) {
     number = '88' + number;
   }
   
   const textMessage = `Hello *${user.name}*! 🎉\n\nYour account on our system has been successfully completed and *APPROVED*! Here are your credentials:\n\n👤 *Name:* ${user.name}\n📧 *Email:* ${user.email || 'N/A'}\n🆔 *Username:* ${user.username}\n🔑 *Password:* ${user.password || '******'}\n\n🔗 *Login here:* ${window.location.origin}\n\nHave a great experience with our system!`;
+  const encodedText = encodeURIComponent(textMessage);
   
-  return `https://api.whatsapp.com/send?phone=${number}&text=${encodeURIComponent(textMessage)}`;
+  return {
+    regular: `https://api.whatsapp.com/send?phone=${number}&text=${encodedText}`,
+    business: `whatsapp-business://send?phone=${number}&text=${encodedText}`,
+    businessFallback: `https://wa.me/${number}?text=${encodedText}`
+  };
 };
 
 interface UsersProps {
@@ -32,6 +44,7 @@ export function Users({ initialFilter = 'all' }: UsersProps) {
   const [settings, setSettings] = useState<Partial<CompanySettings>>({});
   const [activeFilter, setActiveFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>(initialFilter);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [whatsAppModalUser, setWhatsAppModalUser] = useState<User | null>(null);
 
   // Direct Email Application Dispatcher System
   const handleDirectSendEmail = (user: User) => {
@@ -73,9 +86,8 @@ export function Users({ initialFilter = 'all' }: UsersProps) {
       duration: 3500
     });
 
-    // Automatically open WhatsApp url in a new tab to send credentials
-    const url = getWhatsAppUrl(user);
-    window.open(url, '_blank');
+    // Automatically trigger selection of WhatsApp or WhatsApp Business
+    setWhatsAppModalUser(user);
   };
 
   const handleReject = async (user: User) => {
@@ -399,18 +411,16 @@ export function Users({ initialFilter = 'all' }: UsersProps) {
                                 </p>
                               )}
                               {user.whatsapp && (
-                                <a 
-                                  href={getWhatsAppUrl(user)}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  title="Click to open WhatsApp credentials message"
-                                  className="text-emerald-600 hover:underline font-black flex items-center gap-1"
+                                <button 
+                                  onClick={() => setWhatsAppModalUser(user)}
+                                  title="Click to send message via WhatsApp or WhatsApp Business"
+                                  className="text-emerald-600 hover:underline font-black flex items-center gap-1 cursor-pointer bg-transparent border-none p-0 inline-flex"
                                 >
                                   <svg className="w-3.5 h-3.5 fill-emerald-600 shrink-0 inline" viewBox="0 0 24 24">
                                     <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.717-1.458L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.42 9.864-9.864.004-2.637-1.019-5.115-2.88-6.978C16.31 1.9 13.83 1.026 11.2 1.026c-5.433 0-9.858 4.42-9.863 9.864-.001 1.716.452 3.39 1.31 4.869l-.999 3.648 3.74-.981l-.421-.21zm11.309-3.874c-.312-.156-1.848-.911-2.126-1.012-.278-.102-.482-.153-.684.152-.202.304-.783 1.012-.962 1.214-.178.203-.357.228-.669.071-1.581-.789-2.731-1.341-3.791-3.155-.28-.481.28-.446.804-1.493.087-.178.044-.33-.022-.456-.066-.127-.552-1.332-.757-1.826-.2-.48-.403-.414-.552-.422-.143-.007-.306-.007-.47-.007-.163 0-.43.061-.655.305-.224.244-.856.837-.856 2.04 0 1.203.878 2.37 1.0 2.532.122.163 1.725 2.636 4.18 3.693.585.251 1.04.4 1.398.513.588.187 1.124.161 1.547.098.472-.071 1.484-.607 1.696-1.164.212-.557.212-1.037.149-1.139-.063-.102-.23-.153-.541-.309z"/>
                                   </svg>
                                   <span>WA: {user.whatsapp}</span>
-                                </a>
+                                </button>
                               )}
                               {user.email && (
                                 <p className="text-slate-500 hover:underline flex items-center gap-1 font-semibold">
@@ -457,18 +467,16 @@ export function Users({ initialFilter = 'all' }: UsersProps) {
 
                             {currentStatus === 'approved' && (
                               <div className="flex items-center gap-1 flex-wrap shrink-0">
-                                <a
-                                  href={getWhatsAppUrl(user)}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  title="Send credentials to user via WhatsApp"
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[8px] font-black uppercase tracking-wider rounded-md shadow-xs active:scale-95 transition-all"
+                                <button
+                                  onClick={() => setWhatsAppModalUser(user)}
+                                  title="Send credentials to user via WhatsApp or WhatsApp Business"
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[8px] font-black uppercase tracking-wider rounded-md shadow-xs active:scale-95 transition-all cursor-pointer"
                                 >
                                   <svg className="w-2.5 h-2.5 fill-white shrink-0" viewBox="0 0 24 24">
                                     <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.717-1.458L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.42 9.864-9.864.004-2.637-1.019-5.115-2.88-6.978C16.31 1.9 13.83 1.026 11.2 1.026c-5.433 0-9.858 4.42-9.863 9.864-.001 1.716.452 3.39 1.31 4.869l-.999 3.648 3.74-.981l-.421-.21zm11.309-3.874c-.312-.156-1.848-.911-2.126-1.012-.278-.102-.482-.153-.684.152-.202.304-.783 1.012-.962 1.214-.178.203-.357.228-.669.071-1.581-.789-2.731-1.341-3.791-3.155-.28-.481.28-.446.804-1.493.087-.178.044-.33-.022-.456-.066-.127-.552-1.332-.757-1.826-.2-.48-.403-.414-.552-.422-.143-.007-.306-.007-.47-.007-.163 0-.43.061-.655.305-.224.244-.856.837-.856 2.04 0 1.203.878 2.37 1.0 2.532.122.163 1.725 2.636 4.18 3.693.585.251 1.04.4 1.398.513.588.187 1.124.161 1.547.098.472-.071 1.484-.607 1.696-1.164.212-.557.212-1.037.149-1.139-.063-.102-.23-.153-.541-.309z" />
                                   </svg>
                                   Send WA
-                                </a>
+                                </button>
                                 <a
                                   href={`mailto:${user.email || ''}?subject=${encodeURIComponent(`🎉 Your Account is Approved - ${settings.sidebarTitle || 'Master Terminal'}`)}&body=${encodeURIComponent(`আসসালামু আলাইকুম, ${user.name}!\n\nআপনার অ্যাকাউন্টটি সফলভাবে অনুমোদিত (Approved) করা হয়েছে। নিচে আপনার ড্যাশবোর্ড লগইন তথ্য দেওয়া হলো:\n\n👤 ব্যবহারকারীর নাম (Username): ${user.username || user.phone || ''}\n🔑 পাসওয়ার্ড (Password): ${user.password || '******'}\n\n🔗 ড্যাশবোর্ড লিংক: ${window.location.origin}\n\nআপনার চমৎকার অগ্রযাত্রার জন্য শুভকামনা!\n\nধন্যবাদ,\n${settings.sidebarTitle || 'Master Terminal'} এডমিন টিম`)}`}
                                   title="Send welcome/access credentials email (স্বাগত ইমেইল পাঠান)"
@@ -592,6 +600,93 @@ export function Users({ initialFilter = 'all' }: UsersProps) {
             </button>
           </div>
         </div>
+      </Modal>
+
+      {/* WhatsApp App Type Selection Modal */}
+      <Modal
+        isOpen={!!whatsAppModalUser}
+        onClose={() => setWhatsAppModalUser(null)}
+        title="কাস্টমার হোয়াটসঅ্যাপ নোটিফিকেশন (Select WhatsApp Type)"
+      >
+        {whatsAppModalUser && (() => {
+          const urls = getWhatsAppUrls(whatsAppModalUser);
+          return (
+            <div className="space-y-4 py-2">
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-150">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Recipient Details</p>
+                <p className="text-sm font-black text-slate-850">{whatsAppModalUser.name}</p>
+                <p className="text-xs text-slate-500 font-mono mt-0.5">📞 WhatsApp: {whatsAppModalUser.whatsapp || whatsAppModalUser.phone}</p>
+              </div>
+
+              <p className="text-xs text-slate-500 leading-relaxed font-semibold">
+                কোন হোয়াটসঅ্যাপ অ্যাপ দিয়ে মেসেজটি পাঠাতে চান? অনুগ্রহ করে নিচে থেকে একটি নির্বাচন করুন:
+              </p>
+
+              <div className="grid grid-cols-1 gap-3">
+                {/* 1. Normal/Personal WhatsApp */}
+                <a
+                  href={urls.regular}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setWhatsAppModalUser(null)}
+                  className="flex items-center justify-between p-4 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-all hover:scale-[1.01] text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center text-white shrink-0 shadow-sm shadow-emerald-200">
+                      <svg className="w-6 h-6 fill-white" viewBox="0 0 24 24">
+                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.717-1.458L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.42 9.864-9.864.004-2.637-1.019-5.115-2.88-6.978C16.31 1.9 13.83 1.026 11.2 1.026c-5.433 0-9.858 4.42-9.863 9.864-.001 1.716.452 3.39 1.31 4.869l-.999 3.648 3.74-.981l-.421-.21zm11.309-3.874c-.312-.156-1.848-.911-2.126-1.012-.278-.102-.482-.153-.684.152-.202.304-.783 1.012-.962 1.214-.178.203-.357.228-.669.071-1.581-.789-2.731-1.341-3.791-3.155-.28-.481.28-.446.804-1.493.087-.178.044-.33-.022-.456-.066-.127-.552-1.332-.757-1.826-.2-.48-.403-.414-.552-.422-.143-.007-.306-.007-.47-.007-.163 0-.43.061-.655.305-.224.244-.856.837-.856 2.04 0 1.203.878 2.37 1.0 2.532.122.163 1.725 2.636 4.18 3.693.585.251 1.04.4 1.398.513.588.187 1.124.161 1.547.098.472-.071 1.484-.607 1.696-1.164.212-.557.212-1.037.149-1.139-.063-.102-.23-.153-.541-.309z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-emerald-800">হোয়াটসঅ্যাপ (WhatsApp Personal)</p>
+                      <p className="text-xs text-emerald-600 font-medium">সাধারণ হোয়াটসঅ্যাপ অ্যাকাউন্ট থেকে পাঠান</p>
+                    </div>
+                  </div>
+                  <Check size={16} className="text-emerald-600 block shrink-0" />
+                </a>
+
+                {/* 2. WhatsApp Business */}
+                <a
+                  href={urls.businessFallback}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => {
+                    setWhatsAppModalUser(null);
+                    if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                      e.preventDefault();
+                      const isAndroid = /Android/i.test(navigator.userAgent);
+                      const deepLink = isAndroid 
+                        ? `intent://send?phone=${whatsAppModalUser.whatsapp || whatsAppModalUser.phone}&text=${encodeURIComponent(`Hello *${whatsAppModalUser.name}*! 🎉\n\nYour account on our system has been successfully completed and *APPROVED*! Here are your credentials:\n\n👤 *Name:* ${whatsAppModalUser.name}\n📧 *Email:* ${whatsAppModalUser.email || 'N/A'}\n🆔 *Username:* ${whatsAppModalUser.username}\n🔑 *Password:* ${whatsAppModalUser.password || '******'}\n\n🔗 *Login here:* ${window.location.origin}\n\nHave a great experience with our system!`)}#Intent;package=com.whatsapp.w4b;scheme=whatsapp;end`
+                        : `whatsapp-business://send?phone=${whatsAppModalUser.whatsapp || whatsAppModalUser.phone}&text=${encodeURIComponent(`Hello *${whatsAppModalUser.name}*! 🎉\n\nYour account on our system has been successfully completed and *APPROVED*! Here are your credentials:\n\n👤 *Name:* ${whatsAppModalUser.name}\n📧 *Email:* ${whatsAppModalUser.email || 'N/A'}\n🆔 *Username:* ${whatsAppModalUser.username}\n🔑 *Password:* ${whatsAppModalUser.password || '******'}\n\n🔗 *Login here:* ${window.location.origin}\n\nHave a great experience with our system!`)}`;
+                      
+                      const start = Date.now();
+                      window.location.href = deepLink;
+                      setTimeout(() => {
+                        if (Date.now() - start < 1500) {
+                          window.open(urls.businessFallback, '_blank');
+                        }
+                      }, 1000);
+                    }
+                  }}
+                  className="flex items-center justify-between p-4 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-xl transition-all hover:scale-[1.01] text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center text-white shrink-0 shadow-sm shadow-teal-200">
+                      <svg className="w-6 h-6 fill-white" viewBox="0 0 24 24">
+                        <path d="M12.004.01C5.39.01.055 5.348.053 11.961c-.001 2.112.551 4.17 1.6 5.979l-1.7 6.208 6.357-1.666c1.745.952 3.71 1.453 5.7 1.455h.005c6.612 0 11.95-5.337 11.954-11.953.002-3.203-1.241-6.216-3.504-8.483C18.214 1.251 15.204.011 12.004.01zm4.721 16.32c-.328.151-1.942.923-2.234 1.025-.292.103-.507.155-.719-.153-.213-.309-.824-1.029-1.011-1.236-.188-.206-.376-.231-.703-.081-1.66.8-2.868 1.36-3.982 3.203-.294.49-.074.453.473 1.516.091.181.046.336-.023.464-.069.129-.58 1.353-.795 1.854-.21.488-.423.421-.58.429-.15-.008-.322-.008-.495-.008-.172 0-.452.062-.688.31-.236.248-.9.85-.9 2.071 0 1.222.923 2.406 1.051 2.571.128.165 1.812 2.676 4.39 3.75.614.255 1.092.407 1.468.521.618.19 1.18.163 1.625.099.496-.072 1.558-.616 1.782-1.182.223-.566.223-1.053.157-1.156-.066-.103-.242-.155-.569-.314z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-teal-800">হোয়াটসঅ্যাপ বিজনেস (WhatsApp Business)</p>
+                      <p className="text-xs text-teal-600 font-medium">বিজনেস হোয়াটসঅ্যাপ থেকে মেসেজ পাঠান</p>
+                    </div>
+                  </div>
+                  <Check size={16} className="text-teal-600 block shrink-0" />
+                </a>
+              </div>
+            </div>
+          );
+        })()}
       </Modal>
     </div>
   );

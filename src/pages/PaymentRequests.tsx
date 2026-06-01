@@ -35,9 +35,11 @@ import {
   updateDocument, 
   subscribeToSettings,
   createInvoice,
-  deleteInvoice
+  deleteInvoice,
+  createDocument
 } from '../lib/storage';
 import { useToast } from '../components/Toast';
+import { Modal } from '../components/Modal';
 
 const formatLocalDate = (date: Date) => {
   const y = date.getFullYear();
@@ -121,6 +123,7 @@ export function PaymentRequests() {
   const [isProcessingBulk, setIsProcessingBulk] = useState(false);
   const [bulkStatusMsg, setBulkStatusMsg] = useState('');
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
+  const [whatsAppModalInvoice, setWhatsAppModalInvoice] = useState<Invoice | null>(null);
 
   useEffect(() => {
     const unsubInvoices = subscribeToInvoices((data) => {
@@ -470,7 +473,52 @@ export function PaymentRequests() {
         }
       }
 
-      alert(`রিকোয়েস্ট #${invoice.id.substring(0, 8).toUpperCase()} সফলভাবে অনুমোদন করা হয়েছে!`);
+      // 3. Auto-provision the requested item depending on billing purpose / invoice.type
+      if (invoice.username) {
+        if (invoice.type === 'Android App Purchase' && invoice.appName) {
+          await createDocument('apps', {
+            name: invoice.appName,
+            packageName: invoice.packageName || 'dev.masterbuild.' + invoice.appName.toLowerCase().replace(/\s+/g, ''),
+            protocol: invoice.protocol || 'Default',
+            appType: invoice.appsTrying === 'Free apps' ? 'Free' : 'Paid',
+            category: 'Approved APP',
+            status: 'active',
+            price: Number(invoice.amount) || 0,
+            username: invoice.username,
+            appsQuality: invoice.appsQuality || 'Normal security',
+            appsTrying: invoice.appsTrying || 'Paid apps',
+            appWorkType: invoice.appWorkType || 'New app',
+            note: `Approved via purchase invoice request #${invoice.id.substring(0, 8).toUpperCase()}. Approved on ${new Date().toLocaleDateString()}`
+          });
+        } else if (invoice.type === 'Reseller Panel Purchase' && invoice.panelName) {
+          await createDocument('panels', {
+            name: invoice.panelName,
+            url: invoice.panelUrl || '',
+            region: invoice.region || 'Default',
+            duration: invoice.panelDuration || '1 month',
+            price: Number(invoice.amount) || 0,
+            panelType: invoice.panelType === 'Panel Rent' ? 'Rent' : 'New',
+            tier: 'basic',
+            status: 'active',
+            username: invoice.username,
+            note: `Approved via panel invoice request #${invoice.id.substring(0, 8).toUpperCase()}. Approved on ${new Date().toLocaleDateString()}`
+          });
+        } else if (invoice.type === 'Decoder License Purchase' && invoice.decoderUsername) {
+          const randomSerial = 'DEC-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+          await createDocument('decoders', {
+            model: 'Decoder Premium System',
+            serialNumber: randomSerial,
+            username: invoice.decoderUsername,
+            duration: invoice.decoderDuration || '1 month',
+            price: Number(invoice.amount) || 0,
+            status: 'online',
+            clientUsername: invoice.username, // keep track of whose username requested it
+            note: `Approved via decoder invoice request #${invoice.id.substring(0, 8).toUpperCase()}. Approved on ${new Date().toLocaleDateString()}`
+          });
+        }
+      }
+
+      alert(`রিকোয়েস্ট #${invoice.id.substring(0, 8).toUpperCase()} সফলভাবে অনুমোদন করা হয়েছে এবং সার্ভিস সচল হয়েছে!`);
     } catch (err) {
       console.error(err);
       alert('অনুমোদন করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
@@ -494,14 +542,13 @@ export function PaymentRequests() {
     }
   };
 
-  const handleWhatsAppNotify = (invoice: Invoice) => {
+  const getInvoiceWhatsAppUrls = (invoice: Invoice) => {
     const customerName = invoice.customerName || 'গ্রাহক';
     const amount = invoice.amount || 0;
     const method = invoice.paymentMethod || (invoice as any).method || 'Bkash/Nagad/Rocket';
     const transactionId = invoice.transactionId || 'N/A';
     const purpose = invoice.type || 'Wallet Top-Up';
     
-    // Custom message details depending on the purchase type
     let extrasText = '';
     if (invoice.appName) {
       extrasText = ` (অ্যাপের নাম: ${invoice.appName}, প্যাকেজ: ${invoice.packageName || 'N/A'})`;
@@ -514,7 +561,7 @@ export function PaymentRequests() {
     }
 
     const cleanPhone = (phone: string) => {
-      let cleaned = phone.replace(/[^\d]/g, ''); // keep only numbers
+      let cleaned = phone.replace(/[^\d]/g, '');
       if (cleaned.startsWith('0') && cleaned.length === 11) {
         cleaned = '88' + cleaned;
       }
@@ -522,17 +569,26 @@ export function PaymentRequests() {
     };
 
     const recipientNumber = invoice.customerNumber || (invoice as any).phone || '';
+    const phoneForWa = cleanPhone(recipientNumber);
+
+    const message = `আসসালামু আলাইকুম, ${customerName}!\n\nআপনার BDT ${amount} মূল্যের পেন্ডিং পেমেন্ট রিকোয়েস্টটি আমাদের সিস্টেমে সফলভাবে জমা হয়েছে।\n\n📌 বিবরণ:\n- পেমেন্ট উদ্দেশ্য: ${purpose}${extrasText}\n- পেমেন্ট মাধ্যম: ${method}\n- ট্রানজেকশন ID: ${transactionId}\n\nআপনার রিকোয়েস্টটি বর্তমানে যাচাই করা হচ্ছে (Pending Verification)। অনুগ্রহ করে একটু অপেক্ষা করুন, অতি শীঘ্রই আমাদের টিম আপনার পেমেন্টটি ভেরিফাই করে ব্যালেন্স আপডেট করে দিবে।\n\nধন্যবাদ!`;
+    const encodedText = encodeURIComponent(message);
+
+    return {
+      phone: phoneForWa,
+      message: message,
+      regular: `https://api.whatsapp.com/send?phone=${phoneForWa}&text=${encodedText}`,
+      businessFallback: `https://wa.me/${phoneForWa}?text=${encodedText}`
+    };
+  };
+
+  const handleWhatsAppNotify = (invoice: Invoice) => {
+    const recipientNumber = invoice.customerNumber || (invoice as any).phone || '';
     if (!recipientNumber) {
       alert('এই গ্রাহকের কোনো ফোন নম্বর বা মোবাইল নম্বর পাওয়া যায়নি!');
       return;
     }
-
-    const phoneForWa = cleanPhone(recipientNumber);
-
-    const message = `আসসালামু আলাইকুম, ${customerName}!\n\nআপনার BDT ${amount} মূল্যের পেন্ডিং পেমেন্ট রিকোয়েস্টটি আমাদের সিস্টেমে সফলভাবে জমা হয়েছে।\n\n📌 বিবরণ:\n- পেমেন্ট উদ্দেশ্য: ${purpose}${extrasText}\n- পেমেন্ট মাধ্যম: ${method}\n- ট্রানজেকশন ID: ${transactionId}\n\nআপনার রিকোয়েস্টটি বর্তমানে যাচাই করা হচ্ছে (Pending Verification)। অনুগ্রহ করে একটু অপেক্ষা করুন, অতি শীঘ্রই আমাদের টিম আপনার পেমেন্টটি ভেরিফাই করে ব্যালেন্স আপডেট করে দিবে।\n\nধন্যবাদ!`;
-
-    const waUrl = `https://api.whatsapp.com/send?phone=${phoneForWa}&text=${encodeURIComponent(message)}`;
-    window.open(waUrl, '_blank');
+    setWhatsAppModalInvoice(invoice);
   };
 
   const filtered = invoices.filter(inv => {
@@ -1460,6 +1516,94 @@ export function PaymentRequests() {
           </motion.div>
         </div>
       )}
+
+      {/* WhatsApp Choose App Type Modal */}
+      <Modal
+        isOpen={!!whatsAppModalInvoice}
+        onClose={() => setWhatsAppModalInvoice(null)}
+        title="গ্রাহক হোয়াটসঅ্যাপ নোটিফিকেশন (Select WhatsApp Type)"
+      >
+        {whatsAppModalInvoice && (() => {
+          const urls = getInvoiceWhatsAppUrls(whatsAppModalInvoice);
+          return (
+            <div className="space-y-4 py-2">
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-150 text-left">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5">Recipient Details</p>
+                <p className="text-sm font-black text-slate-800">{whatsAppModalInvoice.customerName || 'গ্রাহক'}</p>
+                <p className="text-xs text-slate-500 font-mono mt-0.5">📞 Number: {urls.phone}</p>
+                <p className="text-xs text-indigo-600 font-bold mt-1">💳 Amount: ৳{(whatsAppModalInvoice.amount || 0).toLocaleString()}</p>
+              </div>
+
+              <p className="text-xs text-slate-500 leading-relaxed font-semibold">
+                কোন হোয়াটসঅ্যাপ অ্যাপ দিয়ে মেসেজটি পাঠাতে চান? অনুগ্রহ করে নিচে থেকে একটি নির্বাচন করুন:
+              </p>
+
+              <div className="grid grid-cols-1 gap-3">
+                {/* 1. Normal/Personal WhatsApp */}
+                <a
+                  href={urls.regular}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => setWhatsAppModalInvoice(null)}
+                  className="flex items-center justify-between p-4 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl transition-all hover:scale-[1.01] text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-emerald-600 rounded-lg flex items-center justify-center text-white shrink-0 shadow-sm shadow-emerald-200">
+                      <svg className="w-6 h-6 fill-white" viewBox="0 0 24 24">
+                        <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.717-1.458L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.42 9.864-9.864.004-2.637-1.019-5.115-2.88-6.978C16.31 1.9 13.83 1.026 11.2 1.026c-5.433 0-9.858 4.42-9.863 9.864-.001 1.716.452 3.39 1.31 4.869l-.999 3.648 3.74-.981l-.421-.21zm11.309-3.874c-.312-.156-1.848-.911-2.126-1.012-.278-.102-.482-.153-.684.152-.202.304-.783 1.012-.962 1.214-.178.203-.357.228-.669.071-1.581-.789-2.731-1.341-3.791-3.155-.28-.481.28-.446.804-1.493.087-.178.044-.33-.022-.456-.066-.127-.552-1.332-.757-1.826-.2-.48-.403-.414-.552-.422-.143-.007-.306-.007-.47-.007-.163 0-.43.061-.655.305-.224.244-.856.837-.856 2.04 0 1.203.878 2.37 1.0 2.532.122.163 1.725 2.636 4.18 3.693.585.251 1.04.4 1.398.513.588.187 1.124.161 1.547.098.472-.071 1.484-.607 1.696-1.164.212-.557.212-1.037.149-1.139-.063-.102-.23-.153-.541-.309z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-emerald-800">হোয়াটসঅ্যাপ (WhatsApp Personal)</p>
+                      <p className="text-xs text-emerald-600 font-medium">সাধারণ হোয়াটসঅ্যাপ অ্যাকাউন্ট থেকে পাঠান</p>
+                    </div>
+                  </div>
+                  <Check size={16} className="text-emerald-600 block shrink-0" />
+                </a>
+
+                {/* 2. WhatsApp Business */}
+                <a
+                  href={urls.businessFallback}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => {
+                    setWhatsAppModalInvoice(null);
+                    if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                      e.preventDefault();
+                      const isAndroid = /Android/i.test(navigator.userAgent);
+                      const deepLink = isAndroid 
+                        ? `intent://send?phone=${urls.phone}&text=${encodeURIComponent(urls.message)}#Intent;package=com.whatsapp.w4b;scheme=whatsapp;end`
+                        : `whatsapp-business://send?phone=${urls.phone}&text=${encodeURIComponent(urls.message)}`;
+                      
+                      const start = Date.now();
+                      window.location.href = deepLink;
+                      setTimeout(() => {
+                        if (Date.now() - start < 1500) {
+                          window.open(urls.businessFallback, '_blank');
+                        }
+                      }, 1000);
+                    }
+                  }}
+                  className="flex items-center justify-between p-4 bg-teal-50 hover:bg-teal-100 border border-teal-200 rounded-xl transition-all hover:scale-[1.01] text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-teal-600 rounded-lg flex items-center justify-center text-white shrink-0 shadow-sm shadow-teal-200">
+                      <svg className="w-6 h-6 fill-white" viewBox="0 0 24 24">
+                        <path d="M12.004.01C5.39.01.055 5.348.053 11.961c-.001 2.112.551 4.17 1.6 5.979l-1.7 6.208 6.357-1.666c1.745.952 3.71 1.453 5.7 1.455h.005c6.612 0 11.95-5.337 11.954-11.953.002-3.203-1.241-6.216-3.504-8.483C18.214 1.251 15.204.011 12.004.01zm4.721 16.32c-.328.151-1.942.923-2.234 1.025-.292.103-.507.155-.719-.153-.213-.309-.824-1.029-1.011-1.236-.188-.206-.376-.231-.703-.081-1.66.8-2.868 1.36-3.982 3.203-.294.49-.074.453.473 1.516.091.181.046.336-.023.464-.069.129-.58 1.353-.795 1.854-.21.488-.423.421-.58.429-.15-.008-.322-.008-.495-.008-.172 0-.452.062-.688.31-.236.248-.9.85-.9 2.071 0 1.222.923 2.406 1.051 2.571.128.165 1.812 2.676 4.39 3.75.614.255 1.092.407 1.468.521.618.19 1.18.163 1.625.099.496-.072 1.558-.616 1.782-1.182.223-.566.223-1.053.157-1.156-.066-.103-.242-.155-.569-.314z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-black text-teal-800">হোয়াটসঅ্যাপ বিজনেস (WhatsApp Business)</p>
+                      <p className="text-xs text-teal-600 font-medium">বিজনেস হোয়াটসঅ্যাপ থেকে মেসেজ পাঠান</p>
+                    </div>
+                  </div>
+                  <Check size={16} className="text-teal-600 block shrink-0" />
+                </a>
+              </div>
+            </div>
+          );
+        })()}
+      </Modal>
     </div>
   );
 }

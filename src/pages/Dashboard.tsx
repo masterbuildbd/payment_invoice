@@ -852,31 +852,119 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
             <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-xs">
               <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-3 flex justify-between items-center">
                 <span>আমার সক্রিয় এপ্লিকেশন লাইসেন্স (My Subscribed Apps)</span>
-                <span className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full text-[9px] font-mono">Total {myApps.length}</span>
+                <span className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-[9px] font-mono">Total {myApps.length}</span>
               </h2>
 
               {myApps.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {myApps.map(app => (
-                    <div key={app.id} className="p-4 border border-slate-100 hover:border-indigo-100 rounded-2xl bg-slate-50/50 transition-all flex flex-col justify-between">
+                    <div key={app.id} className="p-4 border border-slate-100 hover:border-blue-100 rounded-2xl bg-slate-50/50 transition-all flex flex-col justify-between">
                       <div>
                         <div className="flex justify-between items-start">
                           <span className="text-[10px] font-bold text-slate-400 uppercase font-mono">App License</span>
                           <span className="text-[9px] bg-emerald-50 text-emerald-700 px-1.5 rounded-full font-black uppercase">Active</span>
                         </div>
                         <h4 className="text-[13px] font-black text-slate-800 mt-1 uppercase tracking-tight">{app.name}</h4>
-                        <p className="text-[10px] text-slate-500 mt-1 line-clamp-2">{app.note || 'No special requirements listed.'}</p>
+                        <div className="text-[10px] text-slate-500 mt-2 space-y-1 bg-white p-2.5 rounded-lg border border-slate-100">
+                          <div><span className="font-bold">Package:</span> {app.packageName}</div>
+                          <div><span className="font-bold">Protocol:</span> {app.protocol}</div>
+                          {app.appWorkType && <div><span className="font-bold">Work Type:</span> {app.appWorkType}</div>}
+                        </div>
+                        {app.note && <p className="text-[10px] text-slate-400 mt-2 italic">{app.note}</p>}
                       </div>
                       <div className="flex justify-between items-center mt-3 pt-2.5 border-t border-slate-100 text-[10px]">
                         <span className="font-bold text-slate-400">License Cost:</span>
-                        <span className="font-black text-indigo-600">৳{(app.price || 0).toLocaleString()}</span>
+                        <span className="font-black text-blue-600">৳{(app.price || 0).toLocaleString()}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-10 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
-                  <p className="text-xs text-slate-400 italic">আপনার কোন এপ্লিকেশন লাইসেন্স তালিকাভুক্ত নেই।</p>
+                  <p className="text-xs text-slate-400 italic">আপনার কোন এপ্লিকেশন লাইসেন্স তালিকাভুক্ত নেই। (সক্রিয় করতে ও পেমেন্ট রিকোয়েস্ট পাঠান)</p>
+                </div>
+              )}
+            </div>
+
+            {/* My Subscribed Panels */}
+            <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-xs">
+              <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-3 flex justify-between items-center">
+                <span>আমার সক্রিয় রিসেলার প্যানেলসমূহ (My Subscribed Panels)</span>
+                <span className="bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full text-[9px] font-mono">Total {myPanels.length}</span>
+              </h2>
+
+              {myPanels.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {myPanels.map(panel => (
+                    <div key={panel.id} className="p-4 border border-slate-100 hover:border-violet-100 rounded-2xl bg-slate-50/50 transition-all flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-start">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase font-mono">Reseller Panel</span>
+                          <span className="text-[9px] bg-emerald-50 text-emerald-700 px-1.5 rounded-full font-black uppercase">Active</span>
+                        </div>
+                        <h4 className="text-[13px] font-black text-slate-800 mt-1 uppercase tracking-tight">{panel.name}</h4>
+                        <div className="text-[10px] text-slate-500 mt-2 space-y-1 bg-white p-2.5 rounded-lg border border-slate-100 font-mono">
+                          {panel.url && (
+                            <div className="truncate">
+                              <span className="font-black font-sans text-slate-400">Host URL:</span>{' '}
+                              <a href={panel.url.startsWith('http') ? panel.url : `https://${panel.url}`} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline inline-flex items-center gap-0.5">
+                                {panel.url} <ExternalLink size={10} />
+                              </a>
+                            </div>
+                          )}
+                          <div><span className="font-black font-sans text-slate-400">Duration:</span> {panel.duration || 'Unlimited'}</div>
+                          {panel.panelType && <div><span className="font-black font-sans text-slate-400">Type:</span> {panel.panelType}</div>}
+                        </div>
+                        {panel.note && <p className="text-[10px] text-slate-400 mt-2 italic">{panel.note}</p>}
+                      </div>
+                      <div className="flex justify-between items-center mt-3 pt-2.5 border-t border-slate-100 text-[10px]">
+                        <span className="font-bold text-slate-400">Subscription Cost:</span>
+                        <span className="font-black text-violet-600">৳{(panel.price || 0).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-10 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+                  <p className="text-xs text-slate-400 italic">আপনার কোন রিসেলার প্যানেল তালিকাভুক্ত নেই। (সক্রিয় করতে পেমেন্ট রিকোয়েস্ট পাঠান)</p>
+                </div>
+              )}
+            </div>
+
+            {/* My Subscribed Decoders */}
+            <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-xs">
+              <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-3 flex justify-between items-center">
+                <span>আমার সক্রিয় ডিকোডার সংযোগসমূহ (My Subscribed Decoders)</span>
+                <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full text-[9px] font-mono">Total {myDecoders.length}</span>
+              </h2>
+
+              {myDecoders.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {myDecoders.map(decoder => (
+                    <div key={decoder.id} className="p-4 border border-slate-100 hover:border-emerald-100 rounded-2xl bg-slate-50/50 transition-all flex flex-col justify-between">
+                      <div>
+                        <div className="flex justify-between items-start">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase font-mono">Decoder Licence</span>
+                          <span className="text-[9px] bg-emerald-50 text-emerald-700 px-1.5 rounded-full font-black uppercase">Online</span>
+                        </div>
+                        <h4 className="text-[13px] font-black text-slate-800 mt-1 uppercase tracking-tight">{decoder.model || 'Premium Decoder'}</h4>
+                        <div className="text-[10px] text-slate-500 mt-2 space-y-1 bg-white p-2.5 rounded-lg border border-slate-100">
+                          <div><span className="font-bold">Serial No:</span> <code className="font-mono bg-slate-100 px-1 py-0.5 rounded font-bold text-slate-700">{decoder.serialNumber}</code></div>
+                          {decoder.username && <div><span className="font-bold">Decoder Username:</span> <code className="font-mono bg-indigo-50/50 px-1 py-0.5 rounded font-black text-indigo-700">{decoder.username}</code></div>}
+                          <div><span className="font-bold">Validity Duration:</span> {decoder.duration || '30 days'}</div>
+                        </div>
+                        {decoder.note && <p className="text-[10px] text-slate-400 mt-2 italic">{decoder.note}</p>}
+                      </div>
+                      <div className="flex justify-between items-center mt-3 pt-2.5 border-t border-slate-100 text-[10px]">
+                        <span className="font-bold text-slate-400">License Fee:</span>
+                        <span className="font-black text-emerald-600">৳{(decoder.price || 0).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-10 border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+                  <p className="text-xs text-slate-400 italic">আপনার কোন ডিকোডার কানেকশন সচল বা তালিকাভুক্ত নেই। (সক্রিয় করতে পেমেন্ট রিকোয়েস্ট পাঠান)</p>
                 </div>
               )}
             </div>
