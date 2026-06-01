@@ -5,7 +5,7 @@ import { useLanguage, Language } from '../lib/language';
 import { Shield, Key, User as UserIcon, ArrowRight, Loader2, Eye, EyeOff, Lock, Globe, Phone, UserCheck, CreditCard, ChevronDown, CheckCircle } from 'lucide-react';
 import { CompanySettings, User } from '../types';
 import { getDocumentById, safeStringify } from '../lib/storage';
-import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, addDoc, limit } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import firebaseConfig from '../../firebase-applet-config.json';
 
@@ -409,7 +409,7 @@ export function Login() {
         }
 
         // 3. Write payload directly to Firestore
-        const usersSnap = await withTimeout(getDocs(collection(db, 'users')));
+        const usersSnap = await withTimeout(getDocs(query(collection(db, 'users'), limit(1))));
         if (usersSnap.empty) {
           regData.role = 'admin';
           regData.status = 'approved';
@@ -451,12 +451,25 @@ export function Login() {
       console.error('LocalStorage persist error:', e);
     }
 
-    if (savedToFirestore || savedToLocal) {
+    if (savedToFirestore) {
       if (regData.role === 'admin') {
         setRegSuccessMessage('রেজিস্ট্রেশন এবং এপ্রুভাল সফল হয়েছে! আপনিই এই সিস্টেমের প্রথম মাস্টার এডমিন (Approved Admin)। পেজের ওপরে লগইন ট্যাবে গিয়ে আপনার মোবাইল নম্বর এবং পাসওয়ার্ড দিয়ে এখনই ইনস্ট্যান্টলি লগইন করতে পারেন!');
       } else {
         setRegSuccessMessage('রেজিস্ট্রেশন অত্যন্ত সফল হয়েছে! এডমিন ভেরিফাই করে আপনার অ্যাকাউন্ট ৫-১০ মিনিটে চালু করবে।');
       }
+      
+      // Clear registration credentials
+      setRegName('');
+      setRegUsername('');
+      setRegPassword('');
+      setRegPhone('');
+      setRegWhatsapp('');
+      setRegEmail('');
+      setRegTransactionId('');
+      setRegAmountPaid('');
+      setRegExpectedFee('');
+    } else if (savedToLocal) {
+      setRegSuccessMessage('আপনার ইন্টারনেট বা ডেটাবেস সংযোগ না থাকায় রেজিস্ট্রেশনটি অফলাইনে সংরক্ষিত হয়েছে। দয়া করে ইন্টারনেট সংযোগ চেক করুন অথবা ইনস্ট্যান্ট এপ্রুভালের জন্য সরাসরি এডমিনের সাথে যোগাযোগ করুন। (Saved offline successfully due to connection lag. Please contact admin directly for instant approval.)');
       
       // Clear registration credentials
       setRegName('');
