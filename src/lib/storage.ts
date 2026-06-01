@@ -295,31 +295,73 @@ export const deleteInvoice = async (id: string) => {
 
 export const subscribeToSettings = (callback: (settings: CompanySettings) => void) => {
   const path = 'settings/global';
-  try {
-    return onSnapshot(doc(db, 'settings', 'global'), (snapshot) => {
-      if (snapshot.exists()) {
-        callback({ ...snapshot.data() as CompanySettings, id: snapshot.id });
-      }
-    }, (error) => {
-      handleFirestoreError(error, OperationType.GET, path);
-    });
-  } catch (error) {
-    handleFirestoreError(error, OperationType.GET, path);
+  
+  // Hydrate immediately from localStorage to avoid loading screens
+  const localSettingsStr = localStorage.getItem('local_settings');
+  if (localSettingsStr) {
+    try {
+      callback(JSON.parse(localSettingsStr));
+    } catch (e) {}
   }
+
+  // Handle local changes dispatched within the same browser instance
+  const handleLocalUpdate = () => {
+    const latest = localStorage.getItem('local_settings');
+    if (latest) {
+      try {
+        callback(JSON.parse(latest));
+      } catch (e) {}
+    }
+  };
+  window.addEventListener('local_settings_updated', handleLocalUpdate);
+
+  let unsubscribe: (() => void) | undefined;
+  try {
+    const isPlaceholder = !firebaseConfig.projectId || firebaseConfig.projectId.includes('remixed-');
+    if (!isPlaceholder) {
+      unsubscribe = onSnapshot(doc(db, 'settings', 'global'), (snapshot) => {
+        if (snapshot.exists()) {
+          const remoteData = snapshot.data() as CompanySettings;
+          localStorage.setItem('local_settings', safeStringify(remoteData));
+          callback({ ...remoteData, id: snapshot.id });
+        }
+      }, (error) => {
+        console.warn('Firestore settings fetch denied or offline, using offline settings:', error);
+      });
+    }
+  } catch (error) {
+    console.warn('Firestore settings subscription failed:', error);
+  }
+
+  return () => {
+    if (unsubscribe) unsubscribe();
+    window.removeEventListener('local_settings_updated', handleLocalUpdate);
+  };
 };
 
 export const saveSettings = async (settings: CompanySettings) => {
   const path = 'settings/global';
-  try {
-    await updateDoc(doc(db, 'settings', 'global'), settings as any);
-  } catch (error) {
-    // If document doesn't exist, use setDoc (or just handle error if rules allow create)
-    // For simplicity, we assume 'global' exists or we can create it
+  
+  // Save to local storage instantly for visual feedback and local-first reliability
+  localStorage.setItem('local_settings', safeStringify(settings));
+  window.dispatchEvent(new Event('local_settings_updated'));
+
+  // Sanitize the object - remove any properties that are undefined to avoid Firebase crashing
+  const cleanSettings = { ...settings };
+  Object.keys(cleanSettings).forEach(key => {
+    if ((cleanSettings as any)[key] === undefined) {
+      delete (cleanSettings as any)[key];
+    }
+  });
+
+  const isPlaceholder = !firebaseConfig.projectId || firebaseConfig.projectId.includes('remixed-');
+  if (!isPlaceholder) {
     try {
-      const { setDoc } = await import('firebase/firestore');
-      await setDoc(doc(db, 'settings', 'global'), settings);
-    } catch (innerError) {
-      handleFirestoreError(innerError, OperationType.WRITE, path);
+      // Use setDoc with merge: true which safely creates or updates the settings document
+      await setDoc(doc(db, 'settings', 'global'), cleanSettings, { merge: true });
+    } catch (error) {
+      console.warn('Failed to save settings to Firestore:', error);
+      // We don't propagate this error to the UI as long as it successfully saved locally
     }
   }
 };

@@ -109,18 +109,18 @@ export function Sidebar({ activeTab, setActiveTab, isOpen, onClose }: SidebarPro
   ];
 
   const menuItems = isAdmin ? [
-    { id: 'dashboard', label: t('dashboard'), icon: LayoutDashboard },
-    { id: 'payment_requests', label: 'পেমেন্ট রিকোয়েস্ট (Payment Requests)', icon: Banknote, badge: pendingPaymentsCount > 0 ? pendingPaymentsCount : undefined },
-    { id: 'invoices', label: t('invoices'), icon: FileText },
-    { id: 'unpaid', label: t('unpaid'), icon: AlertCircle },
+    { id: 'dashboard', label: settings.adminDashboardLabel || t('dashboard'), icon: LayoutDashboard },
+    { id: 'payment_requests', label: settings.adminPaymentRequestsLabel || 'পেমেন্ট রিকোয়েস্ট (Payment Requests)', icon: Banknote, badge: pendingPaymentsCount > 0 ? pendingPaymentsCount : undefined },
+    { id: 'invoices', label: settings.adminInvoicesLabel || t('invoices'), icon: FileText },
+    { id: 'unpaid', label: settings.adminUnpaidLabel || t('unpaid'), icon: AlertCircle },
     { id: 'apps', label: settings.appLabel || t('apps'), icon: AppWindow },
     { id: 'panels', label: settings.panelLabel || t('panels'), icon: LayoutGrid },
     { id: 'decoders', label: settings.decoderLabel || t('decoders'), icon: Cpu },
     { id: 'users', label: settings.userLabel || t('users'), icon: Users },
-    { id: 'pending_users', label: t('pending_users'), icon: Users, badge: pendingCount > 0 ? pendingCount : undefined },
-    { id: 'finances', label: t('finances'), icon: Banknote },
-    { id: 'sms', label: 'এসএমএস পোর্টাল (SMS Portal)', icon: MessageSquare },
-    { id: 'settings', label: t('settings'), icon: Settings },
+    { id: 'pending_users', label: settings.adminPendingUsersLabel || t('pending_users'), icon: Users, badge: pendingCount > 0 ? pendingCount : undefined },
+    { id: 'finances', label: settings.adminFinancesLabel || t('finances'), icon: Banknote },
+    { id: 'sms', label: settings.adminSmsLabel || 'এসএমএস পোর্টাল (SMS Portal)', icon: MessageSquare },
+    { id: 'settings', label: settings.adminSettingsLabel || t('settings'), icon: Settings },
   ] : rawClientItems.filter(item => item.enabled);
   return (
     <>

@@ -391,7 +391,7 @@ export function Settings() {
             </label>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="space-y-1">
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bank Name</label>
               <input 
@@ -407,6 +407,16 @@ export function Settings() {
                 name="branchName"
                 value={settings.branchName}
                 onChange={handleChange}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Account Holder Name</label>
+              <input 
+                name="accountName"
+                value={settings.accountName || ''}
+                onChange={handleChange}
+                placeholder="Account Owner Name"
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
               />
             </div>
@@ -579,6 +589,102 @@ export function Settings() {
                 value={settings.sidebarTitle ?? ''}
                 onChange={handleChange}
                 placeholder="Amar Apka"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Admin Sidebar Menu Options Configuration */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+            <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+              <SettingsIcon size={20} />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Admin Sidebar Option Labels (এডমিন মেনু অপশন লেবেল)</h2>
+              <p className="text-xs text-slate-500">Customize the specific names of options on the administrative menu bar / sidebar</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Dashboard Option</label>
+              <input 
+                name="adminDashboardLabel"
+                value={settings.adminDashboardLabel ?? ''}
+                onChange={handleChange}
+                placeholder="সারাংশ"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Payment Requests Option</label>
+              <input 
+                name="adminPaymentRequestsLabel"
+                value={settings.adminPaymentRequestsLabel ?? ''}
+                onChange={handleChange}
+                placeholder="পেমেন্ট রিকোয়েস্ট"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Invoices Option</label>
+              <input 
+                name="adminInvoicesLabel"
+                value={settings.adminInvoicesLabel ?? ''}
+                onChange={handleChange}
+                placeholder="ইনভয়েস"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Unpaid Bills Option</label>
+              <input 
+                name="adminUnpaidLabel"
+                value={settings.adminUnpaidLabel ?? ''}
+                onChange={handleChange}
+                placeholder="বকেয়া বিল"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pending Users Option</label>
+              <input 
+                name="adminPendingUsersLabel"
+                value={settings.adminPendingUsersLabel ?? ''}
+                onChange={handleChange}
+                placeholder="পেন্ডিং ইউজার"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Finances Option</label>
+              <input 
+                name="adminFinancesLabel"
+                value={settings.adminFinancesLabel ?? ''}
+                onChange={handleChange}
+                placeholder="অর্থ হিসাব"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">SMS Portal Option</label>
+              <input 
+                name="adminSmsLabel"
+                value={settings.adminSmsLabel ?? ''}
+                onChange={handleChange}
+                placeholder="এসএমএস পোর্টাল"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Settings Option</label>
+              <input 
+                name="adminSettingsLabel"
+                value={settings.adminSettingsLabel ?? ''}
+                onChange={handleChange}
+                placeholder="সিস্টেম সেটিংস"
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
               />
             </div>

@@ -11,6 +11,9 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
+  BarChart,
+  Bar,
+  Cell
 } from 'recharts';
 import { Modal } from '../components/Modal';
 import { CreateAppForm, CreateDecoderForm, CreatePanelForm, CreateUserForm } from '../components/CreateForms';
@@ -496,6 +499,65 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
       pendingInvoicesCount
     };
   }, [invoices, investments]);
+
+  const dailyRevenueData = React.useMemo(() => {
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonthNum = today.getMonth(); // 0-indexed
+    
+    // Format current month prefix (e.g. "2026-06")
+    const yearStr = currentYear.toString();
+    const monthStr = String(currentMonthNum + 1).padStart(2, '0');
+    const currentMonthPrefix = `${yearStr}-${monthStr}`;
+
+    // Get number of days in the current month
+    const daysInMonth = new Date(currentYear, currentMonthNum + 1, 0).getDate();
+
+    // Initialize daily revenue map
+    const dailyMap: Record<number, number> = {};
+    for (let d = 1; d <= daysInMonth; d++) {
+      dailyMap[d] = 0;
+    }
+
+    // Filter, process and accumulate paid invoices of current month
+    invoices.forEach(inv => {
+      if (inv.status === 'paid' || inv.status === 'approved') {
+        const invDateStr = inv.date; // "YYYY-MM-DD"
+        if (invDateStr && invDateStr.startsWith(currentMonthPrefix)) {
+          const parts = invDateStr.split('-');
+          const dayVal = parseInt(parts[2], 10);
+          if (dayVal >= 1 && dayVal <= daysInMonth) {
+            const revenue = inv.paidAmount || inv.amount || 0;
+            dailyMap[dayVal] += revenue;
+          }
+        }
+      }
+    });
+
+    const monthNamesEn = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthNamesBng = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+    const currentMonthName = monthNamesEn[currentMonthNum];
+    const currentMonthNameBng = monthNamesBng[currentMonthNum];
+    
+    const chartData = Array.from({ length: daysInMonth }, (_, idx) => {
+      const dayNum = idx + 1;
+      return {
+        day: `${dayNum}`,
+        revenue: dailyMap[dayNum],
+        fullDate: `${yearStr}-${monthStr}-${String(dayNum).padStart(2, '0')}`
+      };
+    });
+
+    const currentMonthTotal = Object.values(dailyMap).reduce((sum, val) => sum + val, 0);
+
+    return {
+      monthName: currentMonthName,
+      monthNameBng: currentMonthNameBng,
+      year: currentYear,
+      data: chartData,
+      total: currentMonthTotal
+    };
+  }, [invoices]);
 
   const handleCreateSuccess = async (data: any) => {
     const collectionMap: Record<string, string> = {
@@ -2224,6 +2286,79 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
           </div>
           <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-violet-50/20 rounded-full blur-2xl group-hover:bg-violet-50/45 transition-colors"></div>
         </motion.div>
+      </div>
+
+      {/* Daily Revenue Trends Bar Chart Section */}
+      <div className="bg-white p-6 sm:p-8 border border-slate-200 rounded-[2rem] shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5">
+              <BarChart3 size={16} className="text-indigo-600" />
+              <h2 className="text-sm font-black text-slate-900 uppercase tracking-wider">চলতি মাসের দৈনিক রেভিনিউ ট্রেন্ড (Daily Revenue Trends)</h2>
+            </div>
+            <p className="text-[11px] text-slate-500 font-sans">
+              {dailyRevenueData.monthNameBng} {dailyRevenueData.year} সালের দৈনিক পরিশোধিত ও অনুমোদিত পেমেন্টের রিয়েলটাইম বার চার্ট বিশ্লেষণ:
+            </p>
+          </div>
+          <div className="bg-indigo-50 border border-indigo-150 px-4 py-2 rounded-2xl flex flex-col items-end shrink-0">
+            <span className="text-[9px] font-black text-indigo-400 uppercase tracking-widest font-sans">চলতি মাসের সর্বমোট আয়</span>
+            <span className="text-lg font-black text-indigo-700 font-mono">৳{dailyRevenueData.total.toLocaleString()}</span>
+          </div>
+        </div>
+
+        <div className="h-[280px] w-full pt-4 pr-2">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={dailyRevenueData.data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+              <XAxis 
+                dataKey="day" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700, fontFamily: 'monospace' }} 
+                dy={8} 
+              />
+              <YAxis 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fill: '#64748b', fontSize: 10, fontWeight: 650, fontFamily: 'monospace' }} 
+                dx={-4}
+              />
+              <Tooltip 
+                cursor={{ fill: '#f8fafc', radius: 4 }}
+                contentStyle={{ 
+                  borderRadius: '16px', 
+                  backgroundColor: '#0f172a', 
+                  color: '#ffffff',
+                  border: 'none', 
+                  boxShadow: '0 8px 16px -2px rgb(0 0 0 / 0.15)',
+                  padding: '12px 14px'
+                }}
+                labelStyle={{ fontWeight: 'black', marginBottom: '4px', fontSize: '11px', color: '#94a3b8' }}
+                itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
+                formatter={(value: any) => [`৳${Number(value).toLocaleString()}`, 'রেভিনিউ']}
+                labelFormatter={(label) => `${dailyRevenueData.monthName} ${label}`}
+              />
+              <Bar 
+                dataKey="revenue" 
+                fill="#4f46e5" 
+                radius={[4, 4, 0, 0]} 
+                maxBarSize={40}
+              >
+                {dailyRevenueData.data.map((entry, index) => (
+                  <Cell 
+                    key={`cell-${index}`} 
+                    fill={entry.revenue > 0 ? '#4f46e5' : '#e2e8f0'} 
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-bold">
+          <span>* এন্ট্রিগুলোতে শুধুমাত্র 'Paid' এবং 'Approved' রেভিনিউ গণনা করা হয়েছে</span>
+          <span className="font-mono">{dailyRevenueData.monthNameBng} ১ - {dailyRevenueData.data.length} তারিখ</span>
+        </div>
       </div>
 
       {/* Main Row: Double Panels */}

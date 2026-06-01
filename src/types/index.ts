@@ -9,6 +9,7 @@ export type CompanySettings = {
   bankName: string;
   branchName: string;
   accountNo: string;
+  accountName?: string;
   terms: string;
   logoUrl?: string;
   loginPageName?: string;
@@ -22,6 +23,16 @@ export type CompanySettings = {
   sidebarAdminName?: string;
   sidebarTitle?: string;
   appVersion?: string;
+
+  // Custom Admin Menu Option Labels
+  adminDashboardLabel?: string;
+  adminPaymentRequestsLabel?: string;
+  adminInvoicesLabel?: string;
+  adminUnpaidLabel?: string;
+  adminPendingUsersLabel?: string;
+  adminFinancesLabel?: string;
+  adminSmsLabel?: string;
+  adminSettingsLabel?: string;
 
   // Dynamic Client Menu Systems Settings
   clientDashboardLabel?: string;

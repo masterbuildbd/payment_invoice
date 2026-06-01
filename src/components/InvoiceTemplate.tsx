@@ -224,6 +224,7 @@ export function InvoiceTemplate({ invoice, settings, id }: InvoiceTemplateProps)
             <div className="text-[9px] font-bold uppercase leading-relaxed" style={{ color: '#64748b' }}>
               <p>{t('bank_name')}: <span style={{ color: '#0f172a' }}>{settings.bankName}</span></p>
               <p>{t('branch_name')}: <span style={{ color: '#0f172a' }}>{settings.branchName}</span></p>
+              {settings.accountName && <p>Account Name: <span style={{ color: '#0f172a' }}>{settings.accountName}</span></p>}
               <p>{t('account_no')}: <span className="font-mono italic" style={{ color: '#2563eb' }}>{settings.accountNo}</span></p>
             </div>
           </div>
