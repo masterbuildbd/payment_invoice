@@ -27,7 +27,7 @@ const DEFAULT_SETTINGS: CompanySettings = {
   sidebarAdminName: 'Master Admin',
   sidebarTitle: 'Amar Apka',
   appVersion: '1.0',
-
+  
   // Client menu options defaults
   clientDashboardLabel: 'সারাংশ (Dashboard Overview)',
   clientDashboardEnabled: true,
@@ -73,6 +73,42 @@ const DEFAULT_SETTINGS: CompanySettings = {
   decoderPrice6m: 6500,
   decoderPrice12m: 8600,
 };
+
+const BANGLADESH_BANKS = [
+  "Pubali Bank PLC (পূবালী ব্যাংক)",
+  "Sonali Bank PLC (সোনালী ব্যাংক)",
+  "BRAC Bank PLC (ব্র্যাক ব্যাংক)",
+  "Dutch-Bangla Bank PLC (ডাচ-বাংলা ব্যাংক)",
+  "Islami Bank Bangladesh PLC (ইসলামী ব্যাংক)",
+  "The City Bank PLC (সিটি ব্যাংক)",
+  "United Commercial Bank PLC (ইউসিবি)",
+  "Mutual Trust Bank PLC (এমটিবি)",
+  "Eastern Bank PLC (ইবিএল)",
+  "Dhaka Bank PLC (ঢাকা ব্যাংক)",
+  "Bank Asia PLC (ব্যাংক এশিয়া)",
+  "Prime Bank PLC (প্রাইম ব্যাংক)",
+  "National Bank Limited (ন্যাশনাল ব্যাংক)",
+  "Mercantile Bank PLC (মার্কেন্টাইল ব্যাংক)",
+  "One Bank PLC (ওয়ান ব্যাংক)",
+  "Southeast Bank PLC (সাউথইস্ট ব্যাংক)",
+  "Al-Arafah Islami Bank PLC (আল-আরাফাহ ইসলামী ব্যাংক)",
+  "Social Islami Bank PLC (সোশ্যাল ইসলামী ব্যাংক)",
+  "First Security Islami Bank PLC (ফার্স্ট সিকিউরিটি ইসলামী ব্যাংক)",
+  "EXIM Bank PLC (এক্সিম ব্যাংক)",
+  "Jamuna Bank PLC (যমুনা ব্যাংক)",
+  "Trust Bank PLC (ট্রাস্ট ব্যাংক)",
+  "South Bangla Agriculture & Commerce Bank (এসবিএসি)",
+  "Standard Bank PLC (স্ট্যান্ডার্ড ব্যাংক)",
+  "Union Bank PLC (ইউনিয়ন ব্যাংক)",
+  "Janata Bank PLC (জনতা ব্যাংক)",
+  "Agrani Bank PLC (অগ্রণী ব্যাংক)",
+  "Rupali Bank PLC (রূপালী ব্যাংক)",
+  "Standard Chartered Bank (স্ট্যান্ডার্ড চার্টার্ড)",
+  "HSBC (এইচএসবিসি)",
+  "Community Bank Bangladesh PLC (কমিউনিটি ব্যাংক)",
+  "Shimanto Bank PLC (সীমান্ত ব্যাংক)",
+  "Global Islami Bank PLC (গ্লোবাল ইসলামী ব্যাংক)"
+];
 
 export function Settings() {
   const { t } = useLanguage();
@@ -155,7 +191,7 @@ export function Settings() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setSettings(prev => ({ ...prev, [name]: value }));
   };
@@ -393,13 +429,43 @@ export function Settings() {
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="space-y-1">
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bank Name</label>
-              <input 
-                name="bankName"
-                value={settings.bankName}
-                onChange={handleChange}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
-              />
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bank Name (ব্যাংকের নাম)</label>
+              {(() => {
+                const isKnownBank = !settings.bankName || BANGLADESH_BANKS.includes(settings.bankName) || settings.bankName === 'Bank Name';
+                const selectValue = isKnownBank ? (settings.bankName || '') : 'other';
+                return (
+                  <div className="space-y-2">
+                    <select
+                      value={selectValue}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'other') {
+                          setSettings(prev => ({ ...prev, bankName: 'Custom Bank' }));
+                        } else {
+                          setSettings(prev => ({ ...prev, bankName: val }));
+                        }
+                      }}
+                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+                    >
+                      <option value="">নির্বাচন করুন (Select Bank)</option>
+                      {BANGLADESH_BANKS.map((bank) => (
+                        <option key={bank} value={bank}>{bank}</option>
+                      ))}
+                      <option value="other">অন্যান্য (Other Bank / Custom Write)</option>
+                    </select>
+                    {!isKnownBank && (
+                      <input 
+                        type="text"
+                        name="bankName"
+                        value={settings.bankName || ''}
+                        onChange={handleChange}
+                        placeholder="আপনার ব্যাংকের নাম লিখুন (Type custom bank name)"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium animate-in slide-in-from-top-1 duration-200"
+                      />
+                    )}
+                  </div>
+                );
+              })()}
             </div>
             <div className="space-y-1">
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Branch Name</label>

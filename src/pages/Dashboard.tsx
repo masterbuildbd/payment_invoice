@@ -1146,7 +1146,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
                             </div>
                             <div className="bg-white/5 p-3 rounded-xl border border-white/5">
                               <strong className="text-indigo-300 block uppercase text-[9px] tracking-wider font-mono">Account Holder</strong>
-                              <span className="font-extrabold text-sm">{settings.sidebarTitle || "Master Digital Group"}</span>
+                              <span className="font-extrabold text-sm">{settings.accountName || "Master Digital Group"}</span>
                             </div>
                             <div className="bg-white/5 p-3.5 rounded-xl border border-white/5 sm:col-span-2 flex items-center justify-between">
                               <div>
