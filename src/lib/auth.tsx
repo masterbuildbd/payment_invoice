@@ -127,6 +127,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let dbError: any = null;
 
     const targetInput = username.trim();
+    
+    // Compute permutation of possible phone number matches to resolve prefix variations (e.g., +880, 880, 0, or raw)
+    const altTargets = [targetInput];
+    const cleanedPhone = targetInput.trim().replace(/[+\s-()]/g, '');
+    if (/^\d+$/.test(cleanedPhone)) {
+      if (cleanedPhone.startsWith('0') && cleanedPhone.length === 11) {
+        const naked = cleanedPhone.substring(1);
+        altTargets.push('+880' + naked);
+        altTargets.push('880' + naked);
+        altTargets.push(naked);
+      } else if (cleanedPhone.length === 10) {
+        altTargets.push('+880' + cleanedPhone);
+        altTargets.push('880' + cleanedPhone);
+        altTargets.push('0' + cleanedPhone);
+        altTargets.push(cleanedPhone);
+      } else if (cleanedPhone.startsWith('880') && cleanedPhone.length === 13) {
+        const naked = cleanedPhone.substring(3);
+        altTargets.push('+880' + naked);
+        altTargets.push('0' + naked);
+        altTargets.push(naked);
+      }
+      
+      if (targetInput.startsWith('+')) {
+        altTargets.push(targetInput.substring(1));
+      } else {
+        altTargets.push('+' + targetInput);
+      }
+    }
+    const uniqueTargets = Array.from(new Set(altTargets.map(t => t.trim())));
 
     const isPlaceholderFirebase = !firebaseConfig || !firebaseConfig.projectId || firebaseConfig.projectId.includes('remixed');
 
@@ -136,8 +165,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Fetch all potential credential query matches concurrently to minimize round trips and logins lag.
         // Wrap in a 1500ms timeout so that it falls back instantly on network lag.
         const fetchPromise = Promise.all([
-          getDocs(query(usersRef, where('username', '==', targetInput))),
-          getDocs(query(usersRef, where('phone', '==', targetInput))),
+          getDocs(query(usersRef, where('username', 'in', uniqueTargets))),
+          getDocs(query(usersRef, where('phone', 'in', uniqueTargets))),
           getDocs(query(usersRef, where('email', '==', targetInput.toLowerCase())))
         ]);
 
@@ -167,8 +196,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const localUsersStr = localStorage.getItem('local_users') || '[]';
         const localUsers = JSON.parse(localUsersStr);
         const matchedLocal = localUsers.find((u: any) => 
-          (u.username && u.username.trim() === targetInput) || 
-          (u.phone && u.phone.trim() === targetInput) || 
+          (u.username && uniqueTargets.includes(u.username.trim())) || 
+          (u.phone && uniqueTargets.includes(u.phone.trim())) || 
           (u.email && u.email.trim().toLowerCase() === targetInput.toLowerCase())
         );
         if (matchedLocal) {
