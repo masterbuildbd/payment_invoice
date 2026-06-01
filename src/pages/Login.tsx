@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../lib/auth';
 import { useLanguage, Language } from '../lib/language';
-import { Shield, Key, User as UserIcon, ArrowRight, Loader2, Eye, EyeOff, Lock, Globe, Phone, UserCheck, CreditCard, ChevronDown, CheckCircle } from 'lucide-react';
+import { Shield, Key, User as UserIcon, ArrowRight, Loader2, Eye, EyeOff, Lock, Globe, Phone, UserCheck, CreditCard, ChevronDown, CheckCircle, AlertCircle, MessageCircle } from 'lucide-react';
 import { CompanySettings, User } from '../types';
 import { getDocumentById, safeStringify } from '../lib/storage';
 import { collection, query, where, getDocs, addDoc, limit } from 'firebase/firestore';
@@ -255,6 +255,7 @@ export function Login() {
   const [regAmountPaid, setRegAmountPaid] = useState('');
   const [regExpectedFee, setRegExpectedFee] = useState('');
   const [regSuccessMessage, setRegSuccessMessage] = useState('');
+  const [regDbError, setRegDbError] = useState('');
 
   const [branding, setBranding] = useState<Partial<CompanySettings>>({
     loginPageName: 'Master Terminal',
@@ -263,6 +264,14 @@ export function Login() {
   });
   
   const [fullSettings, setFullSettings] = useState<Partial<CompanySettings>>({});
+
+  const supportPhone = fullSettings.phone || '01718070273';
+  const customSupportMsg = "আসসালামু আলাইকুম, আমি এই সিস্টেমে একটি নতুন অ্যাকাউন্ট আবেদন করেছি। অনুগ্রহ করে আমার অ্যাকাউন্টটি চেক করে এপ্রুভ বা সচল করে দিবেন?";
+  const supportPhoneClean = supportPhone.replace(/[^\d]/g, '') || '8801718070273';
+  const finalWaPhone = (supportPhoneClean.length === 11 && supportPhoneClean.startsWith('0')) 
+    ? `88${supportPhoneClean}` 
+    : supportPhoneClean;
+  const waSupportUrl = `https://api.whatsapp.com/send?phone=${finalWaPhone}&text=${encodeURIComponent(customSupportMsg)}`;
 
   const languages = [
     { code: 'EN', label: 'English', flag: '🇺🇸' },
@@ -302,6 +311,65 @@ export function Login() {
       }
     }
     fetchBranding();
+  }, []);
+
+  // Background self-registration sync that uploads client offline-cached records when backend connectivity is live
+  useEffect(() => {
+    async function syncOfflineUsers() {
+      const isPlaceholderFirebase = !firebaseConfig.projectId || firebaseConfig.projectId.includes('remixed');
+      if (isPlaceholderFirebase) return;
+
+      try {
+        const localUsersStr = localStorage.getItem('local_users') || '[]';
+        const localUsers = JSON.parse(localUsersStr);
+        if (localUsers.length === 0) return;
+
+        console.log(`Checking offline users sync. Found ${localUsers.length} local records.`);
+
+        const usersRef = collection(db, 'users');
+        const remainingLocal: any[] = [];
+
+        for (const localUser of localUsers) {
+          try {
+            // First check if this user already exists online in firestore (by phone)
+            const cleanPhone = localUser.phone || '';
+            const qPhone = query(usersRef, where('phone', '==', cleanPhone));
+            const phoneSnap = await getDocs(qPhone);
+
+            if (phoneSnap.empty) {
+              // Not online yet, upload!
+              const regData = { ...localUser };
+              // Strip local ID so Firestore generates a real unique ID
+              delete regData.id;
+              // Clean metadata
+              regData.note = (regData.note || '') + ' (Backed up to Firestore from offline cache)';
+              
+              await addDoc(collection(db, 'users'), regData);
+              console.log(`Synced offline registration for ${localUser.name} to Firestore success.`);
+            } else {
+              console.log(`User ${localUser.name} already exists online. Cleaning from local cache.`);
+            }
+          } catch (err) {
+            console.warn(`Failed to sync individual offline user ${localUser.name}:`, err);
+            // Keep in local cache to retry later
+            remainingLocal.push(localUser);
+          }
+        }
+
+        // Save remnants
+        localStorage.setItem('local_users', safeStringify(remainingLocal));
+        window.dispatchEvent(new Event('local_users_updated'));
+      } catch (err) {
+        console.warn('Offline users background synchronization skipped or deferred:', err);
+      }
+    }
+
+    // Trigger sync 2 seconds after load to prevent blocking main content
+    const timer = setTimeout(() => {
+      syncOfflineUsers();
+    }, 2000);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -430,7 +498,9 @@ export function Login() {
         await withTimeout(addDoc(collection(db, 'users'), regData), 25000);
         savedToFirestore = true;
       } catch (err: any) {
-        console.warn('Firestore write failed or timed out. Falling back to local offline user registration:', err instanceof Error ? err.message : String(err));
+        const errMsg = err instanceof Error ? err.message : String(err);
+        console.warn('Firestore write failed or timed out. Falling back to local offline user registration:', errMsg);
+        setRegDbError(errMsg);
       }
     }
 
@@ -724,11 +794,22 @@ export function Login() {
 
               <div className="mt-4 bg-indigo-50 border border-indigo-100 p-4 rounded-2xl text-center space-y-3">
                 <p className="text-[11px] text-indigo-900 font-semibold leading-relaxed">
-                  নতুন গ্রাহক? উপরের <span className="text-indigo-600 font-bold">রেজিস্ট্রেশন (Register)</span> বাটনে ট্যাপ করে রেজিস্ট্রেশন আবেদন জমা দিন। এডমিন ভেরিফাই করে আপনার অ্যাকাউন্ট ৫ মিনিটের মধ্যে সচল করে দিবে।
+                  নতুন গ্রাহক? উপরের <span className="text-indigo-600 font-bold">রেজিস্ট্রেশন (Register)</span> বাটনে ট্যাপ করে রেজিস্ট্রেশন আবেদন জমা দিন। এডমিন ভেরিফাই করে আপনার অ্যাকাউন্ট কিছু সময়ের মধ্যে সচল করে দিবে। <span className="text-amber-700 font-black block mt-1">যদি বেশি দেরি হয় তাহলে নিচে কাস্টমার সাপোর্টে মেসেজ করুন।</span>
                 </p>
-                <p className="text-[9px] text-indigo-600/60 font-mono mt-1">
-                  (New User? Tap "Register" tab to request access. Admin approves instantly.)
+                <p className="text-[9px] text-indigo-600/60 font-mono">
+                  (New User? Tap "Register" tab to request access. Admin approves entry shortly. If it takes too long, please send a message to customer support below.)
                 </p>
+                <div className="pt-1 flex items-center justify-center gap-2">
+                  <a 
+                    href={waSupportUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase tracking-wider px-3.5 py-1.5 rounded-xl transition-all shadow-sm shadow-emerald-200 active:scale-95"
+                  >
+                    <MessageCircle size={12} className="stroke-[2.5]" />
+                    কাস্টমার সাপোর্ট (Message Support)
+                  </a>
+                </div>
               </div>
             </form>
           ) : regSuccessMessage ? (
@@ -755,6 +836,12 @@ export function Login() {
                 <p className="font-semibold text-slate-800 text-center text-xs leading-relaxed">
                   {regSuccessMessage}
                 </p>
+                {regDbError && (
+                  <div className="mt-2.5 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-left text-[11px] leading-relaxed space-y-1">
+                    <p className="font-bold flex items-center gap-1"><AlertCircle size={14} className="text-amber-600" /> offline mode fallback warning (অফলাইন মোড সতর্কতা)</p>
+                    <p>আপনার অ্যাকাউন্ট আবেদনটি শুধুমাত্র এই ব্রাউজারে অফলাইনে নিবন্ধিত হয়েছে কারণ ডেটাবেস সংযোগে সমস্যা বা ত্রুটি দেখা দিয়েছে: <span className="font-mono bg-amber-100/60 px-1 py-0.5 rounded text-[10px] break-all">{regDbError}</span>। এই সমস্যাটি চলমান থাকার কারণে দূরবর্তী এডমিন আপনার আবেদনপত্র দেখতে পাবেন না।</p>
+                  </div>
+                )}
                 <div className="h-[1px] bg-slate-200/60"></div>
                 <p className="text-[11px] text-slate-500 text-center leading-normal">
                   সিস্টেম আপনার আবেদনটি সফলভাবে নথিবদ্ধ করেছে। দ্রুত সক্রিয় করতে অনুগ্রহ করে আমাদের হেল্পলাইন বা হোয়াটসঅ্যাপে যোগাযোগ করতে পারেন।
@@ -916,13 +1003,24 @@ export function Login() {
                 )}
               </button>
 
-              <div className="mt-3 bg-amber-50 border border-amber-100 p-4 rounded-xl text-center">
+              <div className="mt-3 bg-amber-50 border border-amber-100 p-4 rounded-xl text-center space-y-2.5">
                 <p className="text-[11px] text-amber-900 font-semibold leading-relaxed">
-                  রেজিস্ট্রেশন সম্পন্ন হবার পর এডমিন আপনার আবেদনটি রিভিউ করে অনুমোদন করবে। এরপর আপনি লগইন করতে পারবেন।
+                  রেজিস্ট্রেশন সম্পন্ন হবার পর এডমিন আপনার আবেদনটি রিভিউ করে অনুমোদন করবে। এরপর আপনি লগইন করতে পারবেন। <span className="text-amber-700 font-black block mt-1">যদি বেশি দেরি হয় তাহলে নিচে কাস্টমার সাপোর্টে মেসেজ করুন।</span>
                 </p>
                 <p className="text-[9px] text-amber-600/60 font-mono mt-1">
-                  (After registration, the administrator will review and approve your account. Then you can log in.)
+                  (After registration, the administrator will review and approve your account. Then you can log in. If it takes too long, please send a message to customer support below.)
                 </p>
+                <div className="pt-0.5 flex justify-center">
+                  <a 
+                    href={waSupportUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] uppercase tracking-wider px-3.5 py-1.5 rounded-xl transition-all shadow-sm shadow-emerald-200 active:scale-95"
+                  >
+                    <MessageCircle size={12} className="stroke-[2.5]" />
+                    কাস্টমার সাপোর্ট (Message Support)
+                  </a>
+                </div>
               </div>
             </form>
           )}

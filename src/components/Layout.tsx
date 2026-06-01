@@ -2,6 +2,7 @@ import React from 'react';
 import { Menu, LogOut, Info, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useLanguage, Language } from '../lib/language';
+import firebaseConfig from '../../firebase-applet-config.json';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -59,7 +60,17 @@ export function Layout({ children, activeTab, onMenuToggle, onLogoutRequest }: L
           </button>
           
           <div className="flex flex-col">
-            <span className="text-[9px] font-black text-indigo-600 uppercase tracking-[0.2em] leading-none">Master Admin</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-black text-indigo-600 uppercase tracking-[0.2em] leading-none">Master Admin</span>
+              {!firebaseConfig.projectId || firebaseConfig.projectId.includes('remixed') ? (
+                <span className="bg-amber-100 text-amber-700 font-mono text-[8px] font-bold px-1.5 py-0.5 rounded-sm uppercase scale-90 origin-left">Mock Local DB</span>
+              ) : (
+                <span className="bg-emerald-100 text-emerald-700 font-mono text-[8px] font-black px-1.5 py-0.5 rounded-sm uppercase scale-90 origin-left flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse inline-block"></span>
+                  Cloud Live Sync
+                </span>
+              )}
+            </div>
             <span className="text-[13px] font-bold text-slate-800 tracking-tight mt-0.5">{getLabel(activeTab)}</span>
           </div>
         </div>
