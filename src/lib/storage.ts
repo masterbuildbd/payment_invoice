@@ -418,6 +418,21 @@ export const subscribeToCollection = <T extends { id: string }>(
         merged.push(localItem);
       }
     }
+
+    // Modern robust memory sorting in client-side JS to override Firestore index requirements
+    merged.sort((a: any, b: any) => {
+      const valA = a[sortField];
+      const valB = b[sortField];
+      
+      if (valA === undefined || valA === null) return 1;
+      if (valB === undefined || valB === null) return -1;
+      
+      if (typeof valA === 'string' && typeof valB === 'string') {
+        return valB.localeCompare(valA); // Sort desc
+      }
+      return valB > valA ? 1 : (valB < valA ? -1 : 0);
+    });
+
     return merged as T[];
   };
 
@@ -440,7 +455,7 @@ export const subscribeToCollection = <T extends { id: string }>(
   let unsubscribe: (() => void) | undefined;
 
   try {
-    const q = firestoreQuery(collection(db, collectionName), orderBy(sortField, 'desc'));
+    const q = collection(db, collectionName);
     unsubscribe = onSnapshot(q, (snapshot) => {
       currentFirestoreItems = snapshot.docs.map(docSnap => ({
         ...docSnap.data() as T,

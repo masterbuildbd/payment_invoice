@@ -177,9 +177,9 @@ export function Users({ initialFilter = 'all' }: UsersProps) {
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.role.toLowerCase().includes(searchTerm.toLowerCase());
+      (user.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.role || '').toLowerCase().includes(searchTerm.toLowerCase());
     
     if (!matchesSearch) return false;
 

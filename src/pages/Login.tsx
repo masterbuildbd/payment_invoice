@@ -388,9 +388,20 @@ export function Login() {
       try {
         const usersRef = collection(db, 'users');
 
-        // 1. Verify unique phone number in Firestore
+        // Prepare check queries
         const qPhone = query(usersRef, where('phone', '==', processedPhone));
-        const phoneSnap = await withTimeout(getDocs(qPhone));
+        const qEmail = query(usersRef, where('email', '==', cleanEmail));
+        const qFirstUser = query(collection(db, 'users'), limit(1));
+
+        // Evaluate checks concurrently to avoid multi-stage round-trip lag (especially critical on mobile networks)
+        const [phoneSnap, emailSnap, usersSnap] = await withTimeout(
+          Promise.all([
+            getDocs(qPhone),
+            getDocs(qEmail),
+            getDocs(qFirstUser)
+          ]),
+          20000 // 20s timeout for stability on mobile connections
+        );
 
         if (!phoneSnap.empty) {
           setError('এই মোবাইল নম্বরটি ইতিমধ্যে নিবন্ধিত হয়েছে। দয়া করে অন্য মোবাইল নম্বর ব্যবহার করুন। (This mobile number is already registered.)');
@@ -398,25 +409,20 @@ export function Login() {
           return;
         }
 
-        // 2. Verify unique email in Firestore
-        const qEmail = query(usersRef, where('email', '==', cleanEmail));
-        const emailSnap = await withTimeout(getDocs(qEmail));
-
         if (!emailSnap.empty) {
           setError('এই ইমেইল ঠিকানাটি ইতিমধ্যে ব্যবহৃত হয়েছে। অনুগ্রহ করে অন্য ইমেইল ব্যবহার করুন। (This email address is already registered.)');
           setIsLoading(false);
           return;
         }
 
-        // 3. Write payload directly to Firestore
-        const usersSnap = await withTimeout(getDocs(query(collection(db, 'users'), limit(1))));
         if (usersSnap.empty) {
           regData.role = 'admin';
           regData.status = 'approved';
           regData.note = 'Initial database master admin account';
         }
 
-        await withTimeout(addDoc(collection(db, 'users'), regData));
+        // Save payload to Firestore
+        await withTimeout(addDoc(collection(db, 'users'), regData), 25000);
         savedToFirestore = true;
       } catch (err: any) {
         console.warn('Firestore write failed or timed out. Falling back to local offline user registration:', err instanceof Error ? err.message : String(err));
