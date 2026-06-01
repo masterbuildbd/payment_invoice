@@ -404,7 +404,12 @@ export function Login() {
         );
 
         if (!phoneSnap.empty) {
-          setError('এই মোবাইল নম্বরটি ইতিমধ্যে নিবন্ধিত হয়েছে। দয়া করে অন্য মোবাইল নম্বর ব্যবহার করুন। (This mobile number is already registered.)');
+          const matchedData = phoneSnap.docs[0].data();
+          if (matchedData?.status === 'pending') {
+            setError('এই মোবাইল নম্বর দিয়ে ইতিমধ্যে একটি রেজিস্ট্রেশন আবেদন জমা দেওয়া হয়েছে যা এপ্রুভাল পেন্ডিং আছে। অনুগ্রহ করে এডমিন অনুমোদনের জন্য অপেক্ষা করুন। (A registration request is already pending admin approval with this phone number.)');
+          } else {
+            setError('এই মোবাইল নম্বরটি ইতিমধ্যে নিবন্ধিত হয়েছে। দয়া করে অন্য মোবাইল নম্বর ব্যবহার করুন। (This mobile number is already registered.)');
+          }
           setIsLoading(false);
           return;
         }
@@ -439,19 +444,22 @@ export function Login() {
         (u.email && u.email.trim().toLowerCase() === cleanEmail)
       );
       
-      if (existsInLocal) {
+      // Only block based on local cache if we didn't save to Firestore (means online write timed out/failed)
+      if (!savedToFirestore && existsInLocal) {
         setError('এই মোবাইল নম্বর বা ইমেইল দিয়ে ইতিমধ্যেই একটি রেজিস্ট্রেশন আবেদন করা হয়েছে। অনুগ্রহ করে এডমিন অনুমোদনের জন্য অপেক্ষা করুন। (A registration request has already been submitted with this phone or email.)');
         setIsLoading(false);
         return;
       }
 
-      const regDataWithId = {
-        ...regData,
-        id: 'local-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7)
-      };
-      localUsers.push(regDataWithId);
-      localStorage.setItem('local_users', safeStringify(localUsers));
-      window.dispatchEvent(new Event('local_users_updated'));
+      if (!existsInLocal) {
+        const regDataWithId = {
+          ...regData,
+          id: 'local-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7)
+        };
+        localUsers.push(regDataWithId);
+        localStorage.setItem('local_users', safeStringify(localUsers));
+        window.dispatchEvent(new Event('local_users_updated'));
+      }
       savedToLocal = true;
     } catch (e: any) {
       console.error('LocalStorage persist error:', e);
