@@ -54,59 +54,56 @@ interface FirestoreErrorInfo {
   }
 }
 
+function getSafeValue(val: any, seen: Set<any>): any {
+  if (val === null || typeof val !== 'object') {
+    return val;
+  }
+  if (seen.has(val)) {
+    return '[Circular]';
+  }
+  
+  if (val instanceof Date) {
+    return val.toISOString();
+  }
+
+  // Handle generic native / complex non-plain objects
+  // A plain object typically has Object.prototype as its prototype, or null prototype (Object.create(null))
+  const proto = Object.getPrototypeOf(val);
+  const isPlainObj = proto === null || proto === Object.prototype;
+  const isArray = Array.isArray(val);
+
+  if (!isPlainObj && !isArray) {
+    const className = val.constructor?.name || 'Complex Object';
+    return `[Complex/Native ${className}]`;
+  }
+  
+  seen.add(val);
+  
+  if (isArray) {
+    const res = val.map(item => getSafeValue(item, seen));
+    seen.delete(val);
+    return res;
+  }
+  
+  const res: Record<string, any> = {};
+  for (const k of Object.keys(val)) {
+    try {
+      res[k] = getSafeValue(val[k], seen);
+    } catch (e) {
+      res[k] = '[Unreadable]';
+    }
+  }
+  seen.delete(val);
+  return res;
+}
+
 export function safeStringify(obj: any) {
-  const cache = new Set();
   try {
-    return JSON.stringify(obj, (_key, value) => {
-      if (typeof value === 'object' && value !== null) {
-        // If it's a DOM element, window, or Firebase Auth/Firestore/Maps objects, avoid deep serialization
-        if (
-          typeof HTMLElement !== 'undefined' && value instanceof HTMLElement || 
-          typeof Window !== 'undefined' && value instanceof Window || 
-          typeof Document !== 'undefined' && value instanceof Document ||
-          (value.constructor && (
-            value.constructor.name === 'FirebaseAppImpl' ||
-            value.constructor.name === 'AuthImpl' ||
-            value.constructor.name === 'Firestore' ||
-            value.constructor.name === 'Database' ||
-            value.constructor.name === 'Y2' ||
-            value.constructor.name === 'Ka' ||
-            value.constructor.name === 'S' ||
-            value.constructor.name === 'O'
-          ))
-        ) {
-          return '[Complex/Native Object]';
-        }
-        if (cache.has(value)) {
-          return '[Circular]';
-        }
-        cache.add(value);
-      }
-      return value;
-    });
+    const safeObj = getSafeValue(obj, new Set());
+    return JSON.stringify(safeObj);
   } catch (err) {
     console.warn('Failed to fully serialize circular/complex object, returning lightweight fallback:', err);
-    try {
-      if (obj && typeof obj === 'object') {
-        const simple: Record<string, any> = {};
-        for (const k in obj) {
-          try {
-            const val = obj[k];
-            if (typeof val !== 'object' || val === null) {
-              simple[k] = val;
-            } else {
-              simple[k] = `[${typeof val}]`;
-            }
-          } catch (e) {
-            simple[k] = '[Unreadable]';
-          }
-        }
-        return JSON.stringify(simple);
-      }
-      return String(obj);
-    } catch {
-      return '[Unserializable]';
-    }
+    return '[Unserializable]';
   }
 }
 
@@ -479,20 +476,47 @@ export const subscribeToCollection = <T extends { id: string }>(
   };
 };
 
-const sanitizeFirestoreData = (obj: any): any => {
+const sanitizeFirestoreData = (obj: any, seen: Set<any> = new Set()): any => {
   if (obj === null || typeof obj !== 'object') {
     return obj;
   }
-  if (Array.isArray(obj)) {
-    return obj.map(sanitizeFirestoreData);
+  
+  if (seen.has(obj)) {
+    return undefined; // Break cycle
   }
+  
+  if (obj instanceof Date) {
+    return obj.toISOString();
+  }
+
+  // If it's a native or complex non-plain object, do not recurse into it
+  if (obj.constructor && obj.constructor !== Object && obj.constructor !== Array) {
+    // Keep standard Firestore field types intact without deep structural recursion
+    return obj;
+  }
+
+  seen.add(obj);
+
+  if (Array.isArray(obj)) {
+    const res = obj
+      .map(item => sanitizeFirestoreData(item, seen))
+      .filter(item => item !== undefined);
+    seen.delete(obj);
+    return res;
+  }
+
   const cleaned: any = {};
   for (const key of Object.keys(obj)) {
     const val = obj[key];
     if (val !== undefined) {
-      cleaned[key] = sanitizeFirestoreData(val);
+      const sanitized = sanitizeFirestoreData(val, seen);
+      if (sanitized !== undefined) {
+        cleaned[key] = sanitized;
+      }
     }
   }
+  
+  seen.delete(obj);
   return cleaned;
 };
 

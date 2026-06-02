@@ -24,6 +24,7 @@ import {
 } from '../lib/storage';
 import { User, CompanySettings } from '../types';
 import { SmsAnalytics } from '../components/SmsAnalytics';
+import { SmsWeeklyReport } from '../components/SmsWeeklyReport';
 import { motion } from 'motion/react';
 
 interface SmsLog {
@@ -590,6 +591,9 @@ export function SmsPortal() {
 
       {/* SMS Analytics Component */}
       <SmsAnalytics logs={smsLogs} />
+
+      {/* SMS Weekly Automated Email & Performance Reports */}
+      <SmsWeeklyReport logs={smsLogs} users={users} settings={settings} />
 
       {/* Quick Access Last 10 Messages Table */}
       <div className="bg-white border border-slate-200 rounded-[1.5rem] p-5 shadow-xs space-y-4">

@@ -47,6 +47,8 @@ export type CompanySettings = {
   clientSmsEnabled?: boolean;
   clientSettingsLabel?: string;
   clientSettingsEnabled?: boolean;
+  clientRejectedInvoicesLabel?: string;
+  clientRejectedInvoicesEnabled?: boolean;
 
   // Active Payment Gateways Configurations
   bkashNumber?: string;
@@ -79,6 +81,9 @@ export type CompanySettings = {
   decoderPrice6m?: number;
   decoderPrice12m?: number;
   smsTemplates?: { id: string; label: string; text: string }[];
+  weeklySmsReportEnabled?: boolean;
+  weeklySmsReportEmail?: string;
+  weeklySmsReportDay?: string;
 };
 
 export type User = {

@@ -2,6 +2,8 @@ import React from 'react';
 import { Menu, LogOut, Info, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useLanguage, Language } from '../lib/language';
+import { subscribeToSettings } from '../lib/storage';
+import { CompanySettings } from '../types';
 import firebaseConfig from '../../firebase-applet-config.json';
 
 interface LayoutProps {
@@ -20,6 +22,15 @@ export function Layout({ children, activeTab, onMenuToggle, onLogoutRequest }: L
     return localStorage.getItem('dark_mode_theme') === 'dark';
   });
 
+  const [settings, setSettings] = React.useState<Partial<CompanySettings>>({});
+
+  React.useEffect(() => {
+    const unsubscribe = subscribeToSettings((updatedSettings) => {
+      setSettings(updatedSettings);
+    });
+    return () => unsubscribe && unsubscribe();
+  }, []);
+
   React.useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -32,11 +43,13 @@ export function Layout({ children, activeTab, onMenuToggle, onLogoutRequest }: L
 
   const getLabel = (tab: string) => {
     const clientsLabels: Record<string, string> = {
-      'dashboard': 'সারাংশ (Dashboard Overview)',
-      'client_invoices': 'ইনভয়েস শো (Invoices Show)',
-      'client_account': 'অ্যাকাউন্ট অপশন (Payment Accounts)',
-      'client_payment': 'পেমেন্ট অপশন (Payment Form)',
-      'client_settings': 'সেটিংস অপশন (User Settings)'
+      'dashboard': settings.clientDashboardLabel || 'সারাংশ (Dashboard Overview)',
+      'client_invoices': settings.clientInvoicesLabel || 'ইনভয়েস শো (Invoices Show)',
+      'client_rejected_invoices': settings.clientRejectedInvoicesLabel || 'রিজেক্ট ইনভয়েস (Rejected Invoices)',
+      'client_account': settings.clientAccountLabel || 'অ্যাকাউন্ট অপশন (Payment Accounts)',
+      'client_payment': settings.clientPaymentLabel || 'পেমেন্ট অপশন (Payment Form)',
+      'client_settings': settings.clientSettingsLabel || 'সেটিংস অপশন (User Settings)',
+      'client_sms': settings.clientSmsLabel || 'এসএমএস ইনবক্স (SMS Inbox)'
     };
     return clientsLabels[tab] || t(tab) || tab;
   };

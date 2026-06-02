@@ -119,6 +119,7 @@ function ProtectedApp() {
       const clientTabs = [
         { id: 'dashboard', enabled: settings.clientDashboardEnabled !== false },
         { id: 'client_invoices', enabled: settings.clientInvoicesEnabled !== false },
+        { id: 'client_rejected_invoices', enabled: settings.clientRejectedInvoicesEnabled !== false },
         { id: 'client_account', enabled: settings.clientAccountEnabled !== false },
         { id: 'client_payment', enabled: settings.clientPaymentEnabled !== false },
         { id: 'client_sms', enabled: settings.clientSmsEnabled !== false },
@@ -131,6 +132,7 @@ function ProtectedApp() {
       const subTabMap: Record<string, string> = {
         'dashboard': 'dashboard',
         'client_invoices': 'invoices',
+        'client_rejected_invoices': 'rejected_invoices',
         'client_account': 'account',
         'client_payment': 'payment',
         'client_sms': 'sms',

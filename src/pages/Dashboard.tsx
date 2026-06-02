@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, Activity, FileText, Banknote, Check, X, Clock, CreditCard, CheckCircle, ShieldAlert, Sparkles, PhoneCall, Gift, RefreshCw, Users, Settings, Lock, Eye, EyeOff, Megaphone, Bell, Plus, ExternalLink, ChevronRight, BarChart3, Copy, MessageSquare, Search } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, Activity, FileText, Banknote, Check, X, Clock, CreditCard, CheckCircle, ShieldAlert, Sparkles, PhoneCall, Gift, RefreshCw, Users, Settings, Lock, Eye, EyeOff, Megaphone, Bell, Plus, ExternalLink, ChevronRight, BarChart3, Copy, MessageSquare, Search, AlertCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../lib/auth';
 import { updateDocument, safeStringify } from '../lib/storage';
@@ -18,7 +18,7 @@ import {
 import { Modal } from '../components/Modal';
 import { CreateAppForm, CreateDecoderForm, CreatePanelForm, CreateUserForm } from '../components/CreateForms';
 import { Invoice, Investment, ActivityLog, User } from '../types';
-import { subscribeToInvoices, createDocument, subscribeToSettings, subscribeToCollection } from '../lib/storage';
+import { subscribeToInvoices, createDocument, subscribeToSettings, subscribeToCollection, updateInvoice } from '../lib/storage';
 import { useLanguage } from '../lib/language';
 import { CompanySettings } from '../types';
 import { InvoiceTemplate } from '../components/InvoiceTemplate';
@@ -48,6 +48,8 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
 
   const [currentUserData, setCurrentUserData] = useState<any>(null);
   const [totalUsersCount, setTotalUsersCount] = useState(0);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [isProcessingApproval, setIsProcessingApproval] = useState<string | null>(null);
 
   // Customer top-up states
   const [topUpAmount, setTopUpAmount] = useState('');
@@ -95,6 +97,12 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
   const [myApps, setMyApps] = useState<any[]>([]);
   const [myDecoders, setMyDecoders] = useState<any[]>([]);
   const [myPanels, setMyPanels] = useState<any[]>([]);
+
+  // Admin sticky notepad persistence state
+  const [adminNotes, setAdminNotes] = useState<string>(() => {
+    return localStorage.getItem('admin_desktop_sticky_notes') || '';
+  });
+  const [notesSaveSuccess, setNotesSaveSuccess] = useState(false);
 
   // Sync customer SMS logs
   const [allSmsLogs, setAllSmsLogs] = useState<any[]>([]);
@@ -226,6 +234,113 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
     }
   };
 
+  const handleApproveRequest = async (invoice: Invoice) => {
+    setIsProcessingApproval(invoice.id);
+    try {
+      // 1. Update invoice status to 'paid' (approved) and clear any due
+      await updateInvoice(invoice.id, {
+        status: 'paid',
+        paidAmount: invoice.amount,
+        dueAmount: 0,
+        cashierName: settings.signatureName || 'Admin Approved',
+        note: (invoice.note || '') + ' [APPROVED BY DASHBOARD]'
+      });
+
+      // 2. See if there is a matching user to auto-approve their account
+      if (invoice.username) {
+        const matchingUser = allUsers.find(
+          u => u.username?.trim().toLowerCase() === invoice.username?.trim().toLowerCase()
+        );
+
+        if (matchingUser) {
+          // Calculate new financial details for the user
+          const parsedAmount = Number(invoice.amount) || 0;
+          const currentPaid = Number(matchingUser.paidAmount) || 0;
+          const totalPaid = currentPaid + parsedAmount;
+          const userPrice = Number(matchingUser.price) || 0;
+          const newDue = Math.max(0, userPrice - totalPaid);
+
+          await updateDocument<User>('users', matchingUser.id, {
+            status: 'approved',
+            paidAmount: totalPaid,
+            dueAmount: newDue
+          });
+        }
+      }
+
+      // 3. Auto-provision the requested item depending on billing purpose / invoice.type
+      if (invoice.username) {
+        if (invoice.type === 'Android App Purchase' && invoice.appName) {
+          await createDocument('apps', {
+            name: invoice.appName,
+            packageName: invoice.packageName || 'dev.masterbuild.' + invoice.appName.toLowerCase().replace(/\s+/g, ''),
+            protocol: invoice.protocol || 'Default',
+            appType: invoice.appsTrying === 'Free apps' ? 'Free' : 'Paid',
+            category: 'Approved APP',
+            status: 'active',
+            price: Number(invoice.amount) || 0,
+            username: invoice.username,
+            appsQuality: invoice.appsQuality || 'Normal security',
+            appsTrying: invoice.appsTrying || 'Paid apps',
+            appWorkType: invoice.appWorkType || 'New app',
+            note: `Approved via purchase invoice request #${invoice.id.substring(0, 8).toUpperCase()}. Approved on ${new Date().toLocaleDateString()}`
+          });
+        } else if (invoice.type === 'Reseller Panel Purchase' && invoice.panelName) {
+          await createDocument('panels', {
+            name: invoice.panelName,
+            url: invoice.panelUrl || '',
+            region: invoice.region || 'Default',
+            duration: invoice.panelDuration || '1 month',
+            price: Number(invoice.amount) || 0,
+            panelType: invoice.panelType === 'Panel Rent' ? 'Rent' : 'New',
+            tier: 'basic',
+            status: 'active',
+            username: invoice.username,
+            note: `Approved via panel invoice request #${invoice.id.substring(0, 8).toUpperCase()}. Approved on ${new Date().toLocaleDateString()}`
+          });
+        } else if (invoice.type === 'Decoder License Purchase' && invoice.decoderUsername) {
+          const randomSerial = 'DEC-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+          await createDocument('decoders', {
+            model: 'Decoder Premium System',
+            serialNumber: randomSerial,
+            username: invoice.decoderUsername,
+            duration: invoice.decoderDuration || '1 month',
+            price: Number(invoice.amount) || 0,
+            status: 'online',
+            clientUsername: invoice.username, // keep track of whose username requested it
+            note: `Approved via decoder invoice request #${invoice.id.substring(0, 8).toUpperCase()}. Approved on ${new Date().toLocaleDateString()}`
+          });
+        }
+      }
+
+      alert(`রিকোয়েস্ট #${invoice.id.substring(0, 8).toUpperCase()} সফলভাবে অনুমোদন করা হয়েছে এবং সার্ভিস সচল হয়েছে!`);
+    } catch (err) {
+      console.error(err);
+      alert('অনুমোদন করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+    } finally {
+      setIsProcessingApproval(null);
+    }
+  };
+
+  const handleRejectRequest = async (invoice: Invoice) => {
+    if (!window.confirm(`আপনি কি এই রিকোয়েস্টটি প্রত্যাখ্যান করতে চান?`)) return;
+    setIsProcessingApproval(invoice.id);
+    try {
+      await updateInvoice(invoice.id, {
+        status: 'rejected',
+        dueAmount: 0,
+        paidAmount: 0,
+        note: (invoice.note || '') + ' [REJECTED BY DASHBOARD]'
+      });
+      alert(`রিকোয়েস্ট #${invoice.id.substring(0, 8).toUpperCase()} প্রত্যাখ্যান করা হয়েছে।`);
+    } catch (err) {
+      console.error(err);
+      alert('প্রত্যাখ্যান করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+    } finally {
+      setIsProcessingApproval(null);
+    }
+  };
+
   useEffect(() => {
     const unsubInvoices = subscribeToInvoices(setInvoices);
     const unsubInvestments = subscribeToCollection<Investment>('investments', setInvestments, 'date');
@@ -245,14 +360,15 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
   // Sync current user states live from Firebase Users
   useEffect(() => {
     if (user) {
-      const unsubscribe = subscribeToCollection<any>('users', (allUsers) => {
-        const found = allUsers.find(u => u.username === user.username);
+      const unsubscribe = subscribeToCollection<any>('users', (usersList) => {
+        const found = usersList.find(u => u.username === user.username);
         if (found) {
           setCurrentUserData(found);
         } else {
           setCurrentUserData(user);
         }
-        setTotalUsersCount(allUsers.length);
+        setTotalUsersCount(usersList.length);
+        setAllUsers(usersList);
       });
       return () => {
         unsubscribe && unsubscribe();
@@ -476,10 +592,13 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
 
   // State hook for dynamic client invoices preview
   const [myInvoices, setMyInvoices] = useState<any[]>([]);
+  const [myRejectedInvoices, setMyRejectedInvoices] = useState<any[]>([]);
   useEffect(() => {
-    if (user && invoices.length > 0) {
+    if (user) {
       // Exclude 'rejected' invoices from the customer invoices list view entirely
       setMyInvoices(invoices.filter(inv => inv.username === user.username && inv.status !== 'rejected'));
+      // Include ONLY 'rejected' invoices in the customer rejected invoices list view
+      setMyRejectedInvoices(invoices.filter(inv => inv.username === user.username && inv.status === 'rejected'));
     }
   }, [user, invoices]);
 
@@ -499,6 +618,46 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
       pendingInvoicesCount
     };
   }, [invoices, investments]);
+
+  // Integrated Services Breakthrough & Category Contribution
+  const salesBreakdown = React.useMemo(() => {
+    let appsTotal = 0;
+    let panelsTotal = 0;
+    let decodersTotal = 0;
+    let topupsTotal = 0;
+
+    const paidInvoices = invoices.filter(inv => inv.status === 'paid' || inv.status === 'approved');
+    paidInvoices.forEach(inv => {
+      const amount = inv.paidAmount || inv.amount || 0;
+      if (inv.type === 'Android App Purchase' || inv.appName) {
+        appsTotal += amount;
+      } else if (inv.type === 'Reseller Panel Purchase' || inv.panelName) {
+        panelsTotal += amount;
+      } else if (inv.type === 'Decoder License Purchase' || inv.decoderUsername) {
+        decodersTotal += amount;
+      } else {
+        topupsTotal += amount;
+      }
+    });
+
+    const grandTotal = appsTotal + panelsTotal + decodersTotal + topupsTotal || 1; // avoid division by zero
+    
+    return [
+      { name: 'Android Apps', bangla: 'অ্যান্ড্রয়েড অ্যাপ্লিকেশন্স', value: appsTotal, percentage: Math.round((appsTotal / grandTotal) * 100), color: 'bg-blue-500', textClassName: 'text-blue-500' },
+      { name: 'Reseller Panels', bangla: 'রিসেলার প্যানেল প্যাক', value: panelsTotal, percentage: Math.round((panelsTotal / grandTotal) * 100), color: 'bg-violet-500', textClassName: 'text-violet-500' },
+      { name: 'Decoder Licenses', bangla: 'ডিকোডার লাইসেন্সসমূহ', value: decodersTotal, percentage: Math.round((decodersTotal / grandTotal) * 100), color: 'bg-emerald-500', textClassName: 'text-emerald-500' },
+      { name: 'Wallet Top-ups', bangla: 'ওয়ালেট রিচার্জ ও টপ-আপ', value: topupsTotal, percentage: Math.round((topupsTotal / grandTotal) * 100), color: 'bg-amber-500', textClassName: 'text-amber-500' },
+    ];
+  }, [invoices]);
+
+  // Integrated Dashboard Company Health Index Score
+  const healthScore = React.useMemo(() => {
+    const rev = stats.totalRevenue || 0;
+    const due = stats.dueBalance || 0;
+    if (rev === 0 && due === 0) return 100;
+    const ratio = rev / (rev + due || 1);
+    return Math.max(15, Math.min(100, Math.round(ratio * 100)));
+  }, [stats]);
 
   const dailyRevenueData = React.useMemo(() => {
     const today = new Date();
@@ -1048,6 +1207,69 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
           </div>
         )}
 
+        {/* 2.1 REJECTED INVOICES SUB-TAB */}
+        {activeSubTab === 'rejected_invoices' && (
+          <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-xs animate-fade-in">
+            <h2 className="text-sm font-black text-rose-800 uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-rose-100 pb-3">
+              <AlertCircle size={16} className="text-rose-600" />
+              বাতিলকৃত ইনভয়েস বাটারফ্লাই পোর্টাল (Rejected Invoices Screen)
+            </h2>
+            <p className="text-xs text-slate-500 leading-relaxed mb-6">
+              এডমিন কর্তৃক রিজেক্ট (বাতিল) করা আপনার সকল ইনভয়েস বিলসমূহ নিচে তালিকাভুক্ত রয়েছে। কোনো প্রশ্ন বা তথ্য সংশোধনের প্রয়োজন হলে যোগাযোগ করুন।
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {myRejectedInvoices.length > 0 ? (
+                myRejectedInvoices.map((inv) => (
+                  <div key={inv.id} className="p-5 border border-rose-100 hover:border-rose-200 hover:shadow-xs rounded-2xl bg-rose-50/10 transition-all flex flex-col justify-between">
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] font-mono font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded">
+                          #INV-{inv.id?.substring(0, 8).toUpperCase() || inv.id || 'N/A'}
+                        </span>
+                        <span className="text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full border bg-red-100 text-red-700 border-red-200">
+                          {inv.status}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <h4 className="text-[14px] font-black text-slate-800">{inv.customerName}</h4>
+                        <div className="text-[11px] text-slate-400">লেনদেন মাধ্যম: <strong className="text-slate-700">{inv.method || 'Cash / Direct'}</strong></div>
+                        {inv.transactionId && (
+                          <div className="text-[11px] text-slate-400">ট্রানজেকশন ID: <strong className="text-rose-600 font-mono select-all uppercase">{inv.transactionId}</strong></div>
+                        )}
+                        {inv.note && (
+                          <div className="text-[10px] text-rose-600/80 mt-2 bg-rose-50/50 p-2.5 rounded-lg border border-rose-100/50 italic">
+                            বাতিল করার কারণ / মন্তব্য: {inv.note}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t border-slate-100 flex justify-between items-center text-xs">
+                      <span className="text-slate-400 font-medium font-mono">Date: {inv.date || 'N/A'}</span>
+                      <span className="font-black text-rose-600 text-[14px] font-mono">৳{(inv.amount || 0).toLocaleString()}</span>
+                    </div>
+
+                    {/* View Invoice button */}
+                    <button
+                      onClick={() => handleUserPreviewInvoice(inv)}
+                      className="mt-3 w-full bg-slate-100 hover:bg-slate-200 border border-slate-200 hover:border-slate-300 text-[10px] py-2 rounded-xl font-bold flex items-center justify-center gap-1 transition-all text-slate-700 active:scale-[0.98]"
+                    >
+                      <FileText size={12} />
+                      রশিদ ও রিজেক্ট ইনভয়েস বিবরণ দেখুন (View Invoice)
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-1 md:col-span-2 text-center py-12 border border-dashed border-rose-200/30 rounded-3xl bg-rose-50/5">
+                  <p className="text-xs text-slate-400 italic">কোনো রিজেক্ট (বাতিল) করা বিল বা ইনভয়েসের তথ্য পাওয়া যায়নি।</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* 3. ACCOUNT OPTIONS SUB-TAB: SHOW BKASH, NAGAD, BANK ACCOUNT, BINANCE, PAYPAL DETAILS */}
         {activeSubTab === 'account' && (() => {
           const bKashLogo = (
@@ -1436,17 +1658,16 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
                     required
                   >
                     <option value="">-- উদ্দেশ্য নির্বাচন করুন (Select Purpose) * --</option>
-                    <option value="Wallet Top-Up">Wallet Top-Up (ওয়ালেট ব্যালেন্স টপ-আপ)</option>
-                    <option value="Android App Purchase">Android App (অ্যান্ড্রয়েড অ্যাপ ক্রয়)</option>
-                    <option value="Reseller Panel Purchase">Reseller Panel (রিসেলার প্যানেল ক্রয়)</option>
-                    <option value="Decoder License Purchase">Decoder License (ডিকোডার লাইসেন্স ক্রয়)</option>
+                    <option value="Android App Purchase">Android App Purchase (অ্যান্ড্রয়েড অ্যাপ ক্রয়)</option>
+                    <option value="Reseller Panel Purchase">Reseller Panel Pack (রিসেলার প্যানেল প্যাক)</option>
+                    <option value="Decoder License Purchase">Decoder License Purchase (ডিকোডার কোড ক্রয়)</option>
+                    <option value="Wallet Recharge">Wallet Recharge (ওয়ালেট রিচার্জ বা টপ-আপ)</option>
                     <option value="Binance $ Purchase">Binance $ Purchase (বাইনেন্স ডলার ক্রয়)</option>
                     <option value="Redotpay $ Purchase">Redotpay $ Purchase (রেডটপে ডলার ক্রয়)</option>
-                    <option value="Facebook Boost">Facebook Boost (ফেসবুক বুস্ট)</option>
-                    <option value="Banner Making">Banner Making (ব্যানার মেকিং)</option>
-                    <option value="Logo Making">Logo Making (লোগো মেকিং)</option>
-                    <option value="Annual / Server Charge">Annual Charge (অন্যান্য বা বার্ষিক চার্জ)</option>
-                    <option value="Others / Etc">Others / Etc (অন্যান্য সার্ভিস বা অন্যান্য)</option>
+                    <option value="Facebook Boost">Facebook Boost (ফেসবুক পেজ বুস্ট সার্ভিস)</option>
+                    <option value="Banner Making">Banner Making (প্রফেশনাল ব্যানার তৈরি)</option>
+                    <option value="Logo Making">Logo Making (ব্র্যান্ড লোগো ডিজাইন)</option>
+                    <option value="Others / Etc">Others / Etc (অন্যান্য সার্ভিস বা চুক্তি)</option>
                   </select>
                 </div>
 
@@ -1458,226 +1679,218 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-700 font-sans focus:outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
                     required
                   >
-                    <option value="">-- মাধ্যম নির্বাচন করুন (Select Method) * --</option>
-                    <option value="bKash">bKash (বিকাশ)</option>
-                    <option value="Nagad">Nagad (নগদ)</option>
-                    <option value="Rocket">Rocket (রকেট)</option>
-                    <option value="Bank Account">Bank (ব্যাংক ট্রান্সফার)</option>
-                    <option value="Binance">Binance (বাইনান্স)</option>
-                    <option value="PayPal">PayPal (পেপ্যাল)</option>
+                    <option value="">-- মেথড সিলেক্ট করুন * --</option>
+                    {activeProviders.map(p => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">পরিশোধিত আমাউন্ট (Amount / USD) *</label>
-                  <div className="relative shadow-xs rounded-xl overflow-hidden border border-slate-200 focus-within:border-indigo-500 focus-within:ring-4 focus-within:ring-indigo-500/5 transition-all bg-slate-50 focus-within:bg-white">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs font-mono">৳</span>
-                    <input 
-                      type="number" 
-                      value={topUpAmount}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setTopUpAmount(val);
-                        const amt = Number(val) || 0;
-                        const paid = Number(ticketPaidAmount) || 0;
-                        setTicketDueAmount(Math.max(0, amt - paid).toString());
-                      }}
-                      placeholder="0.00"
-                      className="w-full pl-8 pr-3 py-3 bg-transparent outline-none text-xs font-black text-slate-900 font-mono"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-1.5">পেইড আমাউন্ট (Paid Amount)</label>
-                  <div className="relative shadow-xs rounded-xl overflow-hidden border border-slate-200 focus-within:border-emerald-500 focus-within:ring-4 focus-within:ring-emerald-500/5 transition-all bg-slate-50 focus-within:bg-white">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-emerald-400 font-bold text-xs font-mono">৳</span>
-                    <input 
-                      type="number" 
-                      value={ticketPaidAmount}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setTicketPaidAmount(val);
-                        const amt = Number(topUpAmount) || 0;
-                        const paid = Number(val) || 0;
-                        setTicketDueAmount(Math.max(0, amt - paid).toString());
-                      }}
-                      placeholder="0.00"
-                      className="w-full pl-8 pr-3 py-3 bg-transparent outline-none text-xs font-black text-emerald-600 font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-black text-rose-600 uppercase tracking-widest mb-1.5">বকেয়া আমাউন্ট (Due Amount)</label>
-                  <div className="relative shadow-xs rounded-xl overflow-hidden border border-slate-200 focus-within:border-rose-500 focus-within:ring-4 focus-within:ring-rose-500/5 transition-all bg-slate-50 focus-within:bg-white">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-rose-400 font-bold text-xs font-mono">৳</span>
-                    <input 
-                      type="number" 
-                      value={ticketDueAmount}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setTicketDueAmount(val);
-                        const amt = Number(topUpAmount) || 0;
-                        const due = Number(val) || 0;
-                        setTicketPaidAmount(Math.max(0, amt - due).toString());
-                      }}
-                      placeholder="0.00"
-                      className="w-full pl-8 pr-3 py-3 bg-transparent outline-none text-xs font-black text-rose-600 font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">ট্রানজেকশন ID বা লাস্ট নাম্বার (Txn/Last digits) *</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">প্রেরক নাম্বার / লাস্ট ৫ ডিজিট *</label>
                   <input 
                     type="text" 
-                    value={topUpTxn}
+                    value={topUpTxn} 
                     onChange={(e) => setTopUpTxn(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-3.5 text-xs font-mono font-bold text-slate-900 placeholder:text-slate-350 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
-                    placeholder="TRX123456789 or Last Number"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-3.5 text-xs font-mono font-black text-slate-800 placeholder:text-slate-350 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
+                    placeholder="e.g. Bkash Last 5 Digit or TxID"
                     required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">অনুরোধকৃত মোট জমার পরিমাণ *</label>
+                  <input 
+                    type="number" 
+                    value={topUpAmount} 
+                    onChange={(e) => {
+                      const amount = e.target.value;
+                      setTopUpAmount(amount);
+                      
+                      // Calculate paid / due balances for App / Panel / Decoder purchases
+                      if (topUpPurpose === 'Reseller Panel Purchase') {
+                        const price = getPanelPrice(ticketPanelDuration);
+                        setTicketDueAmount(price ? Math.max(0, price - (Number(amount) || 0)).toString() : '');
+                        setTicketPaidAmount(amount);
+                      } else if (topUpPurpose === 'Decoder License Purchase') {
+                        const price = getDecoderPrice(ticketDecoderDuration);
+                        setTicketDueAmount(price ? Math.max(0, price - (Number(amount) || 0)).toString() : '');
+                        setTicketPaidAmount(amount);
+                      }
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-3.5 text-xs font-mono font-black text-slate-800 placeholder:text-slate-350 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
+                    placeholder="e.g. 1500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">টোটাল পেইড এমাউন্ট (Paid Amount)</label>
+                  <input 
+                    type="number" 
+                    value={ticketPaidAmount} 
+                    onChange={(e) => {
+                      const paid = e.target.value;
+                      setTicketPaidAmount(paid);
+                      const tot = Number(topUpAmount) || 0;
+                      setTicketDueAmount(Math.max(0, tot - (Number(paid) || 0)).toString());
+                    }}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-3.5 text-xs font-mono font-black text-slate-800 placeholder:text-slate-350 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
+                    placeholder="e.g. 1500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">টোটাল ডিউ এমাউন্ট (Due Amount)</label>
+                  <input 
+                    type="number" 
+                    value={ticketDueAmount} 
+                    onChange={(e) => setTicketDueAmount(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-3.5 text-xs font-mono font-black text-slate-850 placeholder:text-slate-350 focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
+                    placeholder="e.g. 0"
+                    readOnly
                   />
                 </div>
               </div>
 
+              {/* Dynamic Form extensions conditional blocks */}
               {topUpPurpose === 'Android App Purchase' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl animate-fade-in">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl animate-fade-in text-left">
                   <div>
-                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">অ্যাপের নাম (Apps Name) *</label>
+                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">অ্যাপের নাম (App Name) *</label>
                     <input 
                       type="text" 
                       value={ticketAppName}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setTicketAppName(val);
-                        const cleanName = val
-                          .toLowerCase()
-                          .trim()
-                          .replace(/[^a-z0-9]/g, '')
-                          .substring(0, 30);
-                        setTicketAppPackageName(`dev.masterbuild.${cleanName || 'app'}`);
-                      }}
-                      className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
-                      placeholder="e.g. Master Build App"
+                      onChange={(e) => setTicketAppName(e.target.value)}
+                      className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-800 placeholder:text-slate-350 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
+                      placeholder="e.g. Live TV Pro"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">প্যাকেজ নাম (Package Name) *</label>
+                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">প্যাকেজ আইডি (Package Name) *</label>
                     <input 
                       type="text" 
                       value={ticketAppPackageName}
                       onChange={(e) => setTicketAppPackageName(e.target.value)}
-                      className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-mono font-bold text-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
-                      placeholder="dev.masterbuild."
+                      className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-800 placeholder:text-slate-350 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
+                      placeholder="e.g. com.livetv.pro"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">অ্যাপ প্রোটোকল (Apps Protocol) *</label>
+                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">প্রোটোকল (Protocol) *</label>
                     <select 
                       value={ticketAppProtocol} 
                       onChange={(e) => setTicketAppProtocol(e.target.value)}
                       className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-700 font-sans focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
                       required
                     >
-                      <option value="">-- প্রোটোকল সিলেক্ট করুন (Select Protocol) * --</option>
-                      {Array.from({ length: 12 }, (_, i) => (
-                        <option key={i+1} value={`Protocol ${i+1}`}>Protocol {i+1}</option>
-                      ))}
+                      <option value="">-- সিলেক্ট প্রোটোকল * --</option>
+                      <option value="VJ Panel">VJ Panel</option>
+                      <option value="XCIPTV">XCIPTV</option>
+                      <option value="IBO Player">IBO Player</option>
+                      <option value="Next TV">Next TV</option>
+                      <option value="OTT Platinum">OTT Platinum</option>
+                      <option value="Smarters Pro">Smarters Pro</option>
+                      <option value="Other Protocol">Other Protocol</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">সিকিউরিটি মান (Apps Quality) *</label>
+                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">কোয়ালিটি প্রোফাইল (Quality) *</label>
                     <select 
                       value={ticketAppQuality} 
                       onChange={(e) => setTicketAppQuality(e.target.value)}
                       className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-700 font-sans focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
                       required
                     >
-                      <option value="">-- সিকিউরিটি সিলেক্ট করুন (Select Security) * --</option>
-                      <option value="Normal security">Normal security</option>
-                      <option value="medium security">medium security</option>
-                      <option value="high security">high security</option>
+                      <option value="">-- কোয়ালিটি সিলেক্ট * --</option>
+                      <option value="SD Quality">SD Quality (বাজেট ফ্রেন্ডলি)</option>
+                      <option value="HD Quality">HD Quality (স্ট্যান্ডার্ড)</option>
+                      <option value="FHD Quality">FHD Quality (প্রিমিয়াম)</option>
+                      <option value="4K Quality">4K UHD Quality (আল্ট্রা প্রিমিয়াম)</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">অ্যাপের ধরণ (Apps Type) *</label>
+                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">অ্যাপের ধরণ (App Type) *</label>
                     <select 
                       value={ticketAppType} 
                       onChange={(e) => setTicketAppType(e.target.value)}
                       className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-700 font-sans focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
                       required
                     >
-                      <option value="">-- অ্যাপ ধরণ সিলেক্ট করুন (Select Type) * --</option>
-                      <option value="Paid apps">Paid apps</option>
-                      <option value="Free apps">Free apps</option>
+                      <option value="">-- অ্যাপ টাইপ সিলেক্ট * --</option>
+                      <option value="Single App">Single App (একক অ্যাপ)</option>
+                      <option value="Multi App">Multi App (মাল্টিপল সংযোগ)</option>
+                      <option value="Reseller App">Reseller App (রিসেলিং প্যানেল সমর্থিত)</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">কাজের ধরন (App Work Type) *</label>
+                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">কাজের ধরণ (Work Type) *</label>
                     <select 
                       value={ticketAppWorkType} 
                       onChange={(e) => setTicketAppWorkType(e.target.value)}
                       className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-700 font-sans focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
                       required
                     >
-                      <option value="">-- কাজের ধরণ সিলেক্ট করুন (Select Work Type) * --</option>
-                      <option value="New app">New app (নতুন অ্যাপ)</option>
-                      <option value="Old app">Old app (পুরানো অ্যাপ)</option>
-                      <option value="Update app">Update app (আপডেট অ্যাপ)</option>
+                      <option value="">-- কাজের ধরণ সিলেক্ট * --</option>
+                      <option value="New app compilation">New app compilation (নতুন অ্যাপ তৈরি)</option>
+                      <option value="App update config">App update config (অ্যাপ আপডেট)</option>
+                      <option value="App logo & name change">App logo & name change (রিব্র্যান্ডিং)</option>
                     </select>
                   </div>
                 </div>
               )}
 
               {topUpPurpose === 'Reseller Panel Purchase' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl animate-fade-in text-left">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl animate-fade-in text-left">
                   <div>
-                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">প্যানেল নাম (Panel Name) *</label>
+                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">প্যানেল ক্যাটাগরি (Panel Category) *</label>
                     <select 
                       value={ticketPanelName} 
-                      onChange={(e) => setTicketPanelName(e.target.value)}
+                      onChange={(e) => {
+                        const pName = e.target.value;
+                        setTicketPanelName(pName);
+                        const price = getPanelPrice(ticketPanelDuration);
+                        setTopUpAmount(price.toString());
+                        const paid = Number(ticketPaidAmount) || 0;
+                        setTicketDueAmount(Math.max(0, price - paid).toString());
+                      }}
                       className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-700 font-sans focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
                       required
                     >
-                      <option value="">-- প্যানেল নাম সিলেক্ট করুন * --</option>
-                      <option value="administer">administer</option>
-                      <option value="admin">admin</option>
+                      <option value="">-- প্যানেল ক্যাটাগরি সিলেক্ট করুন * --</option>
+                      <option value="VJ Panel">VJ Panel</option>
+                      <option value="XC Panel">XC Panel</option>
+                      <option value="Stream Panel">Stream Panel</option>
+                      <option value="Other Reseller">Other Reseller Panel</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">প্যানেল URL (Panel URL) *</label>
+                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">প্যানেল ওয়েবলিংক (Panel Web Link) *</label>
                     <input 
-                      type="text" 
+                      type="url" 
                       value={ticketPanelUrl}
                       onChange={(e) => setTicketPanelUrl(e.target.value)}
-                      className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-mono font-bold text-slate-800 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
-                      placeholder="e.g. administrator.com/admin/"
+                      className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-800 placeholder:text-slate-350 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
+                      placeholder="e.g. http://mypanel.com:8080"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">প্যানেল মেয়াদ (Panel Duration) *</label>
+                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">মেয়াদ (Duration Limit) *</label>
                     <select 
                       value={ticketPanelDuration} 
                       onChange={(e) => {
                         const dur = e.target.value;
                         setTicketPanelDuration(dur);
-                        if (!dur) {
-                          setTopUpAmount('');
-                          setTicketDueAmount('');
-                          return;
-                        }
                         const price = getPanelPrice(dur);
                         setTopUpAmount(price.toString());
                         const paid = Number(ticketPaidAmount) || 0;
@@ -1686,7 +1899,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
                       className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-700 font-sans focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
                       required
                     >
-                      <option value="">-- মেয়াদ সিলেক্ট করুন * --</option>
+                      <option value="">-- মেয়াদ লিমিট সিলেক্ট * --</option>
                       <option value="1 month">1 month (৳ {getPanelPrice('1 month')})</option>
                       <option value="2 month">2 month (৳ {getPanelPrice('2 month')})</option>
                       <option value="3 month">3 month (৳ {getPanelPrice('3 month')})</option>
@@ -1698,23 +1911,24 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">প্যানেল টাইপ (Panel Type) *</label>
+                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">অর্ডার টাইপ (Subscription Type) *</label>
                     <select 
                       value={ticketPanelType} 
                       onChange={(e) => setTicketPanelType(e.target.value)}
                       className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-700 font-sans focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
                       required
                     >
-                      <option value="">-- প্যানেল টাইপ সিলেক্ট করুন * --</option>
-                      <option value="New panel">New panel (নতুন প্যানেল)</option>
-                      <option value="Panel Rent">Panel Rent (প্যানেল রেন্ট বা ভাড়া)</option>
+                      <option value="">-- অর্ডার টাইপ সিলেক্ট * --</option>
+                      <option value="New Connection">New Connection (নতুন সংযোগ)</option>
+                      <option value="Renew Connection">Renew Connection (রিনিউ সংযোগ)</option>
+                      <option value="App compilation addon">App compilation addon (অতিরিক্ত অ্যাডঅন)</option>
                     </select>
                   </div>
                 </div>
               )}
 
               {topUpPurpose === 'Decoder License Purchase' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl animate-fade-in text-left">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl animate-fade-in text-left">
                   <div>
                     <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">ইউজারনেম (Username) *</label>
                     <input 
@@ -1808,278 +2022,204 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
               <div className="pt-2">
                 {!isFormValid && (
                   <p className="text-[9.5px] font-black text-amber-600 uppercase tracking-wider mb-2.5 bg-amber-50/50 border border-amber-100 p-2 rounded-lg text-center animate-pulse">
-                    ⚠️ ফর্মের সব অপশন এবং প্রয়োজনীয় তথ্য সিলেক্ট/পূরণ করুন (Please fill and select all payment fields to enable submission)
+                    ⚠️ ফর্মের সব অপশন ও তথ্য সঠিকভাবে নির্বাচন/পূরণ করুন।
                   </p>
                 )}
-                <button 
-                  type="submit" 
-                  disabled={!isFormValid || isTopUpLoading}
-                  className="w-full bg-indigo-600 disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none disabled:cursor-not-allowed text-white font-bold py-3.5 px-4 rounded-xl hover:bg-indigo-700 active:scale-[0.99] transition-all flex items-center justify-center gap-2 tracking-widest uppercase text-[10px] shadow-lg shadow-indigo-100"
+
+                <button
+                  type="submit"
+                  disabled={isTopUpLoading || !isFormValid}
+                  className="w-full py-4 bg-indigo-650 hover:bg-indigo-700 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isTopUpLoading ? <RefreshCw className="animate-spin" size={14} /> : 'পেমেন্ট রশিদ সাবমিট করুন (Send Verification Request)'}
+                  {isTopUpLoading ? (
+                    <>
+                      <RefreshCw size={14} className="animate-spin" />
+                      অনুরোধ প্রসেস করা হচ্ছে...
+                    </>
+                  ) : (
+                    'পেমেন্ট রিকোয়েস্ট সাবমিট করুন (Submit Payment Ticket)'
+                  )}
                 </button>
               </div>
             </form>
-
-            <div className="mt-6 bg-slate-50 border border-slate-100 p-4 rounded-xl">
-              <h4 className="text-[11px] font-black text-slate-700 uppercase tracking-widest mb-1">প্রয়োজনীয় তথ্য সতর্কতা</h4>
-              <p className="text-[10px] text-slate-500 leading-relaxed font-sans">
-                পেমেন্ট রিপোর্টের আমাউন্ট ও লাস্ট নম্বর বা ট্রানজেকশন ID কোম্পানির গেটওয়ে অ্যাকাউন্টের হিসেবের সাথে রিয়েল টাইমে মিলিয়ে দেখা হবে। ভূল বা ভূয়া পেমেন্ট ইনফোর জন্য অ্যাকাউন্ট বাতিল বা সাময়িকভাবে ব্লক করা হতে পারে।
-              </p>
-            </div>
           </div>
         )}
 
-        {/* 4.5 CLIENT SMS HISTORY PORTAL (এসএমএস ইনবক্স) */}
-        {activeSubTab === 'sms' && (() => {
-          // Inner search state (Optional input for client client-side filter)
-          // eslint-disable-next-line react-hooks/rules-of-hooks
-          const [smsSearch, setSmsSearch] = useState('');
-          
-          const filteredSms = mySmsLogs.filter(log => {
-            const query = smsSearch.toLowerCase().trim();
-            if (!query) return true;
-            return (
-              (log.message && log.message.toLowerCase().includes(query)) ||
-              (log.provider && log.provider.toLowerCase().includes(query)) ||
-              (log.sender && log.sender.toLowerCase().includes(query))
-            );
-          });
-
-          return (
-            <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-xs animate-fade-in leading-relaxed">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4 mb-6">
-                <div>
-                  <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                    <MessageSquare size={16} className="text-indigo-600 animate-pulse" />
-                    এসএমএস মেসেজ ইনবক্স (My SMS Portal)
-                  </h2>
-                  <p className="text-xs text-slate-500 leading-relaxed max-w-xl font-sans">
-                    সিস্টেম থেকে আপনার রেজিস্টার্ড হোয়াটসঅ্যাপ/মোবাইলে পাঠানো অফিসিয়াল অভিনন্দন মেসেজ, পেমেন্ট অনুমোদন এবং বকেয়া সতর্কবার্তা নোটিফিকেশন সমূহের লাইভ হিস্ট্রি নিচে দেখতে পাবেন।
-                  </p>
-                </div>
-                {/* Search Inbox Input Container */}
-                <div className="relative w-full sm:w-64">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                    <Search size={14} />
-                  </span>
-                  <input
-                    type="text"
-                    value={smsSearch}
-                    onChange={(e) => setSmsSearch(e.target.value)}
-                    placeholder="ইনবক্স সার্চ করুন..."
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-indigo-500 focus:bg-white rounded-xl pl-9 pr-3.5 py-2.5 text-xs font-bold text-slate-705 placeholder:text-slate-400 outline-none transition-all focus:ring-4 focus:ring-indigo-500/5"
-                  />
-                </div>
-              </div>
-
-              {filteredSms.length > 0 ? (
-                <div className="space-y-4">
-                  {filteredSms.map((log) => {
-                    const formattedDate = (() => {
-                      if (!log.createdAt) return 'N/A';
-                      try {
-                        const dObj = new Date(log.createdAt);
-                        if (isNaN(dObj.getTime())) return log.createdAt;
-                        return dObj.toLocaleString('bn-BD', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          day: 'numeric',
-                          month: 'short',
-                          year: 'numeric',
-                          hour12: true
-                        });
-                      } catch {
-                        return log.createdAt;
-                      }
-                    })();
-
-                    return (
-                      <div key={log.id} className="p-5 border border-slate-150 hover:border-indigo-150 rounded-2xl bg-slate-50/20 hover:bg-slate-50/50 transition-all shadow-xs">
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-100/70 pb-3 mb-3.5 text-xs text-slate-400">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="bg-indigo-50 text-indigo-700 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded border border-indigo-100/60 font-mono">
-                              {log.sender || 'Master Admin'}
-                            </span>
-                            <span className="text-[10px] font-sans text-slate-400/80 font-semibold">{formattedDate}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10.5px] font-bold font-mono text-slate-700 bg-white border border-slate-200 px-2 py-0.5 rounded-lg select-all">
-                              {log.recipientPhone}
-                            </span>
-                            <span className={`text-[8.5px] font-mono font-black uppercase px-2 py-0.5 rounded-full ${
-                              log.status === 'delivered' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100/60' :
-                              log.status === 'failed' ? 'bg-rose-50 text-rose-700 border border-rose-105/60' :
-                              'bg-amber-50 text-amber-700 border border-amber-100/60'
-                            }`}>
-                              {log.status || 'delivered'}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Message payload */}
-                        <div className="text-slate-800 text-[12.5px] leading-relaxed font-semibold whitespace-pre-wrap select-text font-mono">
-                          {log.message}
-                        </div>
-
-                        {/* Footer Gateway Info */}
-                        <div className="flex justify-between items-center mt-3 pt-2.5 border-t border-slate-100/40 text-[9px] font-mono font-bold text-slate-400">
-                          <span>SMS Gateway: {log.provider || 'Premium SMS API'}</span>
-                          <span className="text-indigo-600 font-extrabold uppercase">Verified Delivered</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="text-center py-16 border border-dashed border-slate-200 rounded-3xl bg-slate-50/50">
-                  <div className="w-12 h-12 bg-indigo-50 text-indigo-650 rounded-full flex items-center justify-center mx-auto mb-3.5 shadow-sm animate-bounce">
-                    <MessageSquare size={22} />
-                  </div>
-                  <h4 className="text-xs font-black text-slate-700 uppercase tracking-widest mb-1">কোনো মেসেজ রেকর্ড নেই (No SMS Logs)</h4>
-                  <p className="text-[11px] text-slate-400 max-w-sm mx-auto leading-relaxed">
-                    সিস্টেম থেকে আপনার নম্বরে এখনো কোনো মেসেজ পাঠানো হয়নি। এডমিন প্যানেল থেকে এসএমএস প্রেরণ সম্পন্ন হলে তা সাথে সাথে এখানে শো করবে।
-                  </p>
-                </div>
-              )}
-            </div>
-          );
-        })()}
-
-        {/* 5. USER SETTINGS SUB-TAB */}
+        {/* 5. SETTINGS SUB-TAB: SHOW PROFILE DETAILS AND PASSWORD RESET */}
         {activeSubTab === 'settings' && (
-          <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-xs animate-fade-in leading-relaxed">
+          <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-xs relative animate-fade-in">
             <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-slate-100 pb-3">
-              <Settings size={16} className="text-indigo-600" />
-              গ্রাহক অ্যাকাউন্ট প্রোফাইল ও সেটিংস (User Information & Settings)
+              <Lock size={16} className="text-indigo-650" />
+              ব্যক্তিগত প্রোফাইল ও নিরাপত্তা পরিবর্তন (Profile & Security Options)
             </h2>
+            
             <p className="text-xs text-slate-500 leading-relaxed mb-6">
-              নিচে আপনার নিবন্ধিত গ্রাহক অ্যাকাউন্ট ডাটাবেস ও সিস্টেমের বিবরণী সমূহ দেওয়া হলো। পেমেন্ট হিসেব বা বিলিং সংক্রান্ত কোনো সংশোধনীর জন্য এডমিনের সাথে যোগাযোগ করুন:
+              এখানে আপনার বর্তমান প্রোফাইল ডাটাবেস দেখতে পারেন এবং নিরাপত্তার স্বার্থে সিকিউর পাসওয়ার্ড পরিবর্তন করতে পারেন।
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">গ্রাহকের পূর্ণ নাম (Full Name)</span>
-                <span className="text-[13px] font-black text-slate-800">{currentUserData?.name || user?.name || 'Customer'}</span>
-              </div>
-              
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">নিবন্ধিত মোবাইল নম্বর (Mobile Phone)</span>
-                <span className="text-[13px] font-bold text-slate-800 font-mono">{currentUserData?.phone || 'N/A'}</span>
-              </div>
-
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">ইমেইল অ্যাড্রেস (Email Address)</span>
-                <span className="text-[13px] font-bold text-slate-800 font-mono">{currentUserData?.email || user?.username || 'N/A'}</span>
-              </div>
-
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">ইউজার রোল / এক্সেস লেভেল (Role Profile)</span>
-                <span className="inline-block text-[9px] font-mono font-black uppercase bg-violet-50 text-violet-700 px-2 py-0.5 rounded mt-0.5 border border-violet-100/60">
-                  {currentUserData?.role || user?.role || 'customer'}
-                </span>
-              </div>
-
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">অঞ্চল বা অবস্থান (Region Location)</span>
-                <span className="text-[13px] font-bold text-slate-800 font-mono">{currentUserData?.region || 'Dhaka, Bangladesh'}</span>
-              </div>
-
-              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">নিবন্ধিত লাইসেন্স বার্ষিক চার্জ (Annual Price Plan)</span>
-                <span className="text-[13px] font-black text-indigo-650 font-mono">৳{Number(currentUserData?.price || 0).toLocaleString()}</span>
-              </div>
-            </div>
-
-            {/* Password Change Form */}
-            <div className="mt-8 pt-6 border-t border-slate-100">
-              <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-1.5 pb-2">
-                <Lock size={14} className="text-indigo-600" />
-                পাসওয়ার্ড পরিবর্তন করুন (Change Account Password)
-              </h3>
-              
-              <form onSubmit={handleClientPasswordChange} className="space-y-4 max-w-xl">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">বর্তমান পাসওয়ার্ড (Current Password)</label>
-                    <input 
-                      type={showClientPass ? "text" : "password"}
-                      value={clientCurrentPassword}
-                      onChange={(e) => setClientCurrentPassword(e.target.value)}
-                      placeholder="••••••••"
-                      required
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-xs font-semibold"
-                    />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Profile Details Card */}
+              <div className="space-y-4">
+                <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
+                  <Users size={14} className="text-indigo-650" />
+                  ব্যক্তিগত একাউন্ট প্রোফাইল (Account Profile Data)
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div className="p-3.5 bg-slate-50 border border-slate-150 rounded-2xl">
+                    <span className="text-[10px] text-slate-400 font-bold block">পূর্ণ নাম (Display Name)</span>
+                    <span className="text-xs text-slate-800 font-sans font-black mt-0.5 block">
+                      {currentUserData?.name || user?.name || 'Customer'}
+                    </span>
                   </div>
-                  
-                  <div className="space-y-1">
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">নতুন পাসওয়ার্ড (New Password)</label>
-                    <input 
-                      type={showClientPass ? "text" : "password"}
-                      value={clientNewPassword}
-                      onChange={(e) => setClientNewPassword(e.target.value)}
-                      placeholder="কমপক্ষে ৬ অক্ষর"
-                      required
-                      className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-xs font-semibold"
-                    />
+                  <div className="p-3.5 bg-slate-50 border border-slate-150 rounded-2xl">
+                    <span className="text-[10px] text-slate-400 font-bold block">ইউজারনেম (Username)</span>
+                    <span className="text-xs text-slate-800 font-sans font-black mt-0.5 block">
+                      @{currentUserData?.username || user?.username || 'user'}
+                    </span>
                   </div>
-                  
-                  <div className="space-y-1 sm:col-span-2">
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">পাসওয়ার্ড নিশ্চিত করুন (Confirm Password)</label>
-                    <div className="relative">
-                      <input 
-                        type={showClientPass ? "text" : "password"}
-                        value={clientConfirmPassword}
-                        onChange={(e) => setClientConfirmPassword(e.target.value)}
-                        placeholder="••••••••"
-                        required
-                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-xs font-semibold pr-10"
-                      />
-                      <button 
-                        type="button"
-                        onClick={() => setShowClientPass(!showClientPass)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-                      >
-                        {showClientPass ? <EyeOff size={14} /> : <Eye size={14} />}
-                      </button>
+                  <div className="p-3.5 bg-slate-50 border border-slate-150 rounded-2xl">
+                    <span className="text-[10px] text-slate-400 font-bold block">মোবাইল নম্বর (Phone)</span>
+                    <span className="text-xs text-slate-800 font-mono font-black mt-0.5 block">
+                      {currentUserData?.phone || 'N/A'}
+                    </span>
+                  </div>
+                  <div className="p-3.5 bg-slate-50 border border-slate-150 rounded-2xl">
+                    <span className="text-[10px] text-slate-400 font-bold block">ইমেইল ঠিকানা (Email)</span>
+                    <span className="text-xs text-slate-800 font-mono font-black mt-0.5 block truncate">
+                      {currentUserData?.email || user?.email || 'N/A'}
+                    </span>
+                  </div>
+                  <div className="p-3.5 bg-slate-50 border border-slate-150 rounded-2xl">
+                    <span className="text-[10px] text-slate-400 font-bold block">নিবন্ধন টাইপ (Status)</span>
+                    <span className="inline-flex items-center gap-1.5 text-[9.5px] font-black uppercase text-white bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-md mt-1 shrink-0">
+                      ● {currentUserData?.status || 'approved'}
+                    </span>
+                  </div>
+                  <div className="p-3.5 bg-slate-50 border border-slate-150 rounded-2xl">
+                    <span className="text-[10px] text-slate-400 font-bold block">নিবন্ধনের তারিখ (Registered At)</span>
+                    <span className="text-xs text-slate-800 font-mono font-black mt-0.5 block">
+                      {joinedDateFormatted}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl space-y-2">
+                  <span className="text-[10px] font-black text-indigo-650 uppercase tracking-wider block">কম্পানি পেমেন্ট ডেজার খতিয়ান</span>
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="p-2 bg-white rounded-xl border border-indigo-50/60">
+                      <span className="text-[9px] text-slate-400 font-bold block">মোট মূল্য</span>
+                      <strong className="text-slate-800 font-black">৳{totalFee.toLocaleString()}</strong>
+                    </div>
+                    <div className="p-2 bg-white rounded-xl border border-indigo-50/60">
+                      <span className="text-[9px] text-emerald-500 font-bold block">পরিশোধিত</span>
+                      <strong className="text-emerald-600 font-black">৳{paidFees.toLocaleString()}</strong>
+                    </div>
+                    <div className="p-2 bg-white rounded-xl border border-indigo-50/60">
+                      <span className="text-[9px] text-rose-500 font-bold block">বকেয়া বিল</span>
+                      <strong className="text-rose-600 font-black">৳{dueFees.toLocaleString()}</strong>
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {clientPassError && (
-                  <p className="text-[10px] font-black text-rose-600 uppercase tracking-wider bg-rose-50 border border-rose-100 p-2.5 rounded-lg">
-                    ⚠️ {clientPassError}
-                  </p>
-                )}
-                {clientPassSuccess && (
-                  <p className="text-[10px] font-black text-emerald-600 uppercase tracking-wider bg-emerald-50 border border-emerald-100 p-2.5 rounded-lg">
-                    ✓ {clientPassSuccess}
-                  </p>
-                )}
+              {/* Password change block */}
+              <div className="space-y-4">
+                <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
+                  <Lock size={14} className="text-indigo-650" />
+                  নিরাপত্তা ও পাসওয়ার্ড পরিবর্তন (Account Settings)
+                </h3>
 
-                <button 
-                  type="submit"
-                  disabled={isClientPassSaving}
-                  className="bg-slate-900 text-white hover:bg-black font-black text-[10px] px-6 py-3 rounded-xl uppercase tracking-widest transition-all hover:shadow-md cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5 active:scale-95"
-                >
-                  {isClientPassSaving ? 'পরিবর্তন করা হচ্ছে...' : 'পাসওয়ার্ড আপডেট করুন (Update Password)'}
-                </button>
-              </form>
-            </div>
+                <form onSubmit={handleClientPasswordChange} className="space-y-4">
+                  {clientPassError && (
+                    <div className="p-3.5 bg-rose-50 border border-rose-100 rounded-xl text-[11px] font-bold text-rose-600 leading-relaxed">
+                      ❌ {clientPassError}
+                    </div>
+                  )}
 
-            <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col items-center justify-between text-[10px] font-mono font-black uppercase text-slate-400 tracking-widest sm:flex-row gap-3">
-              <span>Master Intelligence System v1.5.0 © 2026</span>
-              <span className="text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">ALL SERVICES ONLINE</span>
+                  {clientPassSuccess && (
+                     <div className="p-3.5 bg-emerald-50 border border-emerald-100 rounded-xl text-[11px] font-bold text-emerald-600 leading-relaxed">
+                      ✅ {clientPassSuccess}
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5 relative">
+                    <label className="text-[10.5px] font-black text-slate-650 uppercase tracking-wide block">বর্তমান পাসওয়ার্ড (Current Password)</label>
+                    <div className="relative">
+                      <input
+                        type={showClientPass ? "text" : "password"}
+                        required
+                        value={clientCurrentPassword}
+                        onChange={(e) => setClientCurrentPassword(e.target.value)}
+                        placeholder="আপনার বর্তমান অ্যাকাউন্ট পাসওয়ার্ড দিন"
+                        className="w-full px-3.5 py-2.5 text-xs font-medium border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowClientPass(!showClientPass)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                      >
+                        {showClientPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div className="space-y-1.5">
+                      <label className="text-[10.5px] font-black text-slate-655 uppercase block">নতুন পাসওয়ার্ড (New Password)</label>
+                      <input
+                        type={showClientPass ? "text" : "password"}
+                        required
+                        value={clientNewPassword}
+                        onChange={(e) => setClientNewPassword(e.target.value)}
+                        placeholder="কমপক্ষে ৬ অক্ষর"
+                        className="w-full px-3.5 py-2.5 text-xs font-medium border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10.5px] font-black text-slate-655 uppercase block">পাসওয়ার্ড নিশ্চিত করুন (Confirm)</label>
+                      <input
+                        type={showClientPass ? "text" : "password"}
+                        required
+                        value={clientConfirmPassword}
+                        onChange={(e) => setClientConfirmPassword(e.target.value)}
+                        placeholder="পাসওয়ার্ডটি পুনরায় টাইপ করুন"
+                        className="w-full px-3.5 py-2.5 text-xs font-medium border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isClientPassSaving}
+                    className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl text-xs font-black uppercase tracking-wider transition-all shadow-xs flex items-center justify-center gap-2 border border-slate-900 cursor-pointer active:scale-95 disabled:opacity-50"
+                  >
+                    {isClientPassSaving ? (
+                      <>
+                        <RefreshCw size={13} className="animate-spin" />
+                        সংরক্ষণ করা হচ্ছে...
+                      </>
+                    ) : (
+                      'পাসওয়ার্ড আপডেট করুন (Update Password)'
+                    )}
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
         )}
+
+        {/* Global Client Dashboard Footer */}
+        <div className="mt-8 pt-6 border-t border-slate-100 flex flex-col items-center justify-between text-[10px] font-mono font-black uppercase text-slate-400 tracking-widest sm:flex-row gap-3">
+          <span>Master Intelligence System v1.5.0 © 2026</span>
+          <span className="text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">ALL SERVICES ONLINE</span>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-8 pb-12">
-      {/* Premium Welcome & Control Tower Header */}
+{/* Premium Welcome & Control Tower Header */}
       <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-[2rem] p-6 sm:p-8 shadow-xl border border-slate-800 animate-fade-in">
         {/* Abstract Background Vectors */}
         <div className="absolute right-0 top-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
@@ -2122,8 +2262,117 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
         </div>
       </div>
 
-      {/* Admin Quick Action Bento Hub - Hidden per request */}
-      {false && (
+      {/* ⚡ DIRECT ACTION: Pending Approval Requests Console (সরাসরি পেমেন্ট অনুমোদন প্যানেল) */}
+      {invoices.filter(inv => inv.status === 'pending').length > 0 ? (
+        <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border border-amber-300 rounded-[2rem] p-6 shadow-xs animate-pulse">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 pb-3 border-b border-amber-200/50">
+            <div className="space-y-1">
+              <span className="text-[10px] bg-amber-600 text-white font-mono font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1">
+                <ShieldAlert size={12} className="text-amber-200" /> Action Required (অ্যাকশন প্রয়োজন)
+              </span>
+              <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5 mt-1">
+                পেন্ডিং বিল ও টপ-আপ পেমেন্ট অনুমোদন করুন (Direct Quick Invoice Approvals)
+              </h3>
+              <p className="text-[11px] text-slate-600 font-sans">নিচের রিকোয়েস্টগুলো কাস্টমার কর্তৃক সাবমিট করা হয়েছে। দ্রুত বিবরণী যাচাই করে এক ক্লিকে অনুমোদন বা রিজেক্ট করুনঃ</p>
+            </div>
+            <span className="text-xs bg-amber-500 text-white px-3 py-1 rounded-xl text-center font-black uppercase font-mono tracking-wider">
+              {invoices.filter(inv => inv.status === 'pending').length} পেন্ডিং রিকোয়েস্ট
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {invoices.filter(inv => inv.status === 'pending').map((inv) => (
+              <div key={inv.id} className="bg-white border border-amber-250/75 rounded-2xl p-5 hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] font-mono bg-amber-50 text-amber-700 font-black px-2 py-0.5 rounded-md uppercase border border-amber-200">
+                      #{inv.id?.substring(0, 8).toUpperCase()}
+                    </span>
+                    <span className="text-[9px] text-slate-400 font-semibold font-mono">{inv.date}</span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="text-xs">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">গ্রাহকের নাম</span>
+                      <strong className="text-slate-800 font-black">{inv.customerName}</strong>
+                      <span className="text-[10px] text-slate-500 font-mono ml-1">(@{inv.username})</span>
+                    </div>
+
+                    <div className="text-xs">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">আবেদন বা ক্রয়ের উদ্দেশ্য</span>
+                      <strong className="text-indigo-600 font-extrabold">{inv.type || 'পেমেন্ট টপ-আপ (Wallet Top-Up)'}</strong>
+                      {inv.appName && <p className="text-[9px] text-slate-500 font-semibold italic mt-0.5">App: {inv.appName}</p>}
+                      {inv.panelName && <p className="text-[9px] text-slate-500 font-semibold italic mt-0.5">Panel: {inv.panelName}</p>}
+                      {inv.decoderUsername && <p className="text-[9px] text-slate-500 font-semibold italic mt-0.5">Decoder User: {inv.decoderUsername}</p>}
+                    </div>
+
+                    <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex justify-between items-center">
+                      <div>
+                        <span className="text-[9.5px] text-slate-405 font-black uppercase font-mono block tracking-wider">পেমেন্ট মেথড (TxID)</span>
+                        <span className="text-[11px] font-black text-slate-700 font-mono select-all block mt-0.5">{inv.paymentMethod || 'bKash/Nagad/Rocket'}</span>
+                        <span className="text-[10px] text-indigo-600 font-mono bg-indigo-55/60 px-1 py-0.2 rounded border border-indigo-150 select-all font-bold tracking-tight inline-block mt-1">{inv.transactionId || 'No TxID'}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[9.5px] text-rose-500 font-bold block uppercase tracking-wider">টাকার পরিমাণ</span>
+                        <span className="text-base font-black text-rose-600 font-mono">৳{(inv.amount || 0).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2.5 mt-5 border-t border-slate-100 pt-3.5">
+                  <button
+                    disabled={isProcessingApproval !== null}
+                    onClick={() => handleRejectRequest(inv)}
+                    className="flex-1 py-2 rounded-xl text-[10px] font-black uppercase text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors disabled:opacity-50 cursor-pointer active:scale-95"
+                  >
+                    রিজেক্ট (Reject)
+                  </button>
+                  <button
+                    disabled={isProcessingApproval !== null}
+                    onClick={() => handleApproveRequest(inv)}
+                    className="flex-1 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-[10px] font-black uppercase shadow-xs select-none transition-all hover:shadow-md disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1 active:scale-95"
+                  >
+                    {isProcessingApproval === inv.id ? (
+                      <>
+                        <RefreshCw size={11} className="animate-spin" />
+                        প্রসেস...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle size={11} />
+                        অনুমোদন দিন
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="bg-slate-50 border border-slate-200 rounded-[2rem] p-5 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-in shadow-xs/60">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center border border-emerald-100/70 shrink-0">
+              <Check size={20} className="stroke-[3]" />
+            </div>
+            <div>
+              <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                সব রিকোয়েস্ট পরিশোধিত ও অনুমোদন সম্পন্ন (All Clear)
+              </h4>
+              <p className="text-[11px] text-slate-500 leading-relaxed font-sans font-medium mt-0.5">
+                সিস্টেমে এই মুহূর্তে কাস্টমার কর্তৃক পেমেন্টের কোনো আবেদনের বিল নিষ্পন্নের জন্য পেন্ডিং রিকোয়েস্ট নেই।
+              </p>
+            </div>
+          </div>
+          <span className="text-[9px] font-mono text-slate-400 border border-slate-200 bg-white/55 px-2.5 py-1 rounded-xl block font-black tracking-widest uppercase">
+            STATUS: 100% CLEAR
+          </span>
+        </div>
+      )}
+
+      {/* Admin Quick Action Bento Hub - Activated & Polished */}
+      {true && (
       <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
           <div className="space-y-1">
@@ -2446,6 +2695,164 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
         <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 font-bold">
           <span>* এন্ট্রিগুলোতে শুধুমাত্র 'Paid' এবং 'Approved' রেভিনিউ গণনা করা হয়েছে</span>
           <span className="font-mono">{dailyRevenueData.monthNameBng} ১ - {dailyRevenueData.data.length} তারিখ</span>
+        </div>
+      </div>
+
+      {/* 📊 ADVANCED LEDGER PERFORMANCE INSIGHTS (অ্যাডভান্সড কোম্পানির খতিয়ান ও পারফরম্যান্স বিশ্লেষণ হাব) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* 1. Service Sales Contribution Breakdown (ক্যাটাগরি ভিত্তিক বিক্রয় বিশ্লেষণ) */}
+        <div className="col-span-12 lg:col-span-4 bg-white p-6 border border-slate-200 rounded-[2rem] shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Business Segments</span>
+                <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  সার্ভিস ভিত্তিক বিক্রয় শেয়ার (Breakdown)
+                </h3>
+              </div>
+              <span className="text-[9px] font-bold text-indigo-650 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">Real-Time</span>
+            </div>
+
+            <div className="space-y-4">
+              {salesBreakdown.map((item, index) => (
+                <div key={index} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                      <span className={`w-2.5 h-2.5 rounded-full ${item.color}`}></span>
+                      {item.bangla}
+                    </span>
+                    <span className="font-mono font-black text-slate-900">
+                      ৳{item.value.toLocaleString()} ({item.percentage}%)
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-1000 ${item.color}`} 
+                      style={{ width: `${item.percentage}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 mt-5 text-[10px] text-slate-400 font-semibold italic flex items-center justify-between">
+            <span>* শুধুমাত্র সফল বিল পরিশোধ গণনা করা হয়েছে</span>
+            <span>মোট 4 ক্যাটাগরি</span>
+          </div>
+        </div>
+
+        {/* 2. Audit Ledger & Financial Diagnostic Rating (ফাইন্যান্সিয়াল হেলথ স্কোর) */}
+        <div className="col-span-12 md:col-span-6 lg:col-span-4 bg-white p-6 border border-slate-200 rounded-[2rem] shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Audit Security Indices</span>
+                <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  ফাইন্যান্সিয়াল হেলথ রেশিও (Health Rating)
+                </h3>
+              </div>
+              <Activity size={14} className="text-emerald-500 animate-pulse" />
+            </div>
+
+            <div className="space-y-5">
+              <div className="flex items-center gap-4">
+                {/* Visual Circle Gauge Percentage using elegant standard HTML */}
+                <div className="relative w-24 h-24 shrink-0 flex items-center justify-center">
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" stroke="#f1f5f9" strokeWidth="8" fill="transparent" />
+                    <circle 
+                      cx="50" cy="50" r="40" 
+                      stroke={healthScore >= 80 ? "#10b981" : healthScore >= 50 ? "#f59e0b" : "#ef4444"} 
+                      strokeWidth="8" fill="transparent" 
+                      strokeDasharray={`${2 * Math.PI * 40}`}
+                      strokeDashoffset={`${2 * Math.PI * 40 * (1 - healthScore / 100)}`}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <span className="absolute font-mono font-black text-sm text-slate-900">{healthScore}%</span>
+                </div>
+
+                <div className="space-y-1">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Audit Score Interpretation</span>
+                  <span className={`text-xs font-black uppercase px-2 py-0.5 rounded-md inline-block ${
+                    healthScore >= 80 ? 'bg-emerald-50 text-emerald-700 border border-emerald-150' : 
+                    healthScore >= 50 ? 'bg-amber-50 text-amber-700 border border-amber-150' : 'bg-rose-50 text-rose-700 border border-rose-150'
+                  }`}>
+                    {healthScore >= 80 ? 'এক্সিলেন্ট হেলথ (Excellent)' : healthScore >= 50 ? 'মাঝারি ঝুঁকি (Moderate Risk)' : 'উচ্চ ঝুঁকি বকেয়া বকেয়া (Dangerous)'}
+                  </span>
+                  <p className="text-[10.5px] text-slate-500 font-semibold font-sans leading-relaxed">
+                    আদায়কৃত রেভিনিউ বনাম অনাদায়ী বকেয়া বিলের রেশিও অনুপাত বিশ্লেষণ করে রেটিং হিসাব করা হয়েছে।
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 bg-slate-50/70 border border-slate-100 rounded-2xl space-y-1">
+                <span className="text-[9.5px] text-slate-400 font-bold block uppercase tracking-widest">Diagnostic Recommendation</span>
+                <p className="text-[10px] text-slate-650 leading-relaxed font-sans font-medium">
+                  {healthScore >= 80 
+                    ? 'চমৎকার! কোম্পানির ক্যাশফ্লো চমৎকার অবস্থায় রয়েছে।' 
+                    : healthScore >= 50 
+                    ? 'সতর্কীকরণঃ বকেয়া টাকার পরিমাণ বাড়ছে। দ্রুত পেন্ডিং ইনভয়েস কাস্টমারদের মনে করিয়ে দিন।'
+                    : 'ঝুঁকিঃ বকেয়ার পরিমাণ আশঙ্কাজনক। বকেয়া আদায় নিশ্চিত করুন।'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-slate-100 mt-5 text-[10px] text-slate-400/80 font-mono font-black uppercase tracking-wider flex items-center justify-between">
+            <span>Verified System Index</span>
+            <span className="text-emerald-500">Live Secured</span>
+          </div>
+        </div>
+
+        {/* 3. Actionable Admin Notes (লাইভ নোটপ্যাড যা ব্রাউজারে সংরক্ষিত থাকবে) */}
+        <div className="col-span-12 md:col-span-6 lg:col-span-4 bg-white p-6 border border-slate-200 rounded-[2rem] shadow-xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Admin Private Memo</span>
+                <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  নিরাপদ এডমিন কুইক নোটস / মেমো
+                </h3>
+              </div>
+              <div className="flex items-center gap-1">
+                {notesSaveSuccess && (
+                  <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md animate-fade-in">সেভ করা হয়েছে!</span>
+                )}
+                <FileText size={14} className="text-indigo-600" />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <textarea
+                value={adminNotes}
+                onChange={(e) => {
+                  setAdminNotes(e.target.value);
+                  localStorage.setItem('admin_desktop_sticky_notes', e.target.value);
+                  setNotesSaveSuccess(true);
+                  setTimeout(() => setNotesSaveSuccess(false), 1500);
+                }}
+                placeholder="এখানে জরুরী বিল আইডি, কাস্টমার ফোন নম্বর অথবা প্রসেসিং নোটস লিখে রাখতে পারেন যা সম্পূর্ণ স্বয়ংক্রিয়ভাবে ব্রাউজারে সংরক্ষিত থাকবে..."
+                className="w-full h-[125px] p-3 text-[11px] font-medium leading-relaxed text-slate-700 bg-amber-50/15 border border-amber-200/55 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-400/20 focus:bg-amber-50/20 resize-none font-sans"
+              />
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-slate-100 mt-4 flex items-center justify-between">
+            <button 
+              onClick={() => {
+                if (window.confirm('আপনি কি নোটপ্যাডের সব লেখা মুছে দিতে চান?')) {
+                  setAdminNotes('');
+                  localStorage.removeItem('admin_desktop_sticky_notes');
+                }
+              }}
+              className="text-[9.5px] font-black text-rose-500 uppercase hover:bg-rose-50 px-2 py-1 rounded-md transition-colors"
+            >
+              সব মুছুন
+            </button>
+            <span className="text-[9.5px] font-mono text-slate-400 font-semibold italic">● অটো-সেভ ইনডেক্স একটিভ</span>
+          </div>
         </div>
       </div>
 

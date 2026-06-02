@@ -20,13 +20,23 @@ const DEFAULT_SETTINGS: CompanySettings = {
   loginPageLogoUrl: '',
   signatureName: 'Authorized Manager',
   signatureText: 'Manager',
-  appLabel: '',
-  decoderLabel: '',
-  panelLabel: '',
-  userLabel: '',
+  appLabel: 'অ্যান্ড্রয়েড অ্যাপ্স (Android Apps)',
+  decoderLabel: 'ডিকোড লাইসেন্স (Decoder Licenses)',
+  panelLabel: 'রিসেলার প্যানেল (Reseller Panels)',
+  userLabel: 'গ্রাহক তালিকা (Users Registry)',
   sidebarAdminName: 'Master Admin',
   sidebarTitle: 'Amar Apka',
   appVersion: '1.0',
+  
+  // Admin menu options defaults
+  adminDashboardLabel: 'সারাংশ (Admin Dashboard)',
+  adminPaymentRequestsLabel: 'পেমেন্ট রিকোয়েস্ট (Payment Requests)',
+  adminInvoicesLabel: 'ইনভয়েস লিস্ট (Invoice List)',
+  adminUnpaidLabel: 'বকেয়া ইনভয়েস (Unpaid Invoices)',
+  adminPendingUsersLabel: 'পেন্ডিং গ্রাহক (Pending Registrations)',
+  adminFinancesLabel: 'ফাইন্যান্সিয়াল খতিয়ান (Financial Accounts)',
+  adminSmsLabel: 'এসএমএস পোর্টাল (SMS Portal)',
+  adminSettingsLabel: 'সেটিংস কন্ট্রোল (Admin Configs)',
   
   // Client menu options defaults
   clientDashboardLabel: 'সারাংশ (Dashboard Overview)',
@@ -41,6 +51,8 @@ const DEFAULT_SETTINGS: CompanySettings = {
   clientSmsEnabled: true,
   clientSettingsLabel: 'সেটিংস অপশন (User Settings)',
   clientSettingsEnabled: true,
+  clientRejectedInvoicesLabel: 'রিজেক্ট ইনভয়েস (Rejected Invoices)',
+  clientRejectedInvoicesEnabled: true,
 
   // Default gateway credentials
   bkashNumber: '01718070273',
@@ -94,6 +106,9 @@ const DEFAULT_SETTINGS: CompanySettings = {
       text: 'প্রিয় {name}, আমাদের নতুন সার্ভিসে আজই যুক্ত হোন! বিস্তারিত জানতে যোগাযোগ করুন। - {company}'
     }
   ],
+  weeklySmsReportEnabled: true,
+  weeklySmsReportEmail: 'foysolahmedtapader@gmail.com',
+  weeklySmsReportDay: 'Friday',
 };
 
 const BANGLADESH_BANKS = [
@@ -811,6 +826,49 @@ export function Settings() {
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
               />
             </div>
+            
+            {/* Newly added core module option names inside Admin Sidebar configuration */}
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Apps Management Option</label>
+              <input 
+                name="appLabel"
+                value={settings.appLabel ?? ''}
+                onChange={handleChange}
+                placeholder="অ্যান্ড্রয়েড অ্যাপ্স"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Panels Management Option</label>
+              <input 
+                name="panelLabel"
+                value={settings.panelLabel ?? ''}
+                onChange={handleChange}
+                placeholder="রিসেলার প্যানেল"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Decoders Management Option</label>
+              <input 
+                name="decoderLabel"
+                value={settings.decoderLabel ?? ''}
+                onChange={handleChange}
+                placeholder="ডিকোড লাইসেন্স"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Users Management Option</label>
+              <input 
+                name="userLabel"
+                value={settings.userLabel ?? ''}
+                onChange={handleChange}
+                placeholder="গ্রাহক তালিকা"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+
             <div className="space-y-1">
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pending Users Option</label>
               <input 
@@ -1020,6 +1078,32 @@ export function Settings() {
                     value={settings.clientSmsLabel ?? ''}
                     onChange={handleChange}
                     placeholder="এসএমএস ইনবক্স (SMS Inbox)"
+                    className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-semibold text-slate-700"
+                  />
+                </div>
+              </div>
+
+              {/* Client Rejected Invoices Tab */}
+              <div className="p-4 border border-slate-100 rounded-xl bg-slate-50/20 flex flex-col justify-between gap-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">7. Client Rejected Invoices Option</span>
+                  <label className="relative inline-flex items-center cursor-pointer select-none">
+                    <input 
+                      type="checkbox"
+                      checked={settings.clientRejectedInvoicesEnabled !== false}
+                      onChange={() => handleToggle('clientRejectedInvoicesEnabled')}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                  </label>
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest">Menu Label</label>
+                  <input
+                    name="clientRejectedInvoicesLabel"
+                    value={settings.clientRejectedInvoicesLabel ?? ''}
+                    onChange={handleChange}
+                    placeholder="রিজেক্ট ইনভয়েস (Rejected Invoices)"
                     className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-semibold text-slate-700"
                   />
                 </div>

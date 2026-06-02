@@ -102,6 +102,7 @@ export function Sidebar({ activeTab, setActiveTab, isOpen, onClose }: SidebarPro
   const rawClientItems = [
     { id: 'dashboard', label: settings.clientDashboardLabel || 'সারাংশ (Dashboard Overview)', icon: LayoutDashboard, enabled: settings.clientDashboardEnabled !== false },
     { id: 'client_invoices', label: settings.clientInvoicesLabel || 'ইনভয়েস শো (Invoices Show)', icon: FileText, enabled: settings.clientInvoicesEnabled !== false },
+    { id: 'client_rejected_invoices', label: settings.clientRejectedInvoicesLabel || 'রিজেক্ট ইনভয়েস (Rejected Invoices)', icon: AlertCircle, enabled: settings.clientRejectedInvoicesEnabled !== false },
     { id: 'client_account', label: settings.clientAccountLabel || 'অ্যাকাউন্ট অপশন (Payment Accounts)', icon: Wallet, enabled: settings.clientAccountEnabled !== false },
     { id: 'client_payment', label: settings.clientPaymentLabel || 'পেমেন্ট অপশন (Payment Form)', icon: Banknote, enabled: settings.clientPaymentEnabled !== false },
     { id: 'client_sms', label: settings.clientSmsLabel || 'এসএমএস ইনবক্স (SMS Inbox)', icon: MessageSquare, enabled: settings.clientSmsEnabled !== false },
