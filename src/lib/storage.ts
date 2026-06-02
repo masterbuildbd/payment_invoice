@@ -183,7 +183,8 @@ export const createInvoice = async (invoice: Invoice) => {
     if (isPlaceholder) throw new Error('Offline mode');
 
     const docRef = doc(db, 'invoices', invoice.id);
-    await setDoc(docRef, invoice);
+    const sanitizedInvoice = sanitizeFirestoreData(invoice);
+    await setDoc(docRef, sanitizedInvoice);
     
     await logActivity({
       type: 'create',
@@ -232,7 +233,8 @@ export const updateInvoice = async (id: string, data: Partial<Invoice>) => {
 
   try {
     const docRef = doc(db, 'invoices', id);
-    await updateDoc(docRef, data as any);
+    const sanitizedData = sanitizeFirestoreData(data);
+    await updateDoc(docRef, sanitizedData as any);
 
     await logActivity({
       type: 'update',
@@ -477,6 +479,23 @@ export const subscribeToCollection = <T extends { id: string }>(
   };
 };
 
+const sanitizeFirestoreData = (obj: any): any => {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizeFirestoreData);
+  }
+  const cleaned: any = {};
+  for (const key of Object.keys(obj)) {
+    const val = obj[key];
+    if (val !== undefined) {
+      cleaned[key] = sanitizeFirestoreData(val);
+    }
+  }
+  return cleaned;
+};
+
 export const createDocument = async <T extends { id: string }>(collectionName: string, data: Omit<T, 'id'>) => {
   const timestamp = new Date().toISOString();
   const docData = {
@@ -493,9 +512,10 @@ export const createDocument = async <T extends { id: string }>(collectionName: s
   if (!isPlaceholder) {
     try {
       // Avoid infinite pending promise hangs if client has connectivity lag/rules block
-      const writePromise = addDoc(collection(db, collectionName), docData);
+      const sanitizedDocData = sanitizeFirestoreData(docData);
+      const writePromise = addDoc(collection(db, collectionName), sanitizedDocData);
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Write timeout')), 1500)
+        setTimeout(() => reject(new Error('Write timeout')), 3000)
       );
 
       const docRef = (await Promise.race([writePromise, timeoutPromise])) as any;
@@ -567,7 +587,8 @@ export const updateDocument = async <T extends { id: string }>(collectionName: s
       ...data,
       updatedAt: new Date().toISOString()
     };
-    await updateDoc(docRef, docData as any);
+    const sanitizedDocData = sanitizeFirestoreData(docData);
+    await updateDoc(docRef, sanitizedDocData as any);
 
     if (collectionName !== 'activities') {
       await logActivity({
