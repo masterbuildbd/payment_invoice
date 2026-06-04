@@ -133,8 +133,20 @@ export function Users({ initialFilter = 'all' }: UsersProps) {
 
   useEffect(() => {
     const unsubscribe = subscribeToCollection<User>('users', (updatedUsers) => {
-      setUsers(updatedUsers);
-    }, 'name');
+      const sorted = [...updatedUsers].sort((a, b) => {
+        const aPending = (a.status || 'approved') === 'pending';
+        const bPending = (b.status || 'approved') === 'pending';
+        if (aPending && !bPending) return -1;
+        if (!aPending && bPending) return 1;
+
+        const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (bTime !== aTime) return bTime - aTime;
+
+        return (a.name || '').localeCompare(b.name || '');
+      });
+      setUsers(sorted);
+    });
 
     const unsubSettings = subscribeToSettings((updatedSettings) => {
       setSettings(updatedSettings);

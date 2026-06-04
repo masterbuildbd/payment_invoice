@@ -318,19 +318,19 @@ export function Settings() {
     setPassError('');
     setPassSuccess(false);
 
-    const currentPassFromDb = currentUserData?.password || user?.password || '';
+    const currentPassFromDb = (currentUserData?.password || user?.password || '').trim();
 
-    if (currentPassFromDb && passwordData.currentPassword !== currentPassFromDb) {
+    if (currentPassFromDb && passwordData.currentPassword.trim() !== currentPassFromDb) {
       setPassError('Current password is incorrect');
       return;
     }
 
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
+    if (passwordData.newPassword.trim() !== passwordData.confirmPassword.trim()) {
       setPassError('New passwords do not match');
       return;
     }
 
-    if (passwordData.newPassword.length < 6) {
+    if (passwordData.newPassword.trim().length < 6) {
       setPassError('Password must be at least 6 characters');
       return;
     }
@@ -342,10 +342,11 @@ export function Settings() {
         throw new Error('User session not found');
       }
 
-      await updateDocument<User>('users', userId, { password: passwordData.newPassword });
+      const trimmedNewPass = passwordData.newPassword.trim();
+      await updateDocument<User>('users', userId, { password: trimmedNewPass });
 
       if (user) {
-        const updatedLocalUser = { ...user, password: passwordData.newPassword };
+        const updatedLocalUser = { ...user, password: trimmedNewPass };
         localStorage.setItem('master_user', safeStringify(updatedLocalUser));
       }
 

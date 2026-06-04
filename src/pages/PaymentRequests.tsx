@@ -133,7 +133,12 @@ export function PaymentRequests() {
 
   useEffect(() => {
     const unsubInvoices = subscribeToInvoices((data) => {
-      setInvoices(data);
+      const sorted = [...data].sort((a, b) => {
+        const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+        const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+        return bTime - aTime;
+      });
+      setInvoices(sorted);
     });
 
     const unsubUsers = subscribeToCollection<User>('users', (data) => {

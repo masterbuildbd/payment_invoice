@@ -126,6 +126,8 @@ export type User = {
   paymentMethod?: string;
   transactionId?: string;
   note?: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type Invoice = {
@@ -139,6 +141,7 @@ export type Invoice = {
   dueAmount: number;
   status: 'paid' | 'pending' | 'overdue' | 'rejected';
   createdAt: string;
+  updatedAt?: string;
   date?: string;
   cashierName?: string;
   type?: string;

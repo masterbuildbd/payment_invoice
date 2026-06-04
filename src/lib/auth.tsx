@@ -211,8 +211,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw dbError || new Error('invalid_credentials');
     }
     
-    // Check password
-    if (userData.password !== pass) {
+    // Check password (with robust trimming to avoid leading/trailing space errors)
+    const storedPass = (userData.password || '').trim();
+    const enteredPass = pass.trim();
+    if (storedPass !== enteredPass) {
       throw new Error('invalid_credentials');
     }
     

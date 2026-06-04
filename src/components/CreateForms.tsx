@@ -890,7 +890,7 @@ export function CreateUserForm({ onSuccess, onCancel, initialData }: FormProps) 
         ...initialData,
         name, 
         username: cleanUsername, 
-        password,
+        password: password.trim(),
         role, 
         status,
         price: fee,

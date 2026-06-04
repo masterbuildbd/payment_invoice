@@ -194,19 +194,19 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
     setClientPassError('');
     setClientPassSuccess('');
 
-    const currentPassFromDb = currentUserData?.password || user?.password || '';
+    const currentPassFromDb = (currentUserData?.password || user?.password || '').trim();
 
-    if (currentPassFromDb && clientCurrentPassword !== currentPassFromDb) {
+    if (currentPassFromDb && clientCurrentPassword.trim() !== currentPassFromDb) {
       setClientPassError('বর্তমান পাসওয়ার্ডটি সঠিক নয় (Current password is incorrect)');
       return;
     }
 
-    if (clientNewPassword !== clientConfirmPassword) {
+    if (clientNewPassword.trim() !== clientConfirmPassword.trim()) {
       setClientPassError('নতুন পাসওয়ার্ড দুটি মেলেনি (New passwords do not match)');
       return;
     }
 
-    if (clientNewPassword.length < 6) {
+    if (clientNewPassword.trim().length < 6) {
       setClientPassError('পাসওয়ার্ডটি কমপক্ষে ৬ অক্ষরের হতে হবে (Password must be at least 6 characters)');
       return;
     }
@@ -218,10 +218,11 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
         throw new Error('User session not found');
       }
 
-      await updateDocument<User>('users', userId, { password: clientNewPassword });
+      const trimmedNewPassword = clientNewPassword.trim();
+      await updateDocument<User>('users', userId, { password: trimmedNewPassword });
 
       if (user) {
-        const updatedLocalUser = { ...user, password: clientNewPassword };
+        const updatedLocalUser = { ...user, password: trimmedNewPassword };
         localStorage.setItem('master_user', safeStringify(updatedLocalUser));
       }
 
@@ -405,7 +406,14 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
   };
 
   useEffect(() => {
-    const unsubInvoices = subscribeToInvoices(setInvoices);
+    const unsubInvoices = subscribeToInvoices((data) => {
+      const sorted = [...data].sort((a, b) => {
+        const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+        const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+        return bTime - aTime;
+      });
+      setInvoices(sorted);
+    });
     const unsubInvestments = subscribeToCollection<Investment>('investments', setInvestments, 'date');
     const unsubActivities = subscribeToCollection<ActivityLog>('activities', (logs) => {
       setActivities(logs.slice(0, 10)); // Top 10 activities

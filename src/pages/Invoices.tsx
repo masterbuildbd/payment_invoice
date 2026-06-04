@@ -83,7 +83,12 @@ export function Invoices({ initialStatusFilter = 'all' }: InvoicesProps) {
 
   useEffect(() => {
     const unsubInvoices = subscribeToInvoices((updatedInvoices) => {
-      setInvoices(updatedInvoices);
+      const sorted = [...updatedInvoices].sort((a, b) => {
+        const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+        const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+        return bTime - aTime;
+      });
+      setInvoices(sorted);
     });
 
     const unsubApps = subscribeToCollection<any>('apps', (data) => {

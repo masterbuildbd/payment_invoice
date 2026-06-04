@@ -420,7 +420,7 @@ export function Login() {
     const regData = {
       name: regName,
       username: processedPhone, // Store phone number as login username
-      password: regPassword,
+      password: regPassword.trim(),
       role: 'user', // Default customer role
       status: 'pending', // Awaiting admin approval
       price: 0,

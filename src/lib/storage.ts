@@ -210,13 +210,16 @@ export const updateInvoice = async (id: string, data: Partial<Invoice>) => {
   const isLocalId = id.startsWith('local');
   const isPlaceholder = !firebaseConfig.projectId || firebaseConfig.projectId.includes('remixed-');
 
+  const updatedTimestamp = new Date().toISOString();
+  const dataWithTime = { ...data, updatedAt: updatedTimestamp };
+
   if (isLocalId || isPlaceholder) {
     try {
       const storageKey = 'local_invoices';
       const localInvoicesStr = localStorage.getItem(storageKey) || '[]';
       const localInvoices = JSON.parse(localInvoicesStr).map((inv: any) => {
         if (inv.id === id) {
-          return { ...inv, ...data, id, updatedAt: new Date().toISOString() };
+          return { ...inv, ...dataWithTime, id };
         }
         return inv;
       });
@@ -230,7 +233,7 @@ export const updateInvoice = async (id: string, data: Partial<Invoice>) => {
 
   try {
     const docRef = doc(db, 'invoices', id);
-    const sanitizedData = sanitizeFirestoreData(data);
+    const sanitizedData = sanitizeFirestoreData(dataWithTime);
     await updateDoc(docRef, sanitizedData as any);
 
     await logActivity({
@@ -244,7 +247,7 @@ export const updateInvoice = async (id: string, data: Partial<Invoice>) => {
       const localInvoicesStr = localStorage.getItem(storageKey) || '[]';
       const localInvoices = JSON.parse(localInvoicesStr).map((inv: any) => {
         if (inv.id === id) {
-          return { ...inv, ...data, id, updatedAt: new Date().toISOString() };
+          return { ...inv, ...dataWithTime, id };
         }
         return inv;
       });
