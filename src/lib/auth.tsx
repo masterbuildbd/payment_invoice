@@ -104,24 +104,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const adminInput = username.trim().toLowerCase();
     const cleanPass = pass.trim();
 
-    // Admin override login logic
-    if (adminInput === 'admin' && cleanPass === 'admin123') {
-      const mockAdmin: User = {
-        id: 'admin',
-        name: 'Master Admin',
-        username: 'admin',
-        role: 'admin',
-        status: 'approved'
-      };
-      setIsSuccessTransition(true);
-      setSuccessUsername(mockAdmin.name || mockAdmin.username);
-      await new Promise(resolve => setTimeout(resolve, 2200));
-      setUser(mockAdmin);
-      localStorage.setItem('master_user', safeStringify(mockAdmin));
-      setIsSuccessTransition(false);
-      return true;
-    }
-
     // Custom registered users database login
     let userData: User | null = null;
     let dbError: any = null;
@@ -205,6 +187,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       } catch (e) {
         console.error('Failed to parse local users:', e);
+      }
+    }
+
+    // Default admin fallback if not yet initialized in database/localStorage
+    if (!userData) {
+      if (adminInput === 'admin' && cleanPass === 'admin123') {
+        userData = {
+          id: 'admin',
+          name: 'Master Admin',
+          username: 'admin',
+          role: 'admin',
+          status: 'approved',
+          password: 'admin123'
+        };
       }
     }
 

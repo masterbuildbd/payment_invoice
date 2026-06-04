@@ -597,13 +597,27 @@ export const updateDocument = async <T extends { id: string }>(collectionName: s
     try {
       const storageKey = `local_${collectionName}`;
       const localItemsStr = localStorage.getItem(storageKey) || '[]';
-      const localItems = JSON.parse(localItemsStr).map((item: any) => {
+      let localItems = JSON.parse(localItemsStr);
+      let found = false;
+      localItems = localItems.map((item: any) => {
         const itemId = item.id || '';
         if (itemId === id) {
+          found = true;
           return { ...item, ...data, id: itemId, updatedAt: new Date().toISOString() };
         }
         return item;
       });
+      if (!found && collectionName === 'users' && id === 'admin') {
+        localItems.push({
+          id: 'admin',
+          username: 'admin',
+          name: 'Master Admin',
+          role: 'admin',
+          status: 'approved',
+          ...data,
+          updatedAt: new Date().toISOString()
+        });
+      }
       localStorage.setItem(storageKey, safeStringify(localItems));
       window.dispatchEvent(new Event('local_users_updated'));
 
@@ -625,7 +639,20 @@ export const updateDocument = async <T extends { id: string }>(collectionName: s
       updatedAt: new Date().toISOString()
     };
     const sanitizedDocData = sanitizeFirestoreData(docData);
-    await updateDoc(docRef, sanitizedDocData as any);
+
+    if (collectionName === 'users' && id === 'admin') {
+      const fullAdminData = {
+        id: 'admin',
+        username: 'admin',
+        name: 'Master Admin',
+        role: 'admin',
+        status: 'approved',
+        ...sanitizedDocData
+      };
+      await setDoc(docRef, fullAdminData, { merge: true });
+    } else {
+      await updateDoc(docRef, sanitizedDocData as any);
+    }
 
     if (collectionName !== 'activities') {
       await logActivity({
@@ -638,13 +665,27 @@ export const updateDocument = async <T extends { id: string }>(collectionName: s
     try {
       const storageKey = `local_${collectionName}`;
       const localItemsStr = localStorage.getItem(storageKey) || '[]';
-      const localItems = JSON.parse(localItemsStr).map((item: any) => {
+      let localItems = JSON.parse(localItemsStr);
+      let found = false;
+      localItems = localItems.map((item: any) => {
         const itemId = item.id || '';
         if (itemId === id) {
+          found = true;
           return { ...item, ...data, id: itemId, updatedAt: new Date().toISOString() };
         }
         return item;
       });
+      if (!found && collectionName === 'users' && id === 'admin') {
+        localItems.push({
+          id: 'admin',
+          username: 'admin',
+          name: 'Master Admin',
+          role: 'admin',
+          status: 'approved',
+          ...data,
+          updatedAt: new Date().toISOString()
+        });
+      }
       localStorage.setItem(storageKey, safeStringify(localItems));
       window.dispatchEvent(new Event('local_users_updated'));
     } catch (e) {
