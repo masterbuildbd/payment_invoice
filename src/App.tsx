@@ -16,7 +16,7 @@ import Finances from './pages/Finances';
 import { PublicVerify } from './pages/PublicVerify';
 import { PaymentRequests } from './pages/PaymentRequests';
 import { SmsPortal } from './pages/SmsPortal';
-import { Loader2, LogOut } from 'lucide-react';
+import { Loader2, LogOut, Clock, AlertTriangle } from 'lucide-react';
 import { Modal } from './components/Modal';
 import { motion, AnimatePresence } from 'motion/react';
 import { subscribeToCollection, subscribeToInvoices, subscribeToSettings } from './lib/storage';
@@ -33,6 +33,81 @@ function ProtectedApp() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [currentUserData, setCurrentUserData] = useState<User | null>(null);
   const backupAttemptedRef = useRef(false);
+
+  const [showInactivityWarning, setShowInactivityWarning] = useState(false);
+  const [inactivityCountdown, setInactivityCountdown] = useState(60);
+  const lastActiveTimeRef = useRef<number>(Date.now());
+  const countdownIntervalRef = useRef<any>(null);
+
+  // Constants
+  const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+  const WARNING_DURATION = 60; // 60 seconds grace period
+
+  useEffect(() => {
+    if (!user) return;
+
+    const handleActivity = () => {
+      lastActiveTimeRef.current = Date.now();
+    };
+
+    window.addEventListener('mousemove', handleActivity);
+    window.addEventListener('keydown', handleActivity);
+    window.addEventListener('click', handleActivity);
+    window.addEventListener('scroll', handleActivity);
+    window.addEventListener('touchstart', handleActivity);
+
+    const checkInterval = setInterval(() => {
+      if (showInactivityWarning) return;
+
+      const now = Date.now();
+      const inactiveDuration = now - lastActiveTimeRef.current;
+
+      if (inactiveDuration >= INACTIVITY_TIMEOUT) {
+        setShowInactivityWarning(true);
+        setInactivityCountdown(WARNING_DURATION);
+      }
+    }, 5000);
+
+    return () => {
+      window.removeEventListener('mousemove', handleActivity);
+      window.removeEventListener('keydown', handleActivity);
+      window.removeEventListener('click', handleActivity);
+      window.removeEventListener('scroll', handleActivity);
+      window.removeEventListener('touchstart', handleActivity);
+      clearInterval(checkInterval);
+    };
+  }, [user, showInactivityWarning]);
+
+  useEffect(() => {
+    if (showInactivityWarning) {
+      countdownIntervalRef.current = setInterval(() => {
+        setInactivityCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(countdownIntervalRef.current);
+            logout();
+            setShowInactivityWarning(false);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+    }
+
+    return () => {
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+      }
+    };
+  }, [showInactivityWarning, logout]);
+
+  const handleExtendSession = () => {
+    lastActiveTimeRef.current = Date.now();
+    setShowInactivityWarning(false);
+  };
 
   useEffect(() => {
     const unsubscribe = subscribeToSettings(setSettings);
@@ -233,6 +308,50 @@ function ProtectedApp() {
               className="flex-1 px-4 py-2.5 text-sm font-bold bg-rose-600 text-white rounded-xl hover:bg-rose-700 shadow-sm transition-all"
             >
               Sign Out
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Auto-logout warning modal for inactivity */}
+      <Modal 
+        isOpen={showInactivityWarning} 
+        onClose={handleExtendSession} 
+        title="Session Inactivity Warning"
+      >
+        <div className="text-center">
+          <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-100 animate-pulse">
+            <AlertTriangle size={32} className="text-amber-500" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-850">You have been inactive!</h3>
+          <p className="text-sm text-slate-500 mt-2">
+            For security, you will be logged out automatically in:
+          </p>
+          
+          <div className="my-6 inline-flex items-center gap-2.5 bg-slate-50 hover:bg-slate-100 text-slate-700 px-5 py-3 rounded-2xl border border-slate-150 transition-colors font-mono">
+            <Clock size={18} className="text-indigo-600 animate-spin" style={{ animationDuration: '6s' }} />
+            <span className="text-xl font-black tracking-tight text-indigo-600">{inactivityCountdown} seconds</span>
+          </div>
+
+          <p className="text-xs text-slate-400">
+            Click 'Extend Session' below to stay logged in.
+          </p>
+          
+          <div className="flex gap-3 mt-8">
+            <button 
+              onClick={() => {
+                logout();
+                setShowInactivityWarning(false);
+              }}
+              className="flex-1 px-4 py-2.5 text-sm font-bold text-rose-500 hover:bg-rose-50 rounded-xl transition-all border border-rose-100"
+            >
+              Logout Now
+            </button>
+            <button 
+              onClick={handleExtendSession}
+              className="flex-1 px-4 py-2.5 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-150/40 dark:shadow-none hover:shadow-indigo-200 transition-all active:scale-[0.98] cursor-pointer"
+            >
+              Extend Session
             </button>
           </div>
         </div>

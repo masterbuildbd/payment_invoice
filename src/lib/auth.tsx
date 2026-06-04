@@ -192,15 +192,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Default admin fallback if not yet initialized in database/localStorage
     if (!userData) {
-      if (adminInput === 'admin' && cleanPass === 'admin123') {
-        userData = {
-          id: 'admin',
-          name: 'Master Admin',
-          username: 'admin',
-          role: 'admin',
-          status: 'approved',
-          password: 'admin123'
-        };
+      if (adminInput === 'admin') {
+        const storedAdminPass = localStorage.getItem('admin_password_override') || 'admin123';
+        if (cleanPass === storedAdminPass) {
+          userData = {
+            id: 'admin',
+            name: 'Master Admin',
+            username: 'admin',
+            role: 'admin',
+            status: 'approved',
+            password: storedAdminPass
+          };
+        }
       }
     }
 

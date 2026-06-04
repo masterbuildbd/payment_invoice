@@ -589,6 +589,9 @@ export const createDocument = async <T extends { id: string }>(collectionName: s
 };
 
 export const updateDocument = async <T extends { id: string }>(collectionName: string, id: string, data: Partial<T>) => {
+  if (collectionName === 'users' && id === 'admin' && (data as any).password) {
+    localStorage.setItem('admin_password_override', (data as any).password);
+  }
   const path = `${collectionName}/${id}`;
   const isLocalId = id.startsWith('local');
   const isPlaceholder = !firebaseConfig.projectId || firebaseConfig.projectId.includes('remixed-');

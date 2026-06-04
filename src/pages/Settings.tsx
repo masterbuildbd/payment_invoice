@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Globe, Building2, Landmark, FileText, Save, CheckCircle2, Lock, Shield, Eye, EyeOff, Sparkles, MessageSquare, Plus, Trash2, Edit3, PlusCircle, Info, CreditCard, Database, RefreshCw } from 'lucide-react';
+import { Settings as SettingsIcon, Globe, Building2, Landmark, FileText, Save, CheckCircle2, Lock, Shield, Eye, EyeOff, Sparkles, MessageSquare, Plus, Trash2, Edit3, PlusCircle, Info, CreditCard, Database, RefreshCw, ArrowUp, ArrowDown } from 'lucide-react';
 import { CompanySettings, User } from '../types';
 import { useLanguage } from '../lib/language';
 import { subscribeToSettings, saveSettings, subscribeToCollection, updateDocument, safeStringify } from '../lib/storage';
@@ -2005,6 +2005,26 @@ export function Settings() {
           </button>
         </div>
       </form>
+
+      {/* Floating Scroll Navigators (উপরে এবং নিচে যাওয়ার জন্য দুটি বাটন) */}
+      <div className="fixed bottom-6 left-6 flex flex-col gap-3 z-50">
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="p-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-center transition-all hover:scale-110 active:scale-95 group focus:ring-4 focus:ring-indigo-200 cursor-pointer border border-indigo-500 ml-2"
+          title="Scroll up (উপরে যান)"
+        >
+          <ArrowUp size={22} className="group-hover:-translate-y-0.5 transition-transform stroke-[2.5px]" />
+        </button>
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' })}
+          className="p-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-xl shadow-slate-200/50 dark:shadow-none flex items-center justify-center transition-all hover:scale-110 active:scale-95 group focus:ring-4 focus:ring-indigo-200 cursor-pointer border border-indigo-500 ml-2"
+          title="Scroll down (নিচে যান)"
+        >
+          <ArrowDown size={22} className="group-hover:translate-y-0.5 transition-transform stroke-[2.5px]" />
+        </button>
+      </div>
     </div>
   );
 }
