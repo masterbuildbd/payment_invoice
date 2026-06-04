@@ -4,10 +4,12 @@ import { DecoderData, CompanySettings } from '../types';
 import { Modal } from '../components/Modal';
 import { CreateDecoderForm } from '../components/CreateForms';
 import { subscribeToCollection, createDocument, updateDocument, deleteDocument, subscribeToSettings } from '../lib/storage';
+import { useToast } from '../components/Toast';
 
 export function Decoders() {
   const [decoders, setDecoders] = useState<DecoderData[]>([]);
   const [settings, setSettings] = useState<Partial<CompanySettings>>({});
+  const { addToast } = useToast();
 
   useEffect(() => {
     const unsubscribe = subscribeToCollection<DecoderData>('decoders', (updatedDecoders) => {
@@ -36,8 +38,10 @@ export function Decoders() {
 
     if (isEditing && editingDecoder) {
       await updateDocument<DecoderData>('decoders', editingDecoder.id, decoderData as Partial<DecoderData>);
+      addToast({ type: 'success', title: 'Decoder Updated', message: `Successfully updated decoder: ${decoderData.serialNumber}` });
     } else {
       await createDocument<DecoderData>('decoders', decoderData);
+      addToast({ type: 'success', title: 'Decoder Registered', message: `Registered a new decoder: ${decoderData.serialNumber}` });
     }
     setShowCreate(false);
     setIsEditing(false);
@@ -53,6 +57,7 @@ export function Decoders() {
   const handleDelete = async () => {
     if (decoderToDelete) {
       await deleteDocument('decoders', decoderToDelete.id);
+      addToast({ type: 'success', title: 'Decoder Deleted', message: `Successfully removed decoder: ${decoderToDelete.serialNumber}` });
       setShowDeleteConfirm(false);
       setDecoderToDelete(null);
     }

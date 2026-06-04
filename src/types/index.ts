@@ -50,6 +50,19 @@ export type CompanySettings = {
   clientRejectedInvoicesLabel?: string;
   clientRejectedInvoicesEnabled?: boolean;
 
+  // Editable Client Payment Form Options
+  clientPaymentFormTitle?: string;
+  clientPaymentFormSubtitle?: string;
+  clientPaymentPurposeLabel?: string;
+  clientPaymentMethodLabel?: string;
+  clientPaymentTxnLabel?: string;
+  clientPaymentAmountLabel?: string;
+  clientPaymentPaidLabel?: string;
+  clientPaymentDueLabel?: string;
+  clientPaymentSubmitButtonLabel?: string;
+  clientPaymentSuccessMessage?: string;
+  clientPaymentErrorMessage?: string;
+
   // Active Payment Gateways Configurations
   bkashNumber?: string;
   bkashEnabled?: boolean;
@@ -211,4 +224,14 @@ export type Investment = {
   date: string;
   category: string;
   note?: string;
+};
+
+export type SystemNotification = {
+  id: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  title: string;
+  message: string;
+  createdAt: string;
+  read: boolean;
+  recipient: string; // 'all_admins' or username of specific client
 };

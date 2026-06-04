@@ -452,7 +452,8 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
   const handleTopUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isFormValid) {
-      setTopUpError('অনুগ্রহ করে পেমেন্ট করার সকল অপশন এবং প্রয়োজনীয় তথ্য সঠিকভাবে নির্বাচন/পূরণ করুন।');
+      const errorMsg = settings.clientPaymentErrorMessage || 'অনুগ্রহ করে পেমেন্ট করার সকল অপশন এবং প্রয়োজনীয় তথ্য সঠিকভাবে নির্বাচন/পূরণ করুন।';
+      setTopUpError(errorMsg);
       return;
     }
     setIsTopUpLoading(true);
@@ -567,7 +568,9 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
         serviceDetails: serviceDetailsVal || undefined
       } as any, ...prev]);
 
-      setTopUpSuccess(`পেমেন্ট রিকোয়েস্ট ("${topUpPurpose}") এডমিনের কাছে জমা হয়েছে! এডমিন শীঘ্রই এটি ভেরিফাই করে ব্যালেন্স আপডেট করে দেবেন।`);
+      const successTemplate = settings.clientPaymentSuccessMessage || 'পেমেন্ট রিকোয়েস্ট ("{purpose}") এডমিনের কাছে জমা হয়েছে! এডমিন শীঘ্রই এটি ভেরিফাই করে ব্যালেন্স আপডেট করে দেবেন।';
+      const resolvedSuccess = successTemplate.replace('{purpose}', topUpPurpose);
+      setTopUpSuccess(resolvedSuccess);
       setTopUpAmount('');
       setTicketPaidAmount('');
       setTicketDueAmount('');
@@ -1606,11 +1609,11 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
           <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-xs relative animate-fade-in">
             <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-slate-100 pb-3">
               <CreditCard size={16} className="text-indigo-600" />
-              পেমেন্ট রিপোর্টিং অপশন (Submit Payment Ticket Form)
+              {settings.clientPaymentFormTitle || 'পেমেন্ট রিপোর্টিং অপশন (Submit Payment Ticket Form)'}
             </h2>
 
             <p className="text-xs text-slate-500 leading-relaxed mb-6">
-              টাকা প্রেরণের পর পেমেন্ট রশিদ ভেরিফিকেশন ফর্মে আপনার পরিশোধিত মাধ্যম, অ্যামাউন্ট এবং লাস্ট নম্বর বা ট্রানজেকশন আইডি প্রদান করে ব্যালেন্স রিকোয়েস্ট তৈরি করুন:
+              {settings.clientPaymentFormSubtitle || 'টাকা প্রেরণের পর পেমেন্ট রশিদ ভেরিফিকেশন ফর্মে আপনার পরিশোধিত মাধ্যম, অ্যামাউন্ট এবং লাস্ট নম্বর বা ট্রানজেকশন আইডি প্রদান করে ব্যালেন্স রিকোয়েস্ট তৈরি করুন:'}
             </p>
 
             {topUpSuccess && (
@@ -1630,7 +1633,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
             <form onSubmit={handleTopUpSubmit} className="space-y-5">
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">পেমেন্ট উদ্দেশ্য (Purpose / Product) *</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{settings.clientPaymentPurposeLabel || 'পেমেন্ট উদ্দেশ্য (Purpose / Product) *'}</label>
                   <select 
                     value={topUpPurpose} 
                     onChange={(e) => {
@@ -1672,7 +1675,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">পেমেন্ট মাধ্যম (Payment Method) *</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{settings.clientPaymentMethodLabel || 'পেমেন্ট মাধ্যম (Payment Method) *'}</label>
                   <select 
                     value={topUpMethod} 
                     onChange={(e) => setTopUpMethod(e.target.value)}
@@ -1687,7 +1690,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">প্রেরক নাম্বার / লাস্ট ৫ ডিজিট *</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{settings.clientPaymentTxnLabel || 'প্রেরক নাম্বার / লাস্ট ৫ ডিজিট *'}</label>
                   <input 
                     type="text" 
                     value={topUpTxn} 
@@ -1699,7 +1702,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">অনুরোধকৃত মোট জমার পরিমাণ *</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{settings.clientPaymentAmountLabel || 'অনুরোধকৃত মোট জমার পরিমাণ *'}</label>
                   <input 
                     type="number" 
                     value={topUpAmount} 
@@ -1725,7 +1728,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">টোটাল পেইড এমাউন্ট (Paid Amount)</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{settings.clientPaymentPaidLabel || 'টোটাল পেইড এমাউন্ট (Paid Amount)'}</label>
                   <input 
                     type="number" 
                     value={ticketPaidAmount} 
@@ -1741,7 +1744,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
                 </div>
 
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">টোটাল ডিউ এমাউন্ট (Due Amount)</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{settings.clientPaymentDueLabel || 'টোটাল ডিউ এমাউন্ট (Due Amount)'}</label>
                   <input 
                     type="number" 
                     value={ticketDueAmount} 
@@ -2022,7 +2025,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
               <div className="pt-2">
                 {!isFormValid && (
                   <p className="text-[9.5px] font-black text-amber-600 uppercase tracking-wider mb-2.5 bg-amber-50/50 border border-amber-100 p-2 rounded-lg text-center animate-pulse">
-                    ⚠️ ফর্মের সব অপশন ও তথ্য সঠিকভাবে নির্বাচন/পূরণ করুন।
+                    ⚠️ {settings.clientPaymentErrorMessage || 'ফর্মের সব অপশন ও তথ্য সঠিকভাবে নির্বাচন/পূরণ করুন।'}
                   </p>
                 )}
 
@@ -2037,7 +2040,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
                       অনুরোধ প্রসেস করা হচ্ছে...
                     </>
                   ) : (
-                    'পেমেন্ট রিকোয়েস্ট সাবমিট করুন (Submit Payment Ticket)'
+                    settings.clientPaymentSubmitButtonLabel || 'পেমেন্ট রিকোয়েস্ট সাবমিট করুন (Submit Payment Ticket)'
                   )}
                 </button>
               </div>
@@ -2273,7 +2276,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
               <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5 mt-1">
                 পেন্ডিং বিল ও টপ-আপ পেমেন্ট অনুমোদন করুন (Direct Quick Invoice Approvals)
               </h3>
-              <p className="text-[11px] text-slate-600 font-sans">নিচের রিকোয়েস্টগুলো কাস্টমার কর্তৃক সাবমিট করা হয়েছে। দ্রুত বিবরণী যাচাই করে এক ক্লিকে অনুমোদন বা রিজেক্ট করুনঃ</p>
+              <p className="text-[11px] text-slate-605 font-sans">নিচের রিকোয়েস্টগুলো কাস্টমার কর্তৃক সাবমিট করা হয়েছে। দ্রুত বিবরণী যাচাই করে এক ক্লিকে অনুমোদন বা রিজেক্ট করুনঃ</p>
             </div>
             <span className="text-xs bg-amber-500 text-white px-3 py-1 rounded-xl text-center font-black uppercase font-mono tracking-wider">
               {invoices.filter(inv => inv.status === 'pending').length} পেন্ডিং রিকোয়েস্ট
@@ -2369,90 +2372,6 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
             STATUS: 100% CLEAR
           </span>
         </div>
-      )}
-
-      {/* Admin Quick Action Bento Hub - Activated & Polished */}
-      {true && (
-      <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
-          <div className="space-y-1">
-            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles size={15} className="text-indigo-600 animate-pulse" />
-              সিস্টেম এডমিন কুইক অ্যাকশন হাব (Quick Action Hub)
-            </h3>
-            <p className="text-[11px] text-slate-500 font-sans">কাস্টমারের জন্য পেমেন্ট বিল বা ইনভয়েস ক্যাটাগরি অনুযায়ী তাৎক্ষণিক রিয়েলটাইমে তৈরি করুন:</p>
-          </div>
-          <span className="text-[9px] font-mono bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full border border-indigo-100/50 font-black uppercase tracking-wider block w-fit">4 Modules Ready</span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { 
-              modalKey: 'app', 
-              label: settings.appLabel || 'Android App Link', 
-              bangla: 'অ্যান্ড্রয়েড অ্যাপ লাইসেন্স', 
-              color: 'from-blue-500 hover:from-blue-600', 
-              bgGlow: 'bg-blue-50 hover:border-blue-300', 
-              textColor: 'text-blue-700',
-              desc: 'রিমোট কন্ট্রোল অ্যাপ ডিকোড লিংক ও ইনভয়েস বিল'
-            },
-            { 
-              modalKey: 'decoder', 
-              label: settings.decoderLabel || 'Decoder System', 
-              bangla: 'ডিকোডার লাইসেন্স', 
-              color: 'from-emerald-500 hover:from-emerald-600', 
-              bgGlow: 'bg-emerald-50 hover:border-emerald-300', 
-              textColor: 'text-emerald-700',
-              desc: 'ডিকোডার প্যানেল এক্সেস লাইসেন্স ও চার্জ' 
-            },
-            { 
-              modalKey: 'panel', 
-              label: settings.panelLabel || 'Reseller Panel', 
-              bangla: 'রিসেলার প্যানেল প্যাক', 
-              color: 'from-violet-500 hover:from-violet-600', 
-              bgGlow: 'bg-violet-50 hover:border-violet-300', 
-              textColor: 'text-violet-700',
-              desc: 'রিসেলার রেন্ট বা সোর্স কোড ভাড়া চালান' 
-            },
-            { 
-              modalKey: 'user', 
-              label: settings.userLabel || 'Customer Account', 
-              bangla: 'নতুন ইউজার অ্যাকাউন্ট', 
-              color: 'from-indigo-500 hover:from-indigo-600', 
-              bgGlow: 'bg-indigo-50 hover:border-indigo-300', 
-              textColor: 'text-indigo-700',
-              desc: 'সরাসরি নতুন কাস্টমার প্রোফাইল সেটিংস তৈরি' 
-            }
-          ].map((action, idx) => (
-            <button
-              key={idx}
-              onClick={() => setActiveModal(action.modalKey as any)}
-              className="text-left p-5 rounded-2xl border border-slate-250 bg-white hover:bg-slate-50/55 transition-all cursor-pointer group hover:shadow-md hover:scale-[1.01] flex flex-col justify-between h-full min-h-[140px] relative overflow-hidden"
-            >
-              <div className="space-y-2 relative z-10">
-                <span className={`inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${action.bgGlow} ${action.textColor} border border-transparent group-hover:border-slate-300/30`}>
-                  {action.bangla}
-                </span>
-                <h4 className="text-sm font-black text-slate-900 group-hover:text-indigo-600 transition-colors uppercase">
-                  {action.label}
-                </h4>
-                <p className="text-[10px] text-slate-500 leading-relaxed font-sans font-medium line-clamp-2">
-                  {action.desc}
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between pt-3 relative z-10 border-t border-slate-100">
-                <span className="text-[10px] text-slate-500 group-hover:text-indigo-600 font-black tracking-wider uppercase flex items-center gap-0.5">
-                  তৈরি করুন <ChevronRight size={10} className="group-hover:translate-x-0.5 transition-transform" />
-                </span>
-                <div className={`p-1.5 rounded-lg bg-gradient-to-br ${action.color} text-white shadow-xs group-hover:rotate-6 transition-transform`}>
-                  <Plus size={13} />
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
       )}
 
       {/* Bento Stats Grid */}
@@ -3060,6 +2979,88 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
               </span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Admin Quick Action Bento Hub - Activated & Polished (Moved Below) */}
+      <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm mt-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+          <div className="space-y-1">
+            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles size={15} className="text-indigo-600 animate-pulse" />
+              সিস্টেম এডমিন কুইক অ্যাকশন হাব (Quick Action Hub)
+            </h3>
+            <p className="text-[11px] text-slate-500 font-sans">কাস্টমারের জন্য পেমেন্ট বিল বা ইনভয়েস ক্যাটাগরি অনুযায়ী তাৎক্ষণিক রিয়েলটাইমে তৈরি করুন:</p>
+          </div>
+          <span className="text-[9px] font-mono bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full border border-indigo-100/50 font-black uppercase tracking-wider block w-fit">4 Modules Ready</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { 
+              modalKey: 'app', 
+              label: settings.appLabel || 'Android App Link', 
+              bangla: 'অ্যান্ড্রয়েড অ্যাপ লাইসেন্স', 
+              color: 'from-blue-500 hover:from-blue-600', 
+              bgGlow: 'bg-blue-50 hover:border-blue-300', 
+              textColor: 'text-blue-700',
+              desc: 'রিমোট কন্ট্রোল অ্যাপ ডিকোড লিংক ও ইনভয়েস বিল'
+            },
+            { 
+              modalKey: 'decoder', 
+              label: settings.decoderLabel || 'Decoder System', 
+              bangla: 'ডিকোডার লাইসেন্স', 
+              color: 'from-emerald-500 hover:from-emerald-600', 
+              bgGlow: 'bg-emerald-50 hover:border-emerald-300', 
+              textColor: 'text-emerald-700',
+              desc: 'ডিকোডার প্যানেল এক্সেস লাইসেন্স ও চার্জ' 
+            },
+            { 
+              modalKey: 'panel', 
+              label: settings.panelLabel || 'Reseller Panel', 
+              bangla: 'রিসেলার প্যানেল প্যাক', 
+              color: 'from-violet-500 hover:from-violet-600', 
+              bgGlow: 'bg-violet-50 hover:border-violet-300', 
+              textColor: 'text-violet-700',
+              desc: 'রিসেলার রেন্ট বা সোর্স কোড ভাড়া চালান' 
+            },
+            { 
+              modalKey: 'user', 
+              label: settings.userLabel || 'Customer Account', 
+              bangla: 'নতুন ইউজার অ্যাকাউন্ট', 
+              color: 'from-indigo-500 hover:from-indigo-600', 
+              bgGlow: 'bg-indigo-50 hover:border-indigo-300', 
+              textColor: 'text-indigo-700',
+              desc: 'সরাসরি নতুন কাস্টমার প্রোফাইল সেটিংস তৈরি' 
+            }
+          ].map((action, idx) => (
+            <button
+              key={idx}
+              onClick={() => setActiveModal(action.modalKey as any)}
+              className="text-left p-5 rounded-2xl border border-slate-250 bg-white hover:bg-slate-50/55 transition-all cursor-pointer group hover:shadow-md hover:scale-[1.01] flex flex-col justify-between h-full min-h-[140px] relative overflow-hidden"
+            >
+              <div className="space-y-2 relative z-10">
+                <span className={`inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${action.bgGlow} ${action.textColor} border border-transparent group-hover:border-slate-300/30`}>
+                  {action.bangla}
+                </span>
+                <h4 className="text-sm font-black text-slate-900 group-hover:text-indigo-600 transition-colors uppercase">
+                  {action.label}
+                </h4>
+                <p className="text-[10px] text-slate-500 leading-relaxed font-sans font-medium line-clamp-2">
+                  {action.desc}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between pt-3 relative z-10 border-t border-slate-100">
+                <span className="text-[10px] text-slate-500 group-hover:text-indigo-600 font-black tracking-wider uppercase flex items-center gap-0.5">
+                  তৈরি করুন <ChevronRight size={10} className="group-hover:translate-x-0.5 transition-transform" />
+                </span>
+                <div className={`p-1.5 rounded-lg bg-gradient-to-br ${action.color} text-white shadow-xs group-hover:rotate-6 transition-transform`}>
+                  <Plus size={13} />
+                </div>
+              </div>
+            </button>
+          ))}
         </div>
       </div>
 

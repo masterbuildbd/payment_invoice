@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from './firebase';
 import firebaseConfig from '../../firebase-applet-config.json';
-import { Invoice, CompanySettings, ActivityLog } from '../types';
+import { Invoice, CompanySettings, ActivityLog, SystemNotification } from '../types';
 
 export const logActivity = async (activity: Omit<ActivityLog, 'id' | 'timestamp' | 'user'>) => {
   try {
@@ -699,4 +699,60 @@ export const getInvoices = getInvoicesSync;
 export const saveInvoices = (invoices: Invoice[]) => {
   localStorage.setItem('master_invoices', safeStringify(invoices));
   window.dispatchEvent(new Event('invoices_updated'));
+};
+
+// --- System Notifications Operations ---
+
+export const createSystemNotification = async (notification: {
+  type: 'info' | 'success' | 'warning' | 'error';
+  title: string;
+  message: string;
+  recipient: string; // 'all_admins' or username of specific client
+}) => {
+  try {
+    return await createDocument<SystemNotification>('notifications', {
+      ...notification,
+      read: false,
+      createdAt: new Date().toISOString()
+    } as any);
+  } catch (error) {
+    console.error('Error creating system notification:', error);
+    return null;
+  }
+};
+
+export const markNotificationRead = async (id: string) => {
+  try {
+    return await updateDocument<SystemNotification>('notifications', id, { read: true } as any);
+  } catch (error) {
+    console.error('Error marking notification read:', error);
+  }
+};
+
+export const markAllNotificationsRead = async (notifications: SystemNotification[]) => {
+  try {
+    const promises = notifications
+      .filter(n => !n.read)
+      .map(n => updateDocument<SystemNotification>('notifications', n.id, { read: true } as any));
+    await Promise.all(promises);
+  } catch (error) {
+    console.error('Error marking all notifications read:', error);
+  }
+};
+
+export const deleteSystemNotification = async (id: string) => {
+  try {
+    return await deleteDocument('notifications', id);
+  } catch (error) {
+    console.error('Error deleting notification:', error);
+  }
+};
+
+export const clearAllNotifications = async (notifications: SystemNotification[]) => {
+  try {
+    const promises = notifications.map(n => deleteDocument('notifications', n.id));
+    await Promise.all(promises);
+  } catch (error) {
+    console.error('Error clearing all notifications:', error);
+  }
 };

@@ -4,10 +4,12 @@ import { AppData, CompanySettings } from '../types';
 import { Modal } from '../components/Modal';
 import { CreateAppForm } from '../components/CreateForms';
 import { subscribeToCollection, createDocument, updateDocument, deleteDocument, subscribeToSettings } from '../lib/storage';
+import { useToast } from '../components/Toast';
 
 export function Apps() {
   const [apps, setApps] = useState<AppData[]>([]);
   const [settings, setSettings] = useState<Partial<CompanySettings>>({});
+  const { addToast } = useToast();
 
   React.useEffect(() => {
     const unsubscribe = subscribeToCollection<AppData>('apps', (updatedApps) => {
@@ -36,8 +38,10 @@ export function Apps() {
 
     if (isEditing && editingApp) {
       await updateDocument<AppData>('apps', editingApp.id, appData as Partial<AppData>);
+      addToast({ type: 'success', title: 'App Updated', message: `Successfully updated application: ${appData.name}` });
     } else {
       await createDocument<AppData>('apps', appData);
+      addToast({ type: 'success', title: 'App Registered', message: `Registered a new application: ${appData.name}` });
     }
     setShowCreate(false);
     setIsEditing(false);
@@ -53,6 +57,7 @@ export function Apps() {
   const handleDelete = async () => {
     if (appToDelete) {
       await deleteDocument('apps', appToDelete.id);
+      addToast({ type: 'success', title: 'App Deleted', message: `Successfully removed application: ${appToDelete.name}` });
       setShowDeleteConfirm(false);
       setAppToDelete(null);
     }

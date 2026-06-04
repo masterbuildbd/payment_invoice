@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Globe, Building2, Landmark, FileText, Save, CheckCircle2, Lock, Shield, Eye, EyeOff, Sparkles, MessageSquare, Plus, Trash2, Edit3, PlusCircle, Info } from 'lucide-react';
-import { CompanySettings } from '../types';
+import { Settings as SettingsIcon, Globe, Building2, Landmark, FileText, Save, CheckCircle2, Lock, Shield, Eye, EyeOff, Sparkles, MessageSquare, Plus, Trash2, Edit3, PlusCircle, Info, CreditCard } from 'lucide-react';
+import { CompanySettings, User } from '../types';
 import { useLanguage } from '../lib/language';
-import { subscribeToSettings, saveSettings } from '../lib/storage';
+import { subscribeToSettings, saveSettings, subscribeToCollection, updateDocument, safeStringify } from '../lib/storage';
+import { useAuth } from '../lib/auth';
+import { useToast } from '../components/Toast';
 
 const DEFAULT_SETTINGS: CompanySettings = {
   id: 'global',
@@ -53,6 +55,19 @@ const DEFAULT_SETTINGS: CompanySettings = {
   clientSettingsEnabled: true,
   clientRejectedInvoicesLabel: 'রিজেক্ট ইনভয়েস (Rejected Invoices)',
   clientRejectedInvoicesEnabled: true,
+
+  // Default Client Payment Form Values
+  clientPaymentFormTitle: 'পেমেন্ট রিপোর্টিং অপশন (Submit Payment Ticket Form)',
+  clientPaymentFormSubtitle: 'টাকা প্রেরণের পর পেমেন্ট রশিদ ভেরিফিকেশন ফর্মে আপনার পরিশোধিত মাধ্যম, অ্যামাউন্ট এবং লাস্ট নম্বর বা ট্রানজেকশন আইডি প্রদান করে ব্যালেন্স রিকোয়েস্ট তৈরি করুন:',
+  clientPaymentPurposeLabel: 'পেমেন্ট উদ্দেশ্য (Purpose / Product) *',
+  clientPaymentMethodLabel: 'পেমেন্ট মাধ্যম (Payment Method) *',
+  clientPaymentTxnLabel: 'প্রেরক নাম্বার / লাস্ট ৫ ডিজিট *',
+  clientPaymentAmountLabel: 'অনুরোধকৃত মোট জমার পরিমাণ *',
+  clientPaymentPaidLabel: 'টোটাল পেইড এমাউন্ট (Paid Amount)',
+  clientPaymentDueLabel: 'টোটাল ডিউ এমাউন্ট (Due Amount)',
+  clientPaymentSubmitButtonLabel: 'পেমেন্ট রিকোয়েস্ট সাবমিট করুন (Submit Payment Ticket)',
+  clientPaymentSuccessMessage: 'পেমেন্ট রিকোয়েস্ট ("{purpose}") এডমিনের কাছে জমা হয়েছে! এডমিন শীঘ্রই এটি ভেরিফাই করে ব্যালেন্স আপডেট করে দেবেন।',
+  clientPaymentErrorMessage: 'অনুগ্রহ করে পেমেন্ট করার সকল অপশন এবং প্রয়োজনীয় তথ্য সঠিকভাবে নির্বাচন/পূরণ করুন।',
 
   // Default gateway credentials
   bkashNumber: '01718070273',
@@ -149,9 +164,24 @@ const BANGLADESH_BANKS = [
 
 export function Settings() {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const { addToast } = useToast();
+  const [currentUserData, setCurrentUserData] = useState<User | null>(null);
   const [settings, setSettings] = useState<CompanySettings>(DEFAULT_SETTINGS);
   const [isSaving, setIsSaving] = useState(false);
   const [showSavedToast, setShowSavedToast] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      const unsubUser = subscribeToCollection<User>('users', (allUsers) => {
+        const found = allUsers.find(u => u.username === user.username);
+        if (found) {
+          setCurrentUserData(found);
+        }
+      });
+      return () => unsubUser && unsubUser();
+    }
+  }, [user]);
 
   // Custom SMS Templates Local States
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
@@ -240,15 +270,25 @@ export function Settings() {
 
   useEffect(() => {
     const unsubscribe = subscribeToSettings((updatedSettings) => {
-      setSettings(updatedSettings);
+      setSettings(prev => ({
+        ...DEFAULT_SETTINGS,
+        ...updatedSettings
+      }));
     });
     return () => unsubscribe && unsubscribe();
   }, []);
 
-  const handlePassChange = (e: React.FormEvent) => {
+  const handlePassChange = async (e: React.FormEvent) => {
     e.preventDefault();
     setPassError('');
     setPassSuccess(false);
+
+    const currentPassFromDb = currentUserData?.password || user?.password || '';
+
+    if (currentPassFromDb && passwordData.currentPassword !== currentPassFromDb) {
+      setPassError('Current password is incorrect');
+      return;
+    }
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       setPassError('New passwords do not match');
@@ -261,12 +301,33 @@ export function Settings() {
     }
 
     setIsSaving(true);
-    setTimeout(() => {
-      setIsSaving(false);
+    try {
+      const userId = currentUserData?.id || user?.id;
+      if (!userId) {
+        throw new Error('User session not found');
+      }
+
+      await updateDocument<User>('users', userId, { password: passwordData.newPassword });
+
+      if (user) {
+        const updatedLocalUser = { ...user, password: passwordData.newPassword };
+        localStorage.setItem('master_user', safeStringify(updatedLocalUser));
+      }
+
       setPassSuccess(true);
+      addToast({
+        type: 'success',
+        title: 'Password Changed',
+        message: 'Your administrator password has been updated successfully.'
+      });
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      setTimeout(() => setPassSuccess(false), 3000);
-    }, 1000);
+      setTimeout(() => setPassSuccess(false), 4000);
+    } catch (err: any) {
+      setPassError('Failed to change password. Please try again.');
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -1537,6 +1598,149 @@ export function Settings() {
                 </div>
               );
             })()}
+          </div>
+        </div>
+
+        {/* Client Payment Form Customization */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+            <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+              <CreditCard size={20} />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Client Payment Ticket Form Customization</h2>
+              <p className="text-xs text-slate-500">গ্রাহকের পেমেন্ট রিকোয়েস্ট উইজেট ও ফর্মের সব লেখা এবং অনুবাদ পরিবর্তন করুন</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Form Title (ফর্মের শিরোনাম)</label>
+              <input 
+                name="clientPaymentFormTitle"
+                value={settings.clientPaymentFormTitle || ''}
+                onChange={handleChange}
+                placeholder="পেমেন্ট রিপোর্টিং অপশন (Submit Payment Ticket Form)"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Purpose Select Label (পেমেন্ট উদ্দেশ্য কলাম)</label>
+              <input 
+                name="clientPaymentPurposeLabel"
+                value={settings.clientPaymentPurposeLabel || ''}
+                onChange={handleChange}
+                placeholder="পেমেন্ট উদ্দেশ্য (Purpose / Product) *"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+
+            <div className="space-y-1 md:col-span-2">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Form Subtitle / Instructions (ফর্ম সংক্রান্ত নির্দেশনা ও বর্ণনা)</label>
+              <textarea 
+                name="clientPaymentFormSubtitle"
+                value={settings.clientPaymentFormSubtitle || ''}
+                onChange={handleChange}
+                rows={2}
+                placeholder="টাকা প্রেরণের পর পেমেন্ট রশিদ ভেরিফিকেশন ফর্মে আপনার পরিশোধিত মাধ্যম, অ্যামাউন্ট এবং লাস্ট নম্বর বা ট্রানজেকশন আইডি প্রদান করে ব্যালেন্স রিকোয়েস্ট তৈরি করুন:"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Payment Method Label (পেমেন্ট মাধ্যম কলাম)</label>
+              <input 
+                name="clientPaymentMethodLabel"
+                value={settings.clientPaymentMethodLabel || ''}
+                onChange={handleChange}
+                placeholder="পেমেন্ট মাধ্যম (Payment Method) *"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Sender ID / Phone Label (প্রেরক কলাম)</label>
+              <input 
+                name="clientPaymentTxnLabel"
+                value={settings.clientPaymentTxnLabel || ''}
+                onChange={handleChange}
+                placeholder="প্রেরক নাম্বার / লাস্ট ৫ ডিজিট *"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Requested Amount Label (জমাকৃত মোট অ্যামাউন্ট কলাম)</label>
+              <input 
+                name="clientPaymentAmountLabel"
+                value={settings.clientPaymentAmountLabel || ''}
+                onChange={handleChange}
+                placeholder="অনুরোধকৃত মোট জমার পরিমাণ *"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Paid Amount Label (টোটাল পেইড কলাম)</label>
+              <input 
+                name="clientPaymentPaidLabel"
+                value={settings.clientPaymentPaidLabel || ''}
+                onChange={handleChange}
+                placeholder="টোটাল পেইড এমাউন্ট (Paid Amount)"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Due Amount Label (ডিউ অ্যামাউন্ট কলাম)</label>
+              <input 
+                name="clientPaymentDueLabel"
+                value={settings.clientPaymentDueLabel || ''}
+                onChange={handleChange}
+                placeholder="টোটাল ডিউ এমাউন্ট (Due Amount)"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Submit Button Label (সাবমিট বোতামের টেক্সট)</label>
+              <input 
+                name="clientPaymentSubmitButtonLabel"
+                value={settings.clientPaymentSubmitButtonLabel || ''}
+                onChange={handleChange}
+                placeholder="পেমেন্ট রিকোয়েস্ট সাবমিট করুন (Submit Payment Ticket)"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+
+            <div className="space-y-1 md:col-span-2">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Form Validation Error Message (অপশন ফিলাপ না হলে এরর মেসেজ)
+              </label>
+              <input 
+                name="clientPaymentErrorMessage"
+                value={settings.clientPaymentErrorMessage || ''}
+                onChange={handleChange}
+                placeholder="অনুগ্রহ করে পেমেন্ট করার সকল অপশন এবং প্রয়োজনীয় তথ্য সঠিকভাবে নির্বাচন/পূরণ করুন।"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+
+            <div className="space-y-1 md:col-span-2">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                Success Alert Message (সফলভাবে সাবমিট হলে মেসেজ)
+              </label>
+              <textarea 
+                name="clientPaymentSuccessMessage"
+                value={settings.clientPaymentSuccessMessage || ''}
+                onChange={handleChange}
+                rows={2}
+                placeholder='পেমেন্ট রিকোয়েস্ট ("{purpose}") এডমিনের কাছে জমা হয়েছে! এডমিন শীঘ্রই এটি ভেরিফাই করে ব্যালেন্স আপডেট করে দেবেন।'
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+              <p className="text-[10px] text-slate-400 font-medium">💡 ব্যবহার বিধি: <code className="font-mono bg-slate-100 text-indigo-650 px-1 py-0.5 rounded">{"{purpose}"}</code> কোড ব্যবহার করলে এটি স্বয়ংক্রিয়ভাবে ব্যবহারকারীর নির্বাচিত উদ্দেশ্য দ্বারা প্রতিস্থাপিত হবে।</p>
+            </div>
           </div>
         </div>
 

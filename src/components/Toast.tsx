@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Bell, CheckCircle, Info, ShieldAlert } from 'lucide-react';
+import { useAuth } from '../lib/auth';
+import { createSystemNotification } from '../lib/storage';
 
 export interface Toast {
   id: string;
@@ -67,6 +69,13 @@ export const playNotificationChime = () => {
 
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  let authContext: any = null;
+  try {
+    authContext = useAuth();
+  } catch (e) {
+    // Graceful fallback if instantiated outside AuthProvider
+  }
+  const user = authContext?.user;
 
   const addToast = useCallback((toast: Omit<Toast, 'id'>) => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -74,7 +83,21 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     
     // Play light audio notification chime
     playNotificationChime();
-  }, []);
+
+    // Persist as a recent system notification back-end record
+    const recipient = user 
+      ? (user.role === 'admin' ? 'all_admins' : user.username) 
+      : 'all_admins';
+
+    createSystemNotification({
+      type: toast.type || 'info',
+      title: toast.title,
+      message: toast.message,
+      recipient
+    }).catch((err) => {
+      console.warn('Auto-persisting notification failed:', err);
+    });
+  }, [user]);
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));

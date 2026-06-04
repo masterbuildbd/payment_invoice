@@ -132,6 +132,21 @@
         "note": { "type": "string" }
       },
       "required": ["id", "title", "amount", "date", "category"]
+    },
+    "SystemNotification": {
+      "title": "System Notification",
+      "description": "System alerts, payment requests, invoice statuses",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["info", "success", "warning", "error"] },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "read": { "type": "boolean" },
+        "recipient": { "type": "string" }
+      },
+      "required": ["id", "type", "title", "message", "createdAt", "read", "recipient"]
     }
   },
   "firestore": {
@@ -166,6 +181,10 @@
     "activities": {
       "schema": "ActivityLog",
       "description": "System activity logs for auditing"
+    },
+    "notifications": {
+      "schema": "SystemNotification",
+      "description": "Collection of system notifications and alerts"
     }
   }
 }

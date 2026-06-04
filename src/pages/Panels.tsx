@@ -4,10 +4,12 @@ import { PanelData, CompanySettings } from '../types';
 import { Modal } from '../components/Modal';
 import { CreatePanelForm } from '../components/CreateForms';
 import { subscribeToCollection, createDocument, updateDocument, deleteDocument, subscribeToSettings } from '../lib/storage';
+import { useToast } from '../components/Toast';
 
 export function Panels() {
   const [panels, setPanels] = useState<PanelData[]>([]);
   const [settings, setSettings] = useState<Partial<CompanySettings>>({});
+  const { addToast } = useToast();
 
   useEffect(() => {
     const unsubscribe = subscribeToCollection<PanelData>('panels', (updatedPanels) => {
@@ -36,8 +38,10 @@ export function Panels() {
 
     if (isEditing && editingPanel) {
       await updateDocument<PanelData>('panels', editingPanel.id, panelData as Partial<PanelData>);
+      addToast({ type: 'success', title: 'Panel Updated', message: `Successfully updated panel: ${panelData.name}` });
     } else {
       await createDocument<PanelData>('panels', panelData);
+      addToast({ type: 'success', title: 'Panel Registered', message: `Registered a new panel: ${panelData.name}` });
     }
     setShowCreate(false);
     setIsEditing(false);
@@ -53,6 +57,7 @@ export function Panels() {
   const handleDelete = async () => {
     if (panelToDelete) {
       await deleteDocument('panels', panelToDelete.id);
+      addToast({ type: 'success', title: 'Panel Deleted', message: `Successfully removed panel: ${panelToDelete.name}` });
       setShowDeleteConfirm(false);
       setPanelToDelete(null);
     }
