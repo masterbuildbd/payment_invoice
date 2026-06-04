@@ -32,11 +32,26 @@ function ProtectedApp() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [currentUserData, setCurrentUserData] = useState<User | null>(null);
+  const backupAttemptedRef = useRef(false);
 
   useEffect(() => {
     const unsubscribe = subscribeToSettings(setSettings);
     return () => unsubscribe && unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (settings && settings.autoDailyBackupEnabled && !backupAttemptedRef.current) {
+      const today = new Date().toISOString().split('T')[0];
+      if (settings.lastBackupDate !== today) {
+        backupAttemptedRef.current = true;
+        import('./lib/storage').then(({ runDailyBackup }) => {
+          runDailyBackup(settings as CompanySettings);
+        }).catch(err => {
+          console.error("Auto daily backup error:", err);
+        });
+      }
+    }
+  }, [settings]);
 
   useEffect(() => {
     if (user) {

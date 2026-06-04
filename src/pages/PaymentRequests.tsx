@@ -24,7 +24,8 @@ import {
   Sparkles,
   RefreshCw,
   Edit,
-  Trash2
+  Trash2,
+  Mail
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Invoice, User, CompanySettings } from '../types';
@@ -124,6 +125,11 @@ export function PaymentRequests() {
   const [bulkStatusMsg, setBulkStatusMsg] = useState('');
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const [whatsAppModalInvoice, setWhatsAppModalInvoice] = useState<Invoice | null>(null);
+  const [approvedNotificationModal, setApprovedNotificationModal] = useState<{
+    isOpen: boolean;
+    invoice: Invoice | null;
+    user?: User | null;
+  }>({ isOpen: false, invoice: null, user: null });
 
   useEffect(() => {
     const unsubInvoices = subscribeToInvoices((data) => {
@@ -518,7 +524,27 @@ export function PaymentRequests() {
         }
       }
 
-      alert(`রিকোয়েস্ট #${invoice.id.substring(0, 8).toUpperCase()} সফলভাবে অনুমোদন করা হয়েছে এবং সার্ভিস সচল হয়েছে!`);
+      // Find matching user and get their updated budget metrics to pass to notification templates
+      const matchingUser = invoice.username ? users.find(
+        u => u.username?.trim().toLowerCase() === invoice.username?.trim().toLowerCase()
+      ) : null;
+
+      let updatedUser = matchingUser ? { ...matchingUser } : null;
+      if (updatedUser) {
+        const parsedAmount = Number(invoice.amount) || 0;
+        const currentPaid = Number(matchingUser?.paidAmount) || 0;
+        const totalPaid = currentPaid + parsedAmount;
+        const userPrice = Number(matchingUser?.price) || 0;
+        const newDue = Math.max(0, userPrice - totalPaid);
+        updatedUser.paidAmount = totalPaid;
+        updatedUser.dueAmount = newDue;
+      }
+
+      setApprovedNotificationModal({
+        isOpen: true,
+        invoice,
+        user: updatedUser
+      });
     } catch (err) {
       console.error(err);
       alert('অনুমোদন করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
@@ -1599,6 +1625,164 @@ export function PaymentRequests() {
                   </div>
                   <Check size={16} className="text-teal-600 block shrink-0" />
                 </a>
+              </div>
+            </div>
+          );
+        })()}
+      </Modal>
+
+      {/* Dynamic Payment Approval Success Notification Modal */}
+      <Modal
+        isOpen={approvedNotificationModal.isOpen}
+        onClose={() => setApprovedNotificationModal(prev => ({ ...prev, isOpen: false }))}
+        title="🎉 পেমেন্ট সফলভাবে অনুমোদিত হয়েছে! (Payment Approved)"
+      >
+        {approvedNotificationModal.invoice && (() => {
+          const inv = approvedNotificationModal.invoice;
+          const u = approvedNotificationModal.user;
+          
+          const defaultWa = 'আসসালামু আলাইকুম {name}!\n\nআপনার BDT {paid} মূল্যের পেমেন্ট আবেদনটি আমাদের সিস্টেমে সফলভাবে অনুমোদিত (Approved) হয়েছে। 🎉\n\n📌 বিবরণ:\n- পেমেন্ট উদ্দেশ্য: {purpose}\n- পেমেন্ট মাধ্যম: {method}\n- ট্রানজেকশন ID: {txn}\n- চলতি বকেয়া: ৳{due}\n\nআমাদের সেবা ব্যবহারের জন্য আপনাকে ধন্যবাদ!\n- {company}';
+          const defaultSubject = '🎉 Payment Approved & Receipt Confirmed - {id}';
+          const defaultBody = 'আসসালামু আলাইকুম {name}!\n\nআমরা আনন্দের সাথে জানাচ্ছি যে আপনার পেমেন্ট রিকোয়েস্টটি সফলভাবে অনুমোদিত হয়েছে এবং আপনার অ্যাকাউন্ট ব্যালেন্স সচল করা হয়েছে।\n\n📌 বিবরণ:\n- পেমেন্ট উদ্দেশ্য: {purpose}\n- পেমেন্ট মাধ্যম: {method}\n- ট্রানজেকশন ID: {txn}\n- পরিশোধকৃত মোট অ্যামাউন্ট: ৳{paid}\n- চলতি বকেয়া (Due Amount): ৳{due}\n- ইনভয়েস আইডি: INV-{id}\n\nযেকোনো সমস্যায় লাইভ চ্যাট অথবা কাস্টমার কেয়ারে যোগাযোগ করুন।\n\nধন্যবাদ,\n{company} টিম';
+
+          const waTemplate = settings.paymentApproveWaTemplate || defaultWa;
+          const subjectTemplate = settings.paymentApproveEmailSubjectTemplate || defaultSubject;
+          const bodyTemplate = settings.paymentApproveEmailBodyTemplate || defaultBody;
+
+          const shortId = inv.id ? inv.id.substring(0, 8).toUpperCase() : 'N/A';
+          const currentDue = u ? (u.dueAmount ?? 0) : (inv.dueAmount ?? 0);
+          const purpose = inv.type || 'Wallet Top-Up';
+          const method = inv.paymentMethod || 'Bkash/Nagad';
+          const txn = inv.transactionId || 'N/A';
+          const companyName = settings.companyName || settings.sidebarTitle || 'Master Service';
+          const customerName = inv.customerName || u?.name || 'গ্রাহক';
+
+          const resolveFields = (text: string) => {
+            return text
+              .replace(/{name}/g, customerName)
+              .replace(/{paid}/g, (inv.amount || 0).toLocaleString())
+              .replace(/{due}/g, currentDue.toLocaleString())
+              .replace(/{purpose}/g, purpose)
+              .replace(/{id}/g, shortId)
+              .replace(/{method}/g, method)
+              .replace(/{txn}/g, txn)
+              .replace(/{company}/g, companyName);
+          };
+
+          const finalWaMsg = resolveFields(waTemplate);
+          const finalSubj = resolveFields(subjectTemplate);
+          const finalBody = resolveFields(bodyTemplate);
+
+          const cleanPhone = (phone: string) => {
+            let cleaned = phone.replace(/[^\d]/g, '');
+            if (cleaned.startsWith('0') && cleaned.length === 11) {
+              cleaned = '88' + cleaned;
+            }
+            return cleaned;
+          };
+
+          const recipientNumber = inv.customerNumber || (inv as any).phone || u?.phone || '';
+          const phoneForWa = cleanPhone(recipientNumber);
+          const emailAddress = inv.customerEmail || (inv as any).email || u?.email || '';
+
+          const waUrl = `https://api.whatsapp.com/send?phone=${phoneForWa}&text=${encodeURIComponent(finalWaMsg)}`;
+          const waUrlBus = `https://wa.me/${phoneForWa}?text=${encodeURIComponent(finalWaMsg)}`;
+          const mailtoUrl = `mailto:${emailAddress}?subject=${encodeURIComponent(finalSubj)}&body=${encodeURIComponent(finalBody)}`;
+
+          return (
+            <div className="space-y-5 text-left py-2">
+              <div className="bg-emerald-50/50 border border-emerald-100 p-4 rounded-2xl flex items-center gap-3">
+                <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                  ✓
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-emerald-800">পেমেন্ট সফলভাবে ভেরিফাই ও এপ্রুভ হয়েছে!</h4>
+                  <p className="text-xs text-emerald-600 font-bold">ইনভয়েস: INV-{shortId} | অ্যামাউন্ট: ৳{(inv.amount || 0).toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="border border-slate-150 rounded-xl overflow-hidden shadow-xs">
+                  <div className="bg-slate-50 px-4 py-2 border-b border-slate-150 flex justify-between items-center">
+                    <span className="text-xs font-black text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <MessageSquare size={13} className="text-emerald-500" />
+                      Option A: WhatsApp Notification
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-400">📞 {phoneForWa || 'No number'}</span>
+                  </div>
+                  <div className="p-4 bg-white space-y-3">
+                    <div className="bg-slate-50 p-3 rounded-lg text-xs font-medium text-slate-700 whitespace-pre-line border border-slate-100 max-h-36 overflow-y-auto">
+                      {finalWaMsg}
+                    </div>
+                    {phoneForWa ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        <a 
+                          href={waUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => setApprovedNotificationModal(prev => ({ ...prev, isOpen: false }))}
+                          className="flex items-center justify-center gap-1.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 text-center cursor-pointer font-sans"
+                        >
+                          Send WhatsApp
+                        </a>
+                        <a 
+                          href={waUrlBus}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => setApprovedNotificationModal(prev => ({ ...prev, isOpen: false }))}
+                          className="flex items-center justify-center gap-1.5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 text-center cursor-pointer font-sans"
+                        >
+                          WA Business
+                        </a>
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-rose-500 font-bold bg-rose-50 p-2 rounded-lg text-center">⚠️ কোনো মোবাইল নম্বর না থাকায় হোয়াটসঅ্যাপ করা যাচ্ছে না।</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="border border-slate-150 rounded-xl overflow-hidden shadow-xs">
+                  <div className="bg-slate-50 px-4 py-2 border-b border-slate-150 flex justify-between items-center">
+                    <span className="text-xs font-black text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <Mail size={13} className="text-indigo-500" />
+                      Option B: Email Notification
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-400">✉️ {emailAddress || 'No email'}</span>
+                  </div>
+                  <div className="p-4 bg-white space-y-3">
+                    <div className="space-y-2 text-xs">
+                      <div>
+                        <span className="font-bold text-slate-400 uppercase text-[9px] tracking-widest block">Subject Preview</span>
+                        <div className="bg-slate-50 p-2 rounded border border-slate-100 text-slate-700 font-bold">{finalSubj}</div>
+                      </div>
+                      <div>
+                        <span className="font-bold text-slate-400 uppercase text-[9px] tracking-widest block">Message Preview</span>
+                        <div className="bg-slate-50 p-3 rounded border border-slate-100 text-slate-700 whitespace-pre-line max-h-36 overflow-y-auto">{finalBody}</div>
+                      </div>
+                    </div>
+                    {emailAddress ? (
+                      <a 
+                        href={mailtoUrl}
+                        onClick={() => setApprovedNotificationModal(prev => ({ ...prev, isOpen: false }))}
+                        className="flex items-center justify-center gap-1.5 w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 text-center cursor-pointer font-sans"
+                      >
+                        Send Confirmation Email
+                      </a>
+                    ) : (
+                      <p className="text-[10px] text-amber-600 font-bold bg-amber-50 p-2 rounded-lg text-center">💡 এই গ্রাহকের ইমেইল এড্রেস প্রোফাইলে সেট করা নেই।</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-100 pt-3 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setApprovedNotificationModal(prev => ({ ...prev, isOpen: false }))}
+                  className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer font-sans"
+                >
+                  Close (শেষ করুন)
+                </button>
               </div>
             </div>
           );

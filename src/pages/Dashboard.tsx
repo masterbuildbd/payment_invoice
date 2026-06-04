@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, Activity, FileText, Banknote, Check, X, Clock, CreditCard, CheckCircle, ShieldAlert, Sparkles, PhoneCall, Gift, RefreshCw, Users, Settings, Lock, Eye, EyeOff, Megaphone, Bell, Plus, ExternalLink, ChevronRight, BarChart3, Copy, MessageSquare, Search, AlertCircle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, Activity, FileText, Banknote, Check, X, Clock, CreditCard, CheckCircle, ShieldAlert, Sparkles, PhoneCall, Gift, RefreshCw, Users, Settings, Lock, Eye, EyeOff, Megaphone, Bell, Plus, ExternalLink, ChevronRight, BarChart3, Copy, MessageSquare, Search, AlertCircle, Mail } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../lib/auth';
 import { updateDocument, safeStringify } from '../lib/storage';
@@ -18,7 +18,7 @@ import {
 import { Modal } from '../components/Modal';
 import { CreateAppForm, CreateDecoderForm, CreatePanelForm, CreateUserForm } from '../components/CreateForms';
 import { Invoice, Investment, ActivityLog, User } from '../types';
-import { subscribeToInvoices, createDocument, subscribeToSettings, subscribeToCollection, updateInvoice } from '../lib/storage';
+import { subscribeToInvoices, createDocument, subscribeToSettings, subscribeToCollection, updateInvoice, createInvoice } from '../lib/storage';
 import { useLanguage } from '../lib/language';
 import { CompanySettings } from '../types';
 import { InvoiceTemplate } from '../components/InvoiceTemplate';
@@ -50,6 +50,11 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
   const [totalUsersCount, setTotalUsersCount] = useState(0);
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [isProcessingApproval, setIsProcessingApproval] = useState<string | null>(null);
+  const [approvedNotificationModal, setApprovedNotificationModal] = useState<{
+    isOpen: boolean;
+    invoice: Invoice | null;
+    user?: User | null;
+  }>({ isOpen: false, invoice: null, user: null });
 
   // Customer top-up states
   const [topUpAmount, setTopUpAmount] = useState('');
@@ -61,6 +66,39 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
   const [topUpSuccess, setTopUpSuccess] = useState('');
   const [topUpError, setTopUpError] = useState('');
   const [isTopUpLoading, setIsTopUpLoading] = useState(false);
+
+  // Automated fields for Client Invoice metadata
+  const [clientInvoiceNumber, setClientInvoiceNumber] = useState('');
+  const [clientInvoiceDate, setClientInvoiceDate] = useState('');
+  const [clientInvoiceTime, setClientInvoiceTime] = useState('');
+
+  const generateNewInvoiceMeta = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const randomNum = Math.floor(1000 + Math.random() * 9000);
+    const dateStr = `${year}-${month}-${day}`;
+    // Formatted time, e.g. "12:35:45 PM"
+    const timeStr = now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setClientInvoiceNumber(`INV-${year}${month}${day}-${randomNum}`);
+    setClientInvoiceDate(dateStr);
+    setClientInvoiceTime(timeStr);
+  };
+
+  // Generate when subtab is loaded
+  useEffect(() => {
+    if (activeSubTab === 'payment') {
+      generateNewInvoiceMeta();
+    }
+  }, [activeSubTab]);
+
+  // Fallback trigger if empty on mount
+  useEffect(() => {
+    if (!clientInvoiceNumber) {
+      generateNewInvoiceMeta();
+    }
+  }, []);
 
   // New fields for App detail tickets requested by user
   const [ticketAppName, setTicketAppName] = useState('');
@@ -313,7 +351,27 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
         }
       }
 
-      alert(`রিকোয়েস্ট #${invoice.id.substring(0, 8).toUpperCase()} সফলভাবে অনুমোদন করা হয়েছে এবং সার্ভিস সচল হয়েছে!`);
+      // Find matching user and get updated budget metrics to pass to notification templates
+      const matchingUser = invoice.username ? allUsers.find(
+        u => u.username?.trim().toLowerCase() === invoice.username?.trim().toLowerCase()
+      ) : null;
+
+      let updatedUser = matchingUser ? { ...matchingUser } : null;
+      if (updatedUser) {
+        const parsedAmount = Number(invoice.amount) || 0;
+        const currentPaid = Number(matchingUser?.paidAmount) || 0;
+        const totalPaid = currentPaid + parsedAmount;
+        const userPrice = Number(matchingUser?.price) || 0;
+        const newDue = Math.max(0, userPrice - totalPaid);
+        updatedUser.paidAmount = totalPaid;
+        updatedUser.dueAmount = newDue;
+      }
+
+      setApprovedNotificationModal({
+        isOpen: true,
+        invoice,
+        user: updatedUser
+      });
     } catch (err) {
       console.error(err);
       alert('অনুমোদন করতে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
@@ -462,9 +520,13 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
 
     try {
       const now = new Date();
-      const timeStr = now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const invoiceDate = now.toISOString().split('T')[0];
-      const fullDate = `${invoiceDate} ${timeStr}`;
+      const backupTimeStr = now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const backupInvoiceDate = now.toISOString().split('T')[0];
+
+      const finalInvoiceNumber = clientInvoiceNumber || `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const finalDate = clientInvoiceDate || backupInvoiceDate;
+      const finalTimeStr = clientInvoiceTime || backupTimeStr;
+      const fullDate = `${finalDate} ${finalTimeStr}`;
 
       const isAppPurchase = topUpPurpose === 'Android App Purchase';
       const appNameVal = isAppPurchase ? ticketAppName : '';
@@ -501,14 +563,15 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
       const finalPaidAmount = ticketPaidAmount ? (Number(ticketPaidAmount) || 0) : (Number(topUpAmount) || 0);
       const finalDueAmount = ticketDueAmount ? (Number(ticketDueAmount) || 0) : 0;
 
-      await createDocument('invoices', {
+      await createInvoice({
+        id: finalInvoiceNumber,
         customerName: currentUserData?.name || user?.name || 'Customer',
         username: currentUserData?.username || user?.username,
         amount: Number(topUpAmount) || 0,
         paidAmount: finalPaidAmount,
         dueAmount: finalDueAmount,
         status: 'pending',
-        date: invoiceDate,
+        date: finalDate,
         createdAt: fullDate,
         phone: currentUserData?.phone || '',
         customerNumber: currentUserData?.phone ? `+88 ${currentUserData.phone}` : 'N/A',
@@ -535,14 +598,14 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
       });
 
       setMyInvoices(prev => [{
-        id: 'local-inv-' + Math.random().toString(36).substr(2, 9),
+        id: finalInvoiceNumber,
         customerName: currentUserData?.name || user?.name || 'Customer',
         username: currentUserData?.username || user?.username,
         amount: Number(topUpAmount) || 0,
         paidAmount: finalPaidAmount,
         dueAmount: finalDueAmount,
         status: 'pending',
-        date: invoiceDate,
+        date: finalDate,
         createdAt: fullDate,
         phone: currentUserData?.phone || '',
         customerNumber: currentUserData?.phone ? `+88 ${currentUserData.phone}` : 'N/A',
@@ -571,6 +634,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
       const successTemplate = settings.clientPaymentSuccessMessage || 'পেমেন্ট রিকোয়েস্ট ("{purpose}") এডমিনের কাছে জমা হয়েছে! এডমিন শীঘ্রই এটি ভেরিফাই করে ব্যালেন্স আপডেট করে দেবেন।';
       const resolvedSuccess = successTemplate.replace('{purpose}', topUpPurpose);
       setTopUpSuccess(resolvedSuccess);
+      generateNewInvoiceMeta(); // Auto-change the invoice number for the next submit ticket!
       setTopUpAmount('');
       setTicketPaidAmount('');
       setTicketDueAmount('');
@@ -801,12 +865,13 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
 
     // States for Selected Payment Account Channel Viewer
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const [selectedAccountTab, setSelectedAccountTab] = useState<'bKash' | 'Nagad' | 'Bank' | 'Binance' | 'PayPal'>('bKash');
+    const [selectedAccountTab, setSelectedAccountTab] = useState<'bKash' | 'Nagad' | 'Upay' | 'Bank' | 'Binance' | 'PayPal'>('bKash');
 
     const activeProviders = React.useMemo(() => {
       return [
         { key: 'bKash', enabled: settings?.bkashEnabled !== false },
         { key: 'Nagad', enabled: settings?.nagadEnabled !== false },
+        { key: 'Upay', enabled: settings?.upayEnabled !== false },
         { key: 'Bank', enabled: settings?.bankEnabled !== false },
         { key: 'Binance', enabled: settings?.binanceEnabled !== false },
         { key: 'PayPal', enabled: settings?.paypalEnabled !== false },
@@ -1291,6 +1356,14 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
             </svg>
           );
 
+          const upayLogo = (
+            <svg className="w-6 h-6 flex-shrink-0" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="40" height="40" rx="10" fill="#013B63" />
+              <path d="M14 14V21C14 24.3137 16.6863 27 20 27C23.3137 27 26 24.3137 26 21V14" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+              <circle cx="20" cy="27" r="2" fill="#EAB308" />
+            </svg>
+          );
+
           const bankLogo = (
             <svg className="w-6 h-6 flex-shrink-0" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect width="40" height="40" rx="10" fill="#1E3A8A" />
@@ -1331,6 +1404,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
                   {[
                     { key: 'bKash', label: 'bKash (বিকাশ)', logo: bKashLogo, color: 'bg-rose-50/80 text-rose-700 border-rose-200/70', enabled: settings?.bkashEnabled !== false },
                     { key: 'Nagad', label: 'Nagad (নগদ)', logo: nagadLogo, color: 'bg-orange-50/80 text-orange-700 border-orange-200/70', enabled: settings?.nagadEnabled !== false },
+                    { key: 'Upay', label: 'Upay (ইউপে)', logo: upayLogo, color: 'bg-indigo-50/80 text-indigo-700 border-indigo-200/70', enabled: settings?.upayEnabled !== false },
                     { key: 'Bank', label: 'Bank Account (ব্যাংক)', logo: bankLogo, color: 'bg-blue-50/80 text-blue-700 border-blue-200/70', enabled: settings?.bankEnabled !== false },
                     { key: 'Binance', label: 'Binance Pay ID (বাইনান্স)', logo: binanceLogo, color: 'bg-yellow-50/40 text-yellow-850 border-yellow-250', enabled: settings?.binanceEnabled !== false },
                     { key: 'PayPal', label: 'PayPal Gateway (পেপ্যাল)', logo: paypalLogo, color: 'bg-indigo-50/80 text-indigo-700 border-indigo-200/70', enabled: settings?.paypalEnabled !== false },
@@ -1439,6 +1513,46 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
                           </div>
                           <p className="text-[11px] text-slate-400 leading-relaxed pt-2">
                             প্রদত্ত নগদ পার্সোনাল নাম্বারে সেন্ড মানি (Send Money) সফলভাবে সম্পন্ন করুন। ট্রানজেকশন আইডি সহ পেমেন্ট রিকোয়েস্ট নিশ্চিত করতে সেটিংস পেমেন্ট অপশন ফর্মটি দ্রুত সচল করুন।
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedAccountTab === 'Upay' && (
+                        <div className="space-y-4 animate-fade-in">
+                          <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                            <span className="text-xs font-black uppercase text-indigo-400 tracking-wider flex items-center gap-2">
+                              {upayLogo} Upay Active Channel
+                            </span>
+                            <span className="text-[9px] bg-indigo-650 text-white font-mono font-black px-2 py-0.5 rounded-full uppercase">Instant Transfer</span>
+                          </div>
+                          <div className="space-y-1 bg-white/5 p-4 rounded-xl border border-white/5">
+                            <span className="text-[10px] text-indigo-300 font-bold uppercase block tracking-wider font-mono">ইউপে নম্বর (Upay Number)</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-1">
+                              <div className="text-3xl font-mono font-black text-white select-all">{settings.upayNumber || '01718070273'}</div>
+                              <button
+                                type="button"
+                                onClick={() => handleCopyText(settings.upayNumber || '01718070273')}
+                                className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 select-none text-white font-mono font-bold text-[10px] px-3.5 py-1.5 rounded-lg border border-white/5 transition-all self-start sm:self-center"
+                              >
+                                {copiedText === (settings.upayNumber || '01718070273') ? (
+                                  <>
+                                    <CheckCircle size={12} className="text-emerald-450" />
+                                    কপি হয়েছে!
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy size={12} />
+                                    কপি করুন
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                            <span className="inline-block bg-indigo-600 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full mt-3 uppercase tracking-widest font-mono">
+                              personal (ব্যক্তিগত অ্যাকাউন্ট)
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-400 leading-relaxed pt-2">
+                            প্রদত্ত ইউপে পার্সোনাল নাম্বারে সেন্ড মানি (Send Money) সম্পন্ন করুন। সেন্ডিং সম্পন্ন হলে প্রাপ্ত ট্রানজেকশন ID অথবা পেমেন্ট ট্রানজেকশন স্ক্রিনশট বা প্রেরক নাম্বার দিয়ে পেমেন্ট অপশন থেকে রিপোর্ট জমা দিন।
                           </p>
                         </div>
                       )}
@@ -1631,6 +1745,61 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
             )}
 
             <form onSubmit={handleTopUpSubmit} className="space-y-5">
+              {/* Auto Billing Metadata Section */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1 font-sans">
+                    <FileText size={12} className="text-indigo-600" />
+                    ইনভয়েস নাম্বার (Invoice Number) *
+                  </label>
+                  <div className="relative flex items-center">
+                    <input 
+                      type="text" 
+                      value={clientInvoiceNumber} 
+                      readOnly 
+                      className="w-full bg-slate-100 border border-slate-250 rounded-xl py-2.5 pl-3.5 pr-10 text-xs font-mono font-black text-slate-700 outline-none select-all"
+                      placeholder="Generating..."
+                    />
+                    <button 
+                      type="button" 
+                      onClick={generateNewInvoiceMeta}
+                      title="নতুন ইনভয়েস নাম্বার জেনারেট করুন"
+                      className="absolute right-2 p-1.5 bg-white text-indigo-600 hover:text-indigo-800 rounded-lg border border-slate-200/80 hover:bg-slate-50 transition-all font-sans active:scale-90"
+                    >
+                      <RefreshCw size={12} className="animate-spin-once" />
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1 font-sans">
+                    <Clock size={12} className="text-indigo-600" />
+                    ইনভয়েস তারিখ (Invoice Date) *
+                  </label>
+                  <input 
+                    type="date" 
+                    value={clientInvoiceDate} 
+                    onChange={(e) => setClientInvoiceDate(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-xl py-2.5 px-3.5 text-xs font-sans font-bold text-slate-700 focus:outline-none focus:border-indigo-500 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1 font-sans">
+                    <Clock size={12} className="text-indigo-600" />
+                    ইনভয়েস তৈরির সময় (Invoice Time) *
+                  </label>
+                  <input 
+                    type="text" 
+                    value={clientInvoiceTime} 
+                    readOnly 
+                    className="w-full bg-slate-100 border border-slate-200 rounded-xl py-2.5 px-3.5 text-xs font-mono font-black text-slate-600 outline-none select-all"
+                    placeholder="HH:MM:SS AM/PM"
+                  />
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">{settings.clientPaymentPurposeLabel || 'পেমেন্ট উদ্দেশ্য (Purpose / Product) *'}</label>
@@ -3160,6 +3329,164 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
           </div>
         </div>
       )}
+
+      {/* Dynamic Payment Approval Success Notification Modal */}
+      <Modal
+        isOpen={approvedNotificationModal.isOpen}
+        onClose={() => setApprovedNotificationModal(prev => ({ ...prev, isOpen: false }))}
+        title="🎉 পেমেন্ট সফলভাবে অনুমোদিত হয়েছে! (Payment Approved)"
+      >
+        {approvedNotificationModal.invoice && (() => {
+          const inv = approvedNotificationModal.invoice;
+          const u = approvedNotificationModal.user;
+          
+          const defaultWa = 'আসসালামু আলাইকুম {name}!\n\nআপনার BDT {paid} মূল্যের পেমেন্ট আবেদনটি আমাদের সিস্টেমে সফলভাবে অনুমোদিত (Approved) হয়েছে। 🎉\n\n📌 বিবরণ:\n- পেমেন্ট উদ্দেশ্য: {purpose}\n- পেমেন্ট মাধ্যম: {method}\n- ট্রানজেকশন ID: {txn}\n- চলতি বকেয়া: ৳{due}\n\nআমাদের সেবা ব্যবহারের জন্য আপনাকে ধন্যবাদ!\n- {company}';
+          const defaultSubject = '🎉 Payment Approved & Receipt Confirmed - {id}';
+          const defaultBody = 'আসসালামু আলাইকুম {name}!\n\nআমরা আনন্দের সাথে জানাচ্ছি যে আপনার পেমেন্ট রিকোয়েস্টটি সফলভাবে অনুমোদিত হয়েছে এবং আপনার অ্যাকাউন্ট ব্যালেন্স সচল করা হয়েছে।\n\n📌 বিবরণ:\n- পেমেন্ট উদ্দেশ্য: {purpose}\n- পেমেন্ট মাধ্যম: {method}\n- ট্রানজেকশন ID: {txn}\n- পরিশোধকৃত মোট অ্যামাউন্ট: ৳{paid}\n- চলতি বকেয়া (Due Amount): ৳{due}\n- ইনভয়েস আইডি: INV-{id}\n\nযেকোনো সমস্যায় লাইভ চ্যাট অথবা কাস্টমার কেয়ারে যোগাযোগ করুন।\n\nধন্যবাদ,\n{company} টিম';
+
+          const waTemplate = settings.paymentApproveWaTemplate || defaultWa;
+          const subjectTemplate = settings.paymentApproveEmailSubjectTemplate || defaultSubject;
+          const bodyTemplate = settings.paymentApproveEmailBodyTemplate || defaultBody;
+
+          const shortId = inv.id ? inv.id.substring(0, 8).toUpperCase() : 'N/A';
+          const currentDue = u ? (u.dueAmount ?? 0) : (inv.dueAmount ?? 0);
+          const purpose = inv.type || 'Wallet Top-Up';
+          const method = inv.paymentMethod || 'Bkash/Nagad';
+          const txn = inv.transactionId || 'N/A';
+          const companyName = settings.companyName || settings.sidebarTitle || 'Master Service';
+          const customerName = inv.customerName || u?.name || 'গ্রাহক';
+
+          const resolveFields = (text: string) => {
+            return text
+              .replace(/{name}/g, customerName)
+              .replace(/{paid}/g, (inv.amount || 0).toLocaleString())
+              .replace(/{due}/g, currentDue.toLocaleString())
+              .replace(/{purpose}/g, purpose)
+              .replace(/{id}/g, shortId)
+              .replace(/{method}/g, method)
+              .replace(/{txn}/g, txn)
+              .replace(/{company}/g, companyName);
+          };
+
+          const finalWaMsg = resolveFields(waTemplate);
+          const finalSubj = resolveFields(subjectTemplate);
+          const finalBody = resolveFields(bodyTemplate);
+
+          const cleanPhone = (phone: string) => {
+            let cleaned = phone.replace(/[^\d]/g, '');
+            if (cleaned.startsWith('0') && cleaned.length === 11) {
+              cleaned = '88' + cleaned;
+            }
+            return cleaned;
+          };
+
+          const recipientNumber = inv.customerNumber || (inv as any).phone || u?.phone || '';
+          const phoneForWa = cleanPhone(recipientNumber);
+          const emailAddress = inv.customerEmail || (inv as any).email || u?.email || '';
+
+          const waUrl = `https://api.whatsapp.com/send?phone=${phoneForWa}&text=${encodeURIComponent(finalWaMsg)}`;
+          const waUrlBus = `https://wa.me/${phoneForWa}?text=${encodeURIComponent(finalWaMsg)}`;
+          const mailtoUrl = `mailto:${emailAddress}?subject=${encodeURIComponent(finalSubj)}&body=${encodeURIComponent(finalBody)}`;
+
+          return (
+            <div className="space-y-5 text-left py-2">
+              <div className="bg-emerald-50/50 border border-emerald-100 p-4 rounded-2xl flex items-center gap-3">
+                <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                  ✓
+                </div>
+                <div>
+                  <h4 className="text-sm font-black text-emerald-800">পেমেন্ট সফলভাবে ভেরিফাই ও এপ্রুভ হয়েছে!</h4>
+                  <p className="text-xs text-emerald-600 font-bold">ইনভয়েস: INV-{shortId} | অ্যামাউন্ট: ৳{(inv.amount || 0).toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="border border-slate-150 rounded-xl overflow-hidden shadow-xs">
+                  <div className="bg-slate-50 px-4 py-2 border-b border-slate-150 flex justify-between items-center">
+                    <span className="text-xs font-black text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <MessageSquare size={13} className="text-emerald-500" />
+                      Option A: WhatsApp Notification
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-400">📞 {phoneForWa || 'No number'}</span>
+                  </div>
+                  <div className="p-4 bg-white space-y-3">
+                    <div className="bg-slate-50 p-3 rounded-lg text-xs font-medium text-slate-700 whitespace-pre-line border border-slate-100 max-h-36 overflow-y-auto">
+                      {finalWaMsg}
+                    </div>
+                    {phoneForWa ? (
+                      <div className="grid grid-cols-2 gap-2">
+                        <a 
+                          href={waUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => setApprovedNotificationModal(prev => ({ ...prev, isOpen: false }))}
+                          className="flex items-center justify-center gap-1.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 text-center cursor-pointer font-sans"
+                        >
+                          Send WhatsApp
+                        </a>
+                        <a 
+                          href={waUrlBus}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => setApprovedNotificationModal(prev => ({ ...prev, isOpen: false }))}
+                          className="flex items-center justify-center gap-1.5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 text-center cursor-pointer font-sans"
+                        >
+                          WA Business
+                        </a>
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-rose-500 font-bold bg-rose-50 p-2 rounded-lg text-center">⚠️ কোনো মোবাইল নম্বর না থাকায় হোয়াটসঅ্যাপ করা যাচ্ছে না।</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="border border-slate-150 rounded-xl overflow-hidden shadow-xs">
+                  <div className="bg-slate-50 px-4 py-2 border-b border-slate-150 flex justify-between items-center">
+                    <span className="text-xs font-black text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <Mail size={13} className="text-indigo-500" />
+                      Option B: Email Notification
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-400">✉️ {emailAddress || 'No email'}</span>
+                  </div>
+                  <div className="p-4 bg-white space-y-3">
+                    <div className="space-y-2 text-xs">
+                      <div>
+                        <span className="font-bold text-slate-400 uppercase text-[9px] tracking-widest block">Subject Preview</span>
+                        <div className="bg-slate-50 p-2 rounded border border-slate-100 text-slate-700 font-bold">{finalSubj}</div>
+                      </div>
+                      <div>
+                        <span className="font-bold text-slate-400 uppercase text-[9px] tracking-widest block">Message Preview</span>
+                        <div className="bg-slate-50 p-3 rounded border border-slate-100 text-slate-700 whitespace-pre-line max-h-36 overflow-y-auto">{finalBody}</div>
+                      </div>
+                    </div>
+                    {emailAddress ? (
+                      <a 
+                        href={mailtoUrl}
+                        onClick={() => setApprovedNotificationModal(prev => ({ ...prev, isOpen: false }))}
+                        className="flex items-center justify-center gap-1.5 w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 text-center cursor-pointer font-sans"
+                      >
+                        Send Confirmation Email
+                      </a>
+                    ) : (
+                      <p className="text-[10px] text-amber-600 font-bold bg-amber-50 p-2 rounded-lg text-center">💡 এই গ্রাহকের ইমেইল এড্রেস প্রোফাইলে সেট করা নেই।</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-100 pt-3 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setApprovedNotificationModal(prev => ({ ...prev, isOpen: false }))}
+                  className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer font-sans"
+                >
+                  Close (শেষ করুন)
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+      </Modal>
     </div>
   );
 }

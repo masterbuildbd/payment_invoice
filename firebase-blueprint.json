@@ -147,9 +147,27 @@
         "recipient": { "type": "string" }
       },
       "required": ["id", "type", "title", "message", "createdAt", "read", "recipient"]
+    },
+    "Backup": {
+      "title": "System Backup",
+      "description": "A safety backup record containing combined invoices and users snapshot data",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "invoices": { "type": "array" },
+        "users": { "type": "array" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["id", "date", "timestamp", "invoices", "users"]
     }
   },
   "firestore": {
+    "backups": {
+      "schema": "Backup",
+      "description": "Collection of daily systems backups"
+    },
     "invoices": {
       "schema": "Invoice",
       "description": "Collection of invoices"

@@ -756,3 +756,95 @@ export const clearAllNotifications = async (notifications: SystemNotification[])
     console.error('Error clearing all notifications:', error);
   }
 };
+
+// --- Automatic Daily Backup Operations ---
+export const runDailyBackup = async (
+  settings: CompanySettings, 
+  force: boolean = false
+): Promise<{ success: boolean; date?: string; error?: string }> => {
+  const isPlaceholder = !firebaseConfig.projectId || firebaseConfig.projectId.includes('remixed-');
+  const todayDateStr = new Date().toISOString().split('T')[0];
+  
+  if (!force) {
+    if (!settings.autoDailyBackupEnabled) {
+      return { success: false, error: 'Automatic daily backups are disabled.' };
+    }
+    if (settings.lastBackupDate === todayDateStr) {
+      return { success: false, error: 'Backup has already run today.' };
+    }
+  }
+
+  try {
+    let invoices: any[] = [];
+    let users: any[] = [];
+
+    if (!isPlaceholder) {
+      // 1. Fetch Invoices from Firestore safely
+      try {
+        const invoicesSnap = await getDocs(collection(db, 'invoices'));
+        invoices = invoicesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } catch (err) {
+        console.warn('Error fetching invoices for backup, checking fallback:', err);
+        invoices = getInvoicesSync();
+      }
+
+      // 2. Fetch Users from Firestore safely
+      try {
+        const usersSnap = await getDocs(collection(db, 'users'));
+        users = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } catch (err) {
+        console.warn('Error fetching users for backup, checking fallback:', err);
+        const savedUsers = localStorage.getItem('local_users');
+        if (savedUsers) {
+          try { users = JSON.parse(savedUsers); } catch (e) {}
+        }
+      }
+    } else {
+      // Offline fallback
+      invoices = getInvoicesSync();
+      const savedUsers = localStorage.getItem('local_users');
+      if (savedUsers) {
+        try { users = JSON.parse(savedUsers); } catch (e) {}
+      }
+    }
+
+    const backupId = `backup-${todayDateStr}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const backupDocument = {
+      id: backupId,
+      date: todayDateStr,
+      timestamp: new Date().toISOString(),
+      invoices,
+      users,
+      createdBy: auth.currentUser?.email || 'System Scheduler'
+    };
+
+    if (!isPlaceholder) {
+      const sanitizedDoc = sanitizeFirestoreData(backupDocument);
+      await setDoc(doc(db, 'backups', backupId), sanitizedDoc);
+    } else {
+      const localBackupsStr = localStorage.getItem('local_backups') || '[]';
+      const localBackups = JSON.parse(localBackupsStr);
+      localBackups.push(backupDocument);
+      localStorage.setItem('local_backups', JSON.stringify(localBackups));
+    }
+
+    // Save settings with updated lastBackupDate
+    const newSettings = {
+      ...settings,
+      lastBackupDate: todayDateStr
+    };
+    await saveSettings(newSettings);
+
+    await logActivity({
+      type: 'create',
+      category: 'settings',
+      message: `System Backup compiled successfully for ${todayDateStr}. Saved ${invoices.length} invoices and ${users.length} users.`
+    });
+
+    return { success: true, date: todayDateStr };
+  } catch (error) {
+    console.error('Backup failure:', error);
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
+  }
+};
+

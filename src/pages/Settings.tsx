@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Globe, Building2, Landmark, FileText, Save, CheckCircle2, Lock, Shield, Eye, EyeOff, Sparkles, MessageSquare, Plus, Trash2, Edit3, PlusCircle, Info, CreditCard } from 'lucide-react';
+import { Settings as SettingsIcon, Globe, Building2, Landmark, FileText, Save, CheckCircle2, Lock, Shield, Eye, EyeOff, Sparkles, MessageSquare, Plus, Trash2, Edit3, PlusCircle, Info, CreditCard, Database, RefreshCw } from 'lucide-react';
 import { CompanySettings, User } from '../types';
 import { useLanguage } from '../lib/language';
 import { subscribeToSettings, saveSettings, subscribeToCollection, updateDocument, safeStringify } from '../lib/storage';
@@ -74,6 +74,8 @@ const DEFAULT_SETTINGS: CompanySettings = {
   bkashEnabled: true,
   nagadNumber: '01718070273',
   nagadEnabled: true,
+  upayNumber: '01718070273',
+  upayEnabled: true,
   binancePayId: '542901726',
   binanceEnabled: true,
   binanceUsdtAddress: 'TYm7A8WqyY4fFsh9SgH8eD2c1T9Z9sK8nQ',
@@ -124,6 +126,11 @@ const DEFAULT_SETTINGS: CompanySettings = {
   weeklySmsReportEnabled: true,
   weeklySmsReportEmail: 'foysolahmedtapader@gmail.com',
   weeklySmsReportDay: 'Friday',
+  paymentApproveWaTemplate: 'আসসালামু আলাইকুম {name}!\n\nআপনার BDT {paid} মূল্যের পেমেন্ট আবেদনটি আমাদের সিস্টেমে সফলভাবে অনুমোদিত (Approved) হয়েছে। 🎉\n\n📌 বিবরণ:\n- পেমেন্ট উদ্দেশ্য: {purpose}\n- পেমেন্ট মাধ্যম: {method}\n- ট্রানজেকশন ID: {txn}\n- চলতি বকেয়া: ৳{due}\n\nআমাদের সেবা ব্যবহারের জন্য আপনাকে ধন্যবাদ!\n- {company}',
+  paymentApproveEmailSubjectTemplate: '🎉 Payment Approved & Receipt Confirmed - {id}',
+  paymentApproveEmailBodyTemplate: 'আসসালামু আলাইকুম {name}!\n\nআমরা আনন্দের সাথে জানাচ্ছি যে আপনার পেমেন্ট রিকোয়েস্টটি সফলভাবে অনুমোদিত হয়েছে এবং আপনার অ্যাকাউন্ট ব্যালেন্স সচল করা হয়েছে।\n\n📌 বিবরণ:\n- পেমেন্ট উদ্দেশ্য: {purpose}\n- পেমেন্ট মাধ্যম: {method}\n- ট্রানজেকশন ID: {txn}\n- পরিশোধকৃত মোট অ্যামাউন্ট: ৳{paid}\n- চলতি বকেয়া (Due Amount): ৳{due}\n- ইনভয়েস আইডি: INV-{id}\n\nযেকোনো সমস্যায় লাইভ চ্যাট অথবা কাস্টমার কেয়ারে যোগাযোগ করুন।\n\nধন্যবাদ,\n{company} টিম',
+  autoDailyBackupEnabled: false,
+  lastBackupDate: '',
 };
 
 const BANGLADESH_BANKS = [
@@ -267,6 +274,34 @@ export function Settings() {
   const [showPass, setShowPass] = useState(false);
   const [passError, setPassError] = useState('');
   const [passSuccess, setPassSuccess] = useState(false);
+
+  // States & helper for manual backup
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  const [backupMessage, setBackupMessage] = useState<string | null>(null);
+  const [backupType, setBackupType] = useState<'success' | 'error' | null>(null);
+
+  const handleManualBackup = async () => {
+    setIsBackingUp(true);
+    setBackupMessage(null);
+    setBackupType(null);
+    try {
+      const { runDailyBackup } = await import('../lib/storage');
+      const res = await runDailyBackup(settings, true);
+      if (res.success) {
+        setBackupType('success');
+        setBackupMessage(`সফলভাবে ব্যাকআপ সম্পন্ন হয়েছে! তারিখ: ${res.date}`);
+        setSettings(prev => ({ ...prev, lastBackupDate: res.date }));
+      } else {
+        setBackupType('error');
+        setBackupMessage(`ব্যাকআপ ব্যর্থ হয়েছে: ${res.error}`);
+      }
+    } catch (err: any) {
+      setBackupType('error');
+      setBackupMessage(`ব্যতিক্রমী ত্রুটি: ${err.message || err}`);
+    } finally {
+      setIsBackingUp(false);
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = subscribeToSettings((updatedSettings) => {
@@ -1237,6 +1272,30 @@ export function Settings() {
 
             <div className="space-y-1">
               <div className="flex justify-between items-center">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">UPAY PERSONAL NUMBER</label>
+                <label className="relative inline-flex items-center cursor-pointer scale-75 select-none">
+                  <input 
+                    type="checkbox"
+                    checked={settings.upayEnabled !== false}
+                    onChange={() => handleToggle('upayEnabled')}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                  <span className="text-[10px] font-bold text-slate-500 ml-1.5">{settings.upayEnabled !== false ? 'Enabled' : 'Disabled'}</span>
+                </label>
+              </div>
+              <input 
+                name="upayNumber"
+                value={settings.upayNumber ?? ''}
+                onChange={handleChange}
+                placeholder="01718070273"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium font-mono"
+              />
+              <p className="text-[9px] text-slate-400">Upay wallet number displayed under payment accounts & invoice top-ups.</p>
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex justify-between items-center">
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">BINANCE PAY ID</label>
                 <label className="relative inline-flex items-center cursor-pointer scale-75 select-none">
                   <input 
@@ -1740,6 +1799,120 @@ export function Settings() {
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
               />
               <p className="text-[10px] text-slate-400 font-medium">💡 ব্যবহার বিধি: <code className="font-mono bg-slate-100 text-indigo-650 px-1 py-0.5 rounded">{"{purpose}"}</code> কোড ব্যবহার করলে এটি স্বয়ংক্রিয়ভাবে ব্যবহারকারীর নির্বাচিত উদ্দেশ্য দ্বারা প্রতিস্থাপিত হবে।</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Payment Approved Notification Customization */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+            <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-600">
+              <Sparkles size={20} />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-900">Payment Approved Notification Customization</h2>
+              <p className="text-xs text-slate-500">পেমেন্ট অনুমোদন হওয়ার পর গ্রাহককে হোয়াটসঅ্যাপ বা ইমেইলে নোটিফিকেশন পাঠানোর কাস্টম টেমপ্লেট</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6">
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">WhatsApp Approval Template (হোয়াটসঅ্যাপ নোটিফিকেশন মেসেজ)</label>
+              <textarea 
+                name="paymentApproveWaTemplate"
+                value={settings.paymentApproveWaTemplate || ''}
+                onChange={handleChange}
+                rows={5}
+                placeholder='আসসালামু আলাইকুম {name}!...'
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium font-sans"
+              />
+              <p className="text-[10px] text-slate-400 font-medium">💡 ডাইনামিক ফিল্ড কোড ব্যবহার করুন: <code className="font-mono bg-slate-100 text-indigo-650 px-1 py-0.5 rounded">{"{name}"}</code>, <code className="font-mono bg-slate-100 text-indigo-650 px-1 py-0.5 rounded">{"{paid}"}</code>, <code className="font-mono bg-slate-100 text-indigo-650 px-1 py-0.5 rounded">{"{due}"}</code>, <code className="font-mono bg-slate-100 text-indigo-650 px-1 py-0.5 rounded">{"{purpose}"}</code>, <code className="font-mono bg-slate-100 text-indigo-650 px-1 py-0.5 rounded">{"{id}"}</code>, <code className="font-mono bg-slate-100 text-indigo-650 px-1 py-0.5 rounded">{"{method}"}</code>, <code className="font-mono bg-slate-100 text-indigo-650 px-1 py-0.5 rounded">{"{txn}"}</code>, <code className="font-mono bg-slate-100 text-indigo-650 px-1 py-0.5 rounded">{"{company}"}</code></p>
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email Approval Subject (ইমেইল বিষয়/Subject)</label>
+              <input 
+                name="paymentApproveEmailSubjectTemplate"
+                value={settings.paymentApproveEmailSubjectTemplate || ''}
+                onChange={handleChange}
+                placeholder="🎉 Payment Approved & Receipt Confirmed - {id}"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email Approval Body (ইমেইল বডি মেসেজ)</label>
+              <textarea 
+                name="paymentApproveEmailBodyTemplate"
+                value={settings.paymentApproveEmailBodyTemplate || ''}
+                onChange={handleChange}
+                rows={6}
+                placeholder="আসসালামু আলাইকুম {name}!..."
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium font-sans"
+              />
+              <p className="text-[10px] text-slate-400 font-medium">💡 ডাইনামিক ফিল্ড কোড ব্যবহার করুন: <code className="font-mono bg-slate-100 text-indigo-650 px-1 py-0.5 rounded">{"{name}"}</code>, <code className="font-mono bg-slate-100 text-indigo-650 px-1 py-0.5 rounded">{"{paid}"}</code>, <code className="font-mono bg-slate-100 text-indigo-650 px-1 py-0.5 rounded">{"{due}"}</code>, <code className="font-mono bg-slate-100 text-indigo-650 px-1 py-0.5 rounded">{"{purpose}"}</code>, <code className="font-mono bg-slate-100 text-indigo-650 px-1 py-0.5 rounded">{"{id}"}</code>, <code className="font-mono bg-slate-100 text-indigo-650 px-1 py-0.5 rounded">{"{method}"}</code>, <code className="font-mono bg-slate-100 text-indigo-650 px-1 py-0.5 rounded">{"{txn}"}</code>, <code className="font-mono bg-slate-100 text-indigo-650 px-1 py-0.5 rounded">{"{company}"}</code></p>
+            </div>
+          </div>
+        </div>
+
+        {/* System Daily Backups Config */}
+        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-slate-100 gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-600">
+                <Database size={20} />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-900">স্বয়ংক্রিয় দৈনিক ব্যাকআপ (Automatic Daily Backups)</h2>
+                <p className="text-xs text-slate-500">Enable automated daily backups of users and invoices data directly to Google Firestore backups collection</p>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer select-none">
+              <input 
+                type="checkbox"
+                checked={settings.autoDailyBackupEnabled === true}
+                onChange={() => handleToggle('autoDailyBackupEnabled')}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+              <span className="text-[10px] font-bold text-slate-500 ml-1.5">{settings.autoDailyBackupEnabled === true ? 'Enabled' : 'Disabled'}</span>
+            </label>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+            <div className="space-y-1">
+              <p className="text-xs text-slate-600 leading-relaxed font-semibold">
+                যখন এই অপশনটি চালু থাকবে, যেকোনো গ্রাহক বা এডমিন উইন্ডো ওপেন করলে সিস্টেম স্বয়ংক্রিয়ভাবে প্রতিদিন একবার সমস্ত ইউজার প্রোফাইল ও ইনভয়েস ডেটা <code className="bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-mono text-[10px]">backups</code> ফায়ারস্টোর কালেকশনে নিরাপদে স্টোর করে রাখবে। অফলাইন বা নেটওয়ার্ক সমস্যায় এটি ব্রাউজারের লোকাল-স্টোরেজেও ব্যাকআপ রাখার ব্যবস্থা করে।
+              </p>
+              {settings.lastBackupDate && (
+                <div className="pt-2 flex items-center gap-2 text-xs font-bold text-slate-550">
+                  <span className="text-slate-550">সর্বশেষ সফল ব্যাকআপ তারিখ (Last Backup):</span>
+                  <span className="font-mono bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-lg text-[10px]">{settings.lastBackupDate}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col items-center justify-center space-y-3">
+              <span className="text-[11px] font-bold text-slate-605 uppercase tracking-wider">তাত্ক্ষণিক ব্যাকআপ ইউটিলিটি (Instant Backup Utility)</span>
+              <button
+                type="button"
+                disabled={isBackingUp}
+                onClick={handleManualBackup}
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs disabled:opacity-50 flex items-center gap-2 active:scale-95 transition-all shadow-md cursor-pointer"
+              >
+                <RefreshCw size={14} className={isBackingUp ? "animate-spin" : ""} />
+                {isBackingUp ? 'ব্যাকআপ নেওয়া হচ্ছে...' : 'তাত্ক্ষণিক ব্যাকআপ নিন (Run Backup Now)'}
+              </button>
+              
+              {backupMessage && (
+                <div className={`text-[10px] font-bold px-3 py-1.5 rounded-xl border ${
+                  backupType === 'success' 
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200' 
+                    : 'bg-rose-50 text-rose-700 border-rose-200'
+                }`}>
+                  {backupMessage}
+                </div>
+              )}
             </div>
           </div>
         </div>

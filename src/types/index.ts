@@ -68,6 +68,8 @@ export type CompanySettings = {
   bkashEnabled?: boolean;
   nagadNumber?: string;
   nagadEnabled?: boolean;
+  upayNumber?: string;
+  upayEnabled?: boolean;
   binancePayId?: string;
   binanceEnabled?: boolean;
   binanceUsdtAddress?: string;
@@ -97,6 +99,13 @@ export type CompanySettings = {
   weeklySmsReportEnabled?: boolean;
   weeklySmsReportEmail?: string;
   weeklySmsReportDay?: string;
+
+  // Custom Approved Notifications Templates
+  paymentApproveWaTemplate?: string;
+  paymentApproveEmailSubjectTemplate?: string;
+  paymentApproveEmailBodyTemplate?: string;
+  autoDailyBackupEnabled?: boolean;
+  lastBackupDate?: string;
 };
 
 export type User = {
@@ -130,11 +139,14 @@ export type Invoice = {
   dueAmount: number;
   status: 'paid' | 'pending' | 'overdue' | 'rejected';
   createdAt: string;
+  date?: string;
   cashierName?: string;
   type?: string;
   note?: string;
   region?: string;
   username?: string;
+  phone?: string;
+  method?: string;
   items: { description: string; quantity: number; price: number }[];
   appName?: string;
   packageName?: string;
@@ -214,7 +226,7 @@ export type ActivityLog = {
   message: string;
   timestamp: string;
   user: string;
-  category: 'apps' | 'panels' | 'decoders' | 'users' | 'investments' | 'invoices';
+  category: 'apps' | 'panels' | 'decoders' | 'users' | 'investments' | 'invoices' | 'settings';
 };
 
 export type Investment = {
