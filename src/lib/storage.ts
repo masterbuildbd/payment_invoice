@@ -489,10 +489,23 @@ const sanitizeFirestoreData = (obj: any, seen: Set<any> = new Set()): any => {
     return obj.toISOString();
   }
 
-  // If it's a native or complex non-plain object, do not recurse into it
-  if (obj.constructor && obj.constructor !== Object && obj.constructor !== Array) {
-    // Keep standard Firestore field types intact without deep structural recursion
+  // Check if it's a known safe Firestore type
+  const isFirestoreTimestamp = typeof obj.toDate === 'function' && typeof obj.toMillis === 'function';
+  const isFirestoreGeoPoint = typeof obj.latitude === 'number' && typeof obj.longitude === 'number';
+  const isFirestoreDocRef = obj.path && typeof obj.withConverter === 'function';
+
+  if (isFirestoreTimestamp || isFirestoreGeoPoint || isFirestoreDocRef) {
     return obj;
+  }
+
+  if (obj.constructor && obj.constructor !== Object && obj.constructor !== Array) {
+    // If it's a native or complex non-plain object we don't recognize, do not return it as is if it could cause circular reference issues.
+    // Instead return a lightweight string representation
+    const className = obj.constructor.name || 'Complex Object';
+    if (className === 'Timestamp' || className === 'GeoPoint' || className === 'DocumentReference') {
+      return obj;
+    }
+    return `[Complex ${className}]`;
   }
 
   seen.add(obj);
@@ -818,14 +831,15 @@ export const runDailyBackup = async (
       createdBy: auth.currentUser?.email || 'System Scheduler'
     };
 
+    const sanitizedDoc = sanitizeFirestoreData(backupDocument);
+
     if (!isPlaceholder) {
-      const sanitizedDoc = sanitizeFirestoreData(backupDocument);
       await setDoc(doc(db, 'backups', backupId), sanitizedDoc);
     } else {
       const localBackupsStr = localStorage.getItem('local_backups') || '[]';
       const localBackups = JSON.parse(localBackupsStr);
-      localBackups.push(backupDocument);
-      localStorage.setItem('local_backups', JSON.stringify(localBackups));
+      localBackups.push(sanitizedDoc);
+      localStorage.setItem('local_backups', safeStringify(localBackups));
     }
 
     // Save settings with updated lastBackupDate
