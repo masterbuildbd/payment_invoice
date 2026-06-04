@@ -8,6 +8,7 @@ import {
   doc, 
   query as firestoreQuery, 
   orderBy, 
+  limit,
   onSnapshot
 } from 'firebase/firestore';
 import { db, auth } from './firebase';
@@ -169,8 +170,8 @@ export const getInvoicesSync = (): Invoice[] => {
 
 // --- Firebase Operations ---
 
-export const subscribeToInvoices = (callback: (invoices: Invoice[]) => void) => {
-  return subscribeToCollection<Invoice>('invoices', callback, 'createdAt');
+export const subscribeToInvoices = (callback: (invoices: Invoice[]) => void, limitCount?: number) => {
+  return subscribeToCollection<Invoice>('invoices', callback, 'createdAt', limitCount);
 };
 
 export const createInvoice = async (invoice: Invoice) => {
@@ -390,7 +391,8 @@ export const getInvoiceById = (id: string) => getDocumentById<Invoice>('invoices
 export const subscribeToCollection = <T extends { id: string }>(
   collectionName: string, 
   callback: (items: T[]) => void,
-  sortField: string = 'createdAt'
+  sortField: string = 'createdAt',
+  limitCount?: number
 ) => {
   const getMergedItems = (firestoreItems: T[]): T[] => {
     // Generate localStorage key for this specific collection
@@ -457,7 +459,17 @@ export const subscribeToCollection = <T extends { id: string }>(
   let unsubscribe: (() => void) | undefined;
 
   try {
-    const q = collection(db, collectionName);
+    let q;
+    if (limitCount && limitCount > 0) {
+      q = firestoreQuery(
+        collection(db, collectionName),
+        orderBy(sortField, 'desc'),
+        limit(limitCount)
+      );
+    } else {
+      q = collection(db, collectionName);
+    }
+
     unsubscribe = onSnapshot(q, (snapshot) => {
       currentFirestoreItems = snapshot.docs.map(docSnap => ({
         ...docSnap.data() as T,

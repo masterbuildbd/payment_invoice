@@ -75,11 +75,46 @@ export function Invoices({ initialStatusFilter = 'all' }: InvoicesProps) {
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [invoiceToDelete, setInvoiceToDelete] = useState<string | null>(null);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [appsData, setAppsData] = useState<any[]>(mockAppsData);
-  const [panelsData, setPanelsData] = useState<any[]>(mockPanelsData);
-  const [decodersData, setDecodersData] = useState<any[]>(mockDecodersData);
-  const [usersData, setUsersData] = useState<any[]>(mockUsersData);
+  const [invoices, setInvoices] = useState<Invoice[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_invs_invoices');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [appsData, setAppsData] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_invs_apps');
+      return cached ? JSON.parse(cached) : mockAppsData;
+    } catch {
+      return mockAppsData;
+    }
+  });
+  const [panelsData, setPanelsData] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_invs_panels');
+      return cached ? JSON.parse(cached) : mockPanelsData;
+    } catch {
+      return mockPanelsData;
+    }
+  });
+  const [decodersData, setDecodersData] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_invs_decoders');
+      return cached ? JSON.parse(cached) : mockDecodersData;
+    } catch {
+      return mockDecodersData;
+    }
+  });
+  const [usersData, setUsersData] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_invs_users');
+      return cached ? JSON.parse(cached) : mockUsersData;
+    } catch {
+      return mockUsersData;
+    }
+  });
 
   useEffect(() => {
     const unsubInvoices = subscribeToInvoices((updatedInvoices) => {
@@ -89,26 +124,60 @@ export function Invoices({ initialStatusFilter = 'all' }: InvoicesProps) {
         return bTime - aTime;
       });
       setInvoices(sorted);
-    });
+      try {
+        localStorage.setItem('cached_invs_invoices', JSON.stringify(sorted));
+      } catch (e) {
+        console.error(e);
+      }
+    }, 250);
 
     const unsubApps = subscribeToCollection<any>('apps', (data) => {
-      setAppsData(data.length > 0 ? data : mockAppsData);
+      const actualData = data.length > 0 ? data : mockAppsData;
+      setAppsData(actualData);
+      try {
+        localStorage.setItem('cached_invs_apps', JSON.stringify(actualData));
+      } catch (e) {
+        console.error(e);
+      }
     }, 'name');
 
     const unsubPanels = subscribeToCollection<any>('panels', (data) => {
-      setPanelsData(data.length > 0 ? data : mockPanelsData);
+      const actualData = data.length > 0 ? data : mockPanelsData;
+      setPanelsData(actualData);
+      try {
+        localStorage.setItem('cached_invs_panels', JSON.stringify(actualData));
+      } catch (e) {
+        console.error(e);
+      }
     }, 'name');
 
     const unsubDecoders = subscribeToCollection<any>('decoders', (data) => {
-      setDecodersData(data.length > 0 ? data : mockDecodersData);
+      const actualData = data.length > 0 ? data : mockDecodersData;
+      setDecodersData(actualData);
+      try {
+        localStorage.setItem('cached_invs_decoders', JSON.stringify(actualData));
+      } catch (e) {
+        console.error(e);
+      }
     }, 'serialNumber');
 
     const unsubUsers = subscribeToCollection<any>('users', (data) => {
-      setUsersData(data.length > 0 ? data : mockUsersData);
+      const actualData = data.length > 0 ? data : mockUsersData;
+      setUsersData(actualData);
+      try {
+        localStorage.setItem('cached_invs_users', JSON.stringify(actualData));
+      } catch (e) {
+        console.error(e);
+      }
     }, 'name');
 
     const unsubSettings = subscribeToSettings((updatedSettings) => {
       setCompanySettings(updatedSettings as CompanySettings);
+      try {
+        localStorage.setItem('cached_invs_settings', JSON.stringify(updatedSettings));
+      } catch (e) {
+        console.error(e);
+      }
     });
 
     return () => {
@@ -123,7 +192,14 @@ export function Invoices({ initialStatusFilter = 'all' }: InvoicesProps) {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'unpaid' | 'paid' | 'pending' | 'overdue'>(initialStatusFilter);
-  const [companySettings, setCompanySettings] = useState<CompanySettings>(DEFAULT_SETTINGS);
+  const [companySettings, setCompanySettings] = useState<CompanySettings>(() => {
+    try {
+      const cached = localStorage.getItem('cached_invs_settings');
+      return cached ? JSON.parse(cached) : DEFAULT_SETTINGS;
+    } catch {
+      return DEFAULT_SETTINGS;
+    }
+  });
 
   // Form states
   const [invoiceNumber, setInvoiceNumber] = useState('');

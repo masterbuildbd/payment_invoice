@@ -44,16 +44,65 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
   const { t } = useLanguage();
   const { user } = useAuth();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [investments, setInvestments] = useState<Investment[]>([]);
-  const [activities, setActivities] = useState<ActivityLog[]>([]);
-  const [settings, setSettings] = useState<Partial<CompanySettings>>({});
+  const [invoices, setInvoices] = useState<Invoice[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_dashboard_invoices');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [investments, setInvestments] = useState<Investment[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_dashboard_investments');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [activities, setActivities] = useState<ActivityLog[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_dashboard_activities');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [settings, setSettings] = useState<Partial<CompanySettings>>(() => {
+    try {
+      const cached = localStorage.getItem('cached_dashboard_settings');
+      return cached ? JSON.parse(cached) : {};
+    } catch {
+      return {};
+    }
+  });
   const [chartVisualType, setChartVisualType] = useState<'bar' | 'area' | 'line'>('area');
   const [chartMetricMode, setChartMetricMode] = useState<'daily' | 'cumulative' | 'profit'>('daily');
 
-  const [currentUserData, setCurrentUserData] = useState<any>(null);
-  const [totalUsersCount, setTotalUsersCount] = useState(0);
-  const [allUsers, setAllUsers] = useState<any[]>([]);
+  const [currentUserData, setCurrentUserData] = useState<any>(() => {
+    try {
+      const cached = localStorage.getItem('cached_dashboard_current_user_data');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [totalUsersCount, setTotalUsersCount] = useState<number>(() => {
+    try {
+      const cached = localStorage.getItem('cached_dashboard_total_users_count');
+      return cached ? Number(cached) : 0;
+    } catch {
+      return 0;
+    }
+  });
+  const [allUsers, setAllUsers] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_dashboard_all_users');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [isProcessingApproval, setIsProcessingApproval] = useState<string | null>(null);
   const [approvedNotificationModal, setApprovedNotificationModal] = useState<{
     isOpen: boolean;
@@ -137,9 +186,30 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
   const [isClientPassSaving, setIsClientPassSaving] = useState(false);
 
   // Customer sub-assets States
-  const [myApps, setMyApps] = useState<any[]>([]);
-  const [myDecoders, setMyDecoders] = useState<any[]>([]);
-  const [myPanels, setMyPanels] = useState<any[]>([]);
+  const [myApps, setMyApps] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_dashboard_my_apps');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [myDecoders, setMyDecoders] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_dashboard_my_decoders');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [myPanels, setMyPanels] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_dashboard_my_panels');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
 
   // Admin sticky notepad persistence state
   const [adminNotes, setAdminNotes] = useState<string>(() => {
@@ -148,11 +218,23 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
   const [notesSaveSuccess, setNotesSaveSuccess] = useState(false);
 
   // Sync customer SMS logs
-  const [allSmsLogs, setAllSmsLogs] = useState<any[]>([]);
+  const [allSmsLogs, setAllSmsLogs] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_dashboard_all_sms_logs');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   useEffect(() => {
     if (user) {
       const unsubSms = subscribeToCollection<any>('sms_logs', (list) => {
         setAllSmsLogs(list);
+        try {
+          localStorage.setItem('cached_dashboard_all_sms_logs', JSON.stringify(list));
+        } catch (e) {
+          console.error(e);
+        }
       });
       return () => {
         unsubSms && unsubSms();
@@ -413,12 +495,40 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
         return bTime - aTime;
       });
       setInvoices(sorted);
-    });
-    const unsubInvestments = subscribeToCollection<Investment>('investments', setInvestments, 'date');
+      try {
+        localStorage.setItem('cached_dashboard_invoices', JSON.stringify(sorted));
+      } catch (e) {
+        console.error(e);
+      }
+    }, 200);
+
+    const unsubInvestments = subscribeToCollection<Investment>('investments', (list) => {
+      setInvestments(list);
+      try {
+        localStorage.setItem('cached_dashboard_investments', JSON.stringify(list));
+      } catch (e) {
+        console.error(e);
+      }
+    }, 'date');
+
     const unsubActivities = subscribeToCollection<ActivityLog>('activities', (logs) => {
-      setActivities(logs.slice(0, 10)); // Top 10 activities
-    }, 'timestamp');
-    const unsubSettings = subscribeToSettings(setSettings);
+      const top10 = logs.slice(0, 10);
+      setActivities(top10); // Top 10 activities
+      try {
+        localStorage.setItem('cached_dashboard_activities', JSON.stringify(top10));
+      } catch (e) {
+        console.error(e);
+      }
+    }, 'timestamp', 25);
+
+    const unsubSettings = subscribeToSettings((updatedSettings) => {
+      setSettings(updatedSettings);
+      try {
+        localStorage.setItem('cached_dashboard_settings', JSON.stringify(updatedSettings));
+      } catch (e) {
+        console.error(e);
+      }
+    });
 
     return () => {
       unsubInvoices && unsubInvoices();
@@ -433,13 +543,23 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
     if (user) {
       const unsubscribe = subscribeToCollection<any>('users', (usersList) => {
         const found = usersList.find(u => u.username === user.username);
+        let updatedUser = user;
         if (found) {
           setCurrentUserData(found);
+          updatedUser = found;
         } else {
           setCurrentUserData(user);
         }
         setTotalUsersCount(usersList.length);
         setAllUsers(usersList);
+
+        try {
+          localStorage.setItem('cached_dashboard_current_user_data', JSON.stringify(updatedUser));
+          localStorage.setItem('cached_dashboard_total_users_count', String(usersList.length));
+          localStorage.setItem('cached_dashboard_all_users', JSON.stringify(usersList));
+        } catch (e) {
+          console.error(e);
+        }
       });
       return () => {
         unsubscribe && unsubscribe();
@@ -451,13 +571,31 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
   useEffect(() => {
     if (user) {
       const unsubApps = subscribeToCollection<any>('apps', (list) => {
-        setMyApps(list.filter(item => item.username === user.username));
+        const filtered = list.filter(item => item.username === user.username);
+        setMyApps(filtered);
+        try {
+          localStorage.setItem('cached_dashboard_my_apps', JSON.stringify(filtered));
+        } catch (e) {
+          console.error(e);
+        }
       }, 'name');
       const unsubDecoders = subscribeToCollection<any>('decoders', (list) => {
-        setMyDecoders(list.filter(item => item.username === user.username));
+        const filtered = list.filter(item => item.username === user.username);
+        setMyDecoders(filtered);
+        try {
+          localStorage.setItem('cached_dashboard_my_decoders', JSON.stringify(filtered));
+        } catch (e) {
+          console.error(e);
+        }
       }, 'name');
       const unsubPanels = subscribeToCollection<any>('panels', (list) => {
-        setMyPanels(list.filter(item => item.username === user.username));
+        const filtered = list.filter(item => item.username === user.username);
+        setMyPanels(filtered);
+        try {
+          localStorage.setItem('cached_dashboard_my_panels', JSON.stringify(filtered));
+        } catch (e) {
+          console.error(e);
+        }
       }, 'name');
 
       return () => {

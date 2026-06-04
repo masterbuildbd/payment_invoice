@@ -93,9 +93,30 @@ const parseCSV = (text: string) => {
 
 export function PaymentRequests() {
   const { addToast } = useToast();
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [settings, setSettings] = useState<Partial<CompanySettings>>({});
+  const [invoices, setInvoices] = useState<Invoice[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_payreq_invoices');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [users, setUsers] = useState<User[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_payreq_users');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [settings, setSettings] = useState<Partial<CompanySettings>>(() => {
+    try {
+      const cached = localStorage.getItem('cached_payreq_settings');
+      return cached ? JSON.parse(cached) : {};
+    } catch {
+      return {};
+    }
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState<'pending' | 'paid' | 'rejected' | 'all'>('pending');
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -139,14 +160,29 @@ export function PaymentRequests() {
         return bTime - aTime;
       });
       setInvoices(sorted);
-    });
+      try {
+        localStorage.setItem('cached_payreq_invoices', JSON.stringify(sorted));
+      } catch (e) {
+        console.error(e);
+      }
+    }, 250);
 
     const unsubUsers = subscribeToCollection<User>('users', (data) => {
       setUsers(data);
+      try {
+        localStorage.setItem('cached_payreq_users', JSON.stringify(data));
+      } catch (e) {
+        console.error(e);
+      }
     }, 'name');
 
     const unsubSettings = subscribeToSettings((data) => {
       setSettings(data);
+      try {
+        localStorage.setItem('cached_payreq_settings', JSON.stringify(data));
+      } catch (e) {
+        console.error(e);
+      }
     });
 
     return () => {
