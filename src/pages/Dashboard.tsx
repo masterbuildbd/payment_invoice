@@ -1039,13 +1039,15 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
 
     // States for Selected Payment Account Channel Viewer
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const [selectedAccountTab, setSelectedAccountTab] = useState<'bKash' | 'Nagad' | 'Upay' | 'Bank' | 'Binance' | 'PayPal'>('bKash');
+    const [selectedAccountTab, setSelectedAccountTab] = useState<'bKash' | 'Nagad' | 'Upay' | 'Rocket' | 'Mcash' | 'Bank' | 'Binance' | 'PayPal'>('bKash');
 
     const activeProviders = React.useMemo(() => {
       return [
         { key: 'bKash', enabled: settings?.bkashEnabled !== false },
         { key: 'Nagad', enabled: settings?.nagadEnabled !== false },
         { key: 'Upay', enabled: settings?.upayEnabled !== false },
+        { key: 'Rocket', enabled: settings?.rocketEnabled !== false },
+        { key: 'Mcash', enabled: settings?.mcashEnabled !== false },
         { key: 'Bank', enabled: settings?.bankEnabled !== false },
         { key: 'Binance', enabled: settings?.binanceEnabled !== false },
         { key: 'PayPal', enabled: settings?.paypalEnabled !== false },
@@ -1538,6 +1540,20 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
             </svg>
           );
 
+          const rocketLogo = (
+            <svg className="w-6 h-6 flex-shrink-0" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="40" height="40" rx="10" fill="#8C2C84" />
+              <path d="M20 9L14 19H18V29L26 19H22V9Z" fill="white" stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
+            </svg>
+          );
+
+          const mcashLogo = (
+            <svg className="w-6 h-6 flex-shrink-0" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="40" height="40" rx="10" fill="#00843D" />
+              <text x="50%" y="65%" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold" fontFamily="sans-serif">M</text>
+            </svg>
+          );
+
           const bankLogo = (
             <svg className="w-6 h-6 flex-shrink-0" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect width="40" height="40" rx="10" fill="#1E3A8A" />
@@ -1579,6 +1595,8 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
                     { key: 'bKash', label: 'bKash (বিকাশ)', logo: bKashLogo, color: 'bg-rose-50/80 text-rose-700 border-rose-200/70', enabled: settings?.bkashEnabled !== false },
                     { key: 'Nagad', label: 'Nagad (নগদ)', logo: nagadLogo, color: 'bg-orange-50/80 text-orange-700 border-orange-200/70', enabled: settings?.nagadEnabled !== false },
                     { key: 'Upay', label: 'Upay (ইউপে)', logo: upayLogo, color: 'bg-indigo-50/80 text-indigo-700 border-indigo-200/70', enabled: settings?.upayEnabled !== false },
+                    { key: 'Rocket', label: 'Rocket (রকেট)', logo: rocketLogo, color: 'bg-pink-50/80 text-pink-700 border-pink-200/70', enabled: settings?.rocketEnabled !== false },
+                    { key: 'Mcash', label: 'Mcash (এমক্যাশ)', logo: mcashLogo, color: 'bg-emerald-50/80 text-emerald-700 border-emerald-200/70', enabled: settings?.mcashEnabled !== false },
                     { key: 'Bank', label: 'Bank Account (ব্যাংক)', logo: bankLogo, color: 'bg-blue-50/80 text-blue-700 border-blue-200/70', enabled: settings?.bankEnabled !== false },
                     { key: 'Binance', label: 'Binance Pay ID (বাইনান্স)', logo: binanceLogo, color: 'bg-yellow-50/40 text-yellow-850 border-yellow-250', enabled: settings?.binanceEnabled !== false },
                     { key: 'PayPal', label: 'PayPal Gateway (পেপ্যাল)', logo: paypalLogo, color: 'bg-indigo-50/80 text-indigo-700 border-indigo-200/70', enabled: settings?.paypalEnabled !== false },
@@ -1727,6 +1745,86 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
                           </div>
                           <p className="text-[11px] text-slate-400 leading-relaxed pt-2">
                             প্রদত্ত ইউপে পার্সোনাল নাম্বারে সেন্ড মানি (Send Money) সম্পন্ন করুন। সেন্ডিং সম্পন্ন হলে প্রাপ্ত ট্রানজেকশন ID অথবা পেমেন্ট ট্রানজেকশন স্ক্রিনশট বা প্রেরক নাম্বার দিয়ে পেমেন্ট অপশন থেকে রিপোর্ট জমা দিন।
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedAccountTab === 'Rocket' && (
+                        <div className="space-y-4 animate-fade-in">
+                          <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                            <span className="text-xs font-black uppercase text-pink-400 tracking-wider flex items-center gap-2">
+                              {rocketLogo} Rocket Active Channel
+                            </span>
+                            <span className="text-[9px] bg-pink-500 text-white font-mono font-black px-2 py-0.5 rounded-full uppercase">Instant Transfer</span>
+                          </div>
+                          <div className="space-y-1 bg-white/5 p-4 rounded-xl border border-white/5">
+                            <span className="text-[10px] text-pink-300 font-bold uppercase block tracking-wider font-mono">রকেট নম্বর (Rocket Number)</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-1">
+                              <div className="text-3xl font-mono font-black text-white select-all">{settings.rocketNumber || '01718070273'}</div>
+                              <button
+                                type="button"
+                                onClick={() => handleCopyText(settings.rocketNumber || '01718070273')}
+                                className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 select-none text-white font-mono font-bold text-[10px] px-3.5 py-1.5 rounded-lg border border-white/5 transition-all self-start sm:self-center"
+                              >
+                                {copiedText === (settings.rocketNumber || '01718070273') ? (
+                                  <>
+                                    <CheckCircle size={12} className="text-emerald-450" />
+                                    কপি হয়েছে!
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy size={12} />
+                                    কপি করুন
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                            <span className="inline-block bg-pink-600 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full mt-3 uppercase tracking-widest font-mono">
+                              personal (ব্যক্তিগত অ্যাকাউন্ট)
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-400 leading-relaxed pt-2">
+                            প্রদত্ত রকেট পার্সোনাল নাম্বারে সেন্ড মানি (Send Money) সম্পন্ন করুন। সেন্ডিং সম্পন্ন হলে প্রাপ্ত ট্রানজেকশন ID অথবা পেমেন্ট ট্রানজেকশন স্ক্রিনশট বা প্রেরক নাম্বার দিয়ে পেমেন্ট অপশন থেকে রিপোর্ট জমা দিন।
+                          </p>
+                        </div>
+                      )}
+
+                      {selectedAccountTab === 'Mcash' && (
+                        <div className="space-y-4 animate-fade-in">
+                          <div className="flex justify-between items-center border-b border-white/10 pb-3">
+                            <span className="text-xs font-black uppercase text-emerald-400 tracking-wider flex items-center gap-2">
+                              {mcashLogo} Mcash Active Channel
+                            </span>
+                            <span className="text-[9px] bg-emerald-500 text-white font-mono font-black px-2 py-0.5 rounded-full uppercase">Instant Transfer</span>
+                          </div>
+                          <div className="space-y-1 bg-white/5 p-4 rounded-xl border border-white/5">
+                            <span className="text-[10px] text-emerald-300 font-bold uppercase block tracking-wider font-mono">এমক্যাশ নম্বর (Mcash Number)</span>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-1">
+                              <div className="text-3xl font-mono font-black text-white select-all">{settings.mcashNumber || '01718070273'}</div>
+                              <button
+                                type="button"
+                                onClick={() => handleCopyText(settings.mcashNumber || '01718070273')}
+                                className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 select-none text-white font-mono font-bold text-[10px] px-3.5 py-1.5 rounded-lg border border-white/5 transition-all self-start sm:self-center"
+                              >
+                                {copiedText === (settings.mcashNumber || '01718070273') ? (
+                                  <>
+                                    <CheckCircle size={12} className="text-emerald-450" />
+                                    কপি হয়েছে!
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy size={12} />
+                                    কপি করুন
+                                  </>
+                                )}
+                              </button>
+                            </div>
+                            <span className="inline-block bg-emerald-600 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full mt-3 uppercase tracking-widest font-mono">
+                              personal (ব্যক্তিগত অ্যাকাউন্ট)
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-400 leading-relaxed pt-2">
+                            প্রদত্ত এমক্যাশ পার্সোনাল নাম্বারে সেন্ড মানি (Send Money) সম্পন্ন করুন। সেন্ডিং সম্পন্ন হলে প্রাপ্ত ট্রানজেকশন ID অথবা পেমেন্ট ট্রানজেকশন স্ক্রিনশট বা প্রেরক নাম্বার দিয়ে পেমেন্ট অপশন থেকে রিপোর্ট জমা দিন।
                           </p>
                         </div>
                       )}

@@ -70,6 +70,10 @@ export type CompanySettings = {
   nagadEnabled?: boolean;
   upayNumber?: string;
   upayEnabled?: boolean;
+  rocketNumber?: string;
+  rocketEnabled?: boolean;
+  mcashNumber?: string;
+  mcashEnabled?: boolean;
   binancePayId?: string;
   binanceEnabled?: boolean;
   binanceUsdtAddress?: string;

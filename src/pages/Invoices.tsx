@@ -252,8 +252,8 @@ export function Invoices({ initialStatusFilter = 'all' }: InvoicesProps) {
     { code: '+91', name: 'IN', flag: '🇮🇳' },
   ];
 
-  const localPayments = ['bKash', 'Nagad', 'Rocket', 'Upay', 'CellFin', 'Bank', 'Binance'];
-  const isTaka = ['bKash', 'Nagad', 'Rocket', 'Upay', 'CellFin'].includes(paymentMethod);
+  const localPayments = ['bKash', 'Nagad', 'Rocket', 'Upay', 'Mcash', 'CellFin', 'Bank', 'Binance'];
+  const isTaka = ['bKash', 'Nagad', 'Rocket', 'Upay', 'Mcash', 'CellFin'].includes(paymentMethod);
 
   const filteredInvoices = invoices.filter(inv => {
     const matchesSearch = inv.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -992,6 +992,7 @@ export function Invoices({ initialStatusFilter = 'all' }: InvoicesProps) {
                     <option value="Nagad">Nagad</option>
                     <option value="Rocket">Rocket</option>
                     <option value="Upay">Upay</option>
+                    <option value="Mcash">Mcash</option>
                     <option value="CellFin">CellFin</option>
                   </optgroup>
                   <optgroup label="Global & Bank">

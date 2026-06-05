@@ -76,6 +76,10 @@ const DEFAULT_SETTINGS: CompanySettings = {
   nagadEnabled: true,
   upayNumber: '01718070273',
   upayEnabled: true,
+  rocketNumber: '01718070273',
+  rocketEnabled: true,
+  mcashNumber: '01718070273',
+  mcashEnabled: true,
   binancePayId: '542901726',
   binanceEnabled: true,
   binanceUsdtAddress: 'TYm7A8WqyY4fFsh9SgH8eD2c1T9Z9sK8nQ',
@@ -1273,7 +1277,7 @@ export function Settings() {
 
             <div className="space-y-1">
               <div className="flex justify-between items-center">
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest">UPAY PERSONAL NUMBER</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">UPAY PERSONAL NUMBER</label>
                 <label className="relative inline-flex items-center cursor-pointer scale-75 select-none">
                   <input 
                     type="checkbox"
@@ -1293,6 +1297,54 @@ export function Settings() {
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium font-mono"
               />
               <p className="text-[9px] text-slate-400">Upay wallet number displayed under payment accounts & invoice top-ups.</p>
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex justify-between items-center">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">ROCKET PERSONAL NUMBER</label>
+                <label className="relative inline-flex items-center cursor-pointer scale-75 select-none">
+                  <input 
+                    type="checkbox"
+                    checked={settings.rocketEnabled !== false}
+                    onChange={() => handleToggle('rocketEnabled')}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                  <span className="text-[10px] font-bold text-slate-500 ml-1.5">{settings.rocketEnabled !== false ? 'Enabled' : 'Disabled'}</span>
+                </label>
+              </div>
+              <input 
+                name="rocketNumber"
+                value={settings.rocketNumber ?? ''}
+                onChange={handleChange}
+                placeholder="01718070273"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium font-mono"
+              />
+              <p className="text-[9px] text-slate-400">Rocket wallet number displayed under payment accounts & invoice top-ups.</p>
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex justify-between items-center">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">MCASH PERSONAL NUMBER</label>
+                <label className="relative inline-flex items-center cursor-pointer scale-75 select-none">
+                  <input 
+                    type="checkbox"
+                    checked={settings.mcashEnabled !== false}
+                    onChange={() => handleToggle('mcashEnabled')}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                  <span className="text-[10px] font-bold text-slate-500 ml-1.5">{settings.mcashEnabled !== false ? 'Enabled' : 'Disabled'}</span>
+                </label>
+              </div>
+              <input 
+                name="mcashNumber"
+                value={settings.mcashNumber ?? ''}
+                onChange={handleChange}
+                placeholder="01718070273"
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition-all text-sm font-medium font-mono"
+              />
+              <p className="text-[9px] text-slate-400">Mcash wallet number displayed under payment accounts & invoice top-ups.</p>
             </div>
 
             <div className="space-y-1">

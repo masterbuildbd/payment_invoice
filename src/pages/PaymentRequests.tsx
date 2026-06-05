@@ -1530,6 +1530,7 @@ export function PaymentRequests() {
                     <option value="bKash Agent">bKash Agent</option>
                     <option value="nagad">Nagad</option>
                     <option value="rocket">Rocket</option>
+                    <option value="mcash">Mcash</option>
                     <option value="upay">Upay</option>
                     <option value="Imported Statement">Imported Statement</option>
                   </select>

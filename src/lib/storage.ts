@@ -441,6 +441,26 @@ export const subscribeToCollection = <T extends { id: string }>(
   };
 
   let currentFirestoreItems: T[] = [];
+  try {
+    const cacheKeyMap: Record<string, string> = {
+      'invoices': 'cached_dashboard_invoices',
+      'investments': 'cached_dashboard_investments',
+      'activities': 'cached_dashboard_activities',
+      'users': 'cached_dashboard_all_users',
+      'apps': 'cached_dashboard_my_apps',
+      'decoders': 'cached_dashboard_my_decoders',
+      'panels': 'cached_dashboard_my_panels',
+    };
+    const cacheKey = cacheKeyMap[collectionName];
+    if (cacheKey) {
+      const cachedData = localStorage.getItem(cacheKey);
+      if (cachedData) {
+        currentFirestoreItems = JSON.parse(cachedData);
+      }
+    }
+  } catch (e) {
+    console.warn(`Error pre-hydrating currentFirestoreItems for ${collectionName}:`, e);
+  }
 
   const publishItems = () => {
     callback(getMergedItems(currentFirestoreItems));
