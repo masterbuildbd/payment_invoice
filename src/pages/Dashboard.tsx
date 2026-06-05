@@ -3152,28 +3152,10 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
             ))}
           </div>
         </div>
-      ) : (
-        <div className="bg-slate-50 border border-slate-200 rounded-[2rem] p-5 flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-in shadow-xs/60">
-          <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 bg-emerald-50 text-emerald-500 rounded-2xl flex items-center justify-center border border-emerald-100/70 shrink-0">
-              <Check size={20} className="stroke-[3]" />
-            </div>
-            <div>
-              <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                সব রিকোয়েস্ট পরিশোধিত ও অনুমোদন সম্পন্ন (All Clear)
-              </h4>
-              <p className="text-[11px] text-slate-500 leading-relaxed font-sans font-medium mt-0.5">
-                সিস্টেমে এই মুহূর্তে কাস্টমার কর্তৃক পেমেন্টের কোনো আবেদনের বিল নিষ্পন্নের জন্য পেন্ডিং রিকোয়েস্ট নেই।
-              </p>
-            </div>
-          </div>
-          <span className="text-[9px] font-mono text-slate-400 border border-slate-200 bg-white/55 px-2.5 py-1 rounded-xl block font-black tracking-widest uppercase">
-            STATUS: 100% CLEAR
-          </span>
-        </div>
-      )}
+      ) : null}
 
       {/* Dynamic Widget Settings Trigger Panel */}
+      {false && (
       <div className="flex flex-col sm:flex-row justify-between sm:items-center bg-slate-50 border border-slate-200 rounded-[2rem] p-5.5 gap-4 shadow-xs/50 animate-fade-in">
         <div className="flex items-center gap-3.5">
           <div className="p-3 bg-indigo-50 text-indigo-650 rounded-2xl border border-indigo-100/50 shadow-sm shrink-0">
@@ -3193,6 +3175,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
           <span>উইজেট সাজান (Configure Panel)</span>
         </button>
       </div>
+      )}
 
       {/* Bento Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
@@ -4642,7 +4625,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
       </Modal>
 
       {/* Floating Quick Actions Button */}
-      {isAdmin && (
+      {false && isAdmin && (
         <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3 font-sans">
           {/* Backdrop Click Dismiss for Menu */}
           {isQuickActionsOpen && (
