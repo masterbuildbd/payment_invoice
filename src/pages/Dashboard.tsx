@@ -1425,6 +1425,18 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
     const paidFees = approvedInvoicesBalance;
     const dueFees = Math.max(0, totalFee - paidFees);
 
+    const pendingFees = React.useMemo(() => {
+      return userInvoicesList
+        .filter(inv => inv.status === 'pending' || inv.status === 'overdue')
+        .reduce((sum, inv) => sum + (inv.amount || 0), 0);
+    }, [userInvoicesList]);
+
+    const rejectedFees = React.useMemo(() => {
+      return userInvoicesList
+        .filter(inv => inv.status === 'rejected' || inv.status === 'cancelled')
+        .reduce((sum, inv) => sum + (inv.amount || 0), 0);
+    }, [userInvoicesList]);
+
     const bKashLogo = (
       <svg className="w-6 h-6 flex-shrink-0 animate-pulse" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect width="40" height="40" rx="10" fill="#E2136E" />
@@ -1579,6 +1591,81 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
         {/* 1. DASHBOARD OVERVIEW SUB-TAB */}
         {activeSubTab === 'dashboard' && (
           <div className="space-y-6 animate-fade-in">
+            {/* ⚡ CLIENT CORE FINANCIAL LEDGER STATS */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+              {/* Card 1: Total Subscription Price / Fee */}
+              <div className="bg-gradient-to-br from-indigo-50/70 via-white to-indigo-100/20 border border-indigo-150 p-4.5 sm:p-5 rounded-2xl shadow-3xs relative overflow-hidden group hover:shadow-xs hover:border-indigo-300 transition-all duration-300 text-left">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="space-y-1">
+                    <span className="text-[9px] sm:text-[10px] font-black uppercase text-indigo-500/90 tracking-widest block leading-none">মোট সার্ভিস চুক্তি বিল</span>
+                    <h3 className="text-base sm:text-lg md:text-xl font-black text-slate-850 font-mono tracking-tight leading-none mt-1">৳{totalFee.toLocaleString()}</h3>
+                  </div>
+                  <span className="p-1.5 sm:p-2 rounded-xl bg-indigo-50 text-indigo-650 shrink-0 border border-indigo-100/30">
+                    <Activity size={16} className="stroke-[2.5]" />
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center gap-1 text-[9px] font-bold text-indigo-550/80">
+                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 animate-pulse" />
+                  <span>নির্ধারিত মোট সার্ভিস ফি (Contract)</span>
+                </div>
+                <div className="absolute right-0 bottom-0 w-12 h-12 bg-indigo-50/50 rounded-tl-full -mr-3 -mb-3 pointer-events-none" />
+              </div>
+
+              {/* Card 2: Total Approved / Paid Amount */}
+              <div className="bg-gradient-to-br from-emerald-50/70 via-white to-emerald-100/20 border border-emerald-150 p-4.5 sm:p-5 rounded-2xl shadow-3xs relative overflow-hidden group hover:shadow-xs hover:border-emerald-300 transition-all duration-300 text-left">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="space-y-1">
+                    <span className="text-[9px] sm:text-[10px] font-black uppercase text-emerald-600 tracking-widest block leading-none">পরিশোধিত ব্যালেন্স (Paid)</span>
+                    <h3 className="text-base sm:text-lg md:text-xl font-black text-emerald-900 font-mono tracking-tight leading-none mt-1">৳{paidFees.toLocaleString()}</h3>
+                  </div>
+                  <span className="p-1.5 sm:p-2 rounded-xl bg-emerald-50 text-emerald-700 shrink-0 border border-emerald-100/30">
+                    <CheckCircle size={16} className="stroke-[2.5]" />
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center gap-1 text-[9px] font-bold text-emerald-655">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <span>অনুমোদিত ব্যালেন্স ( {approvedCount}টি পেমেন্ট )</span>
+                </div>
+                <div className="absolute right-0 bottom-0 w-12 h-12 bg-emerald-50/50 rounded-tl-full -mr-3 -mb-3 pointer-events-none" />
+              </div>
+
+              {/* Card 3: Pending/Under Verification Amount */}
+              <div className="bg-gradient-to-br from-amber-50/70 via-white to-amber-100/20 border border-amber-150 p-4.5 sm:p-5 rounded-2xl shadow-3xs relative overflow-hidden group hover:shadow-xs hover:border-amber-300 transition-all duration-300 text-left">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="space-y-1">
+                    <span className="text-[9px] sm:text-[10px] font-black uppercase text-amber-600 tracking-widest block leading-none">যাচাইাধীন জমা (Pending)</span>
+                    <h3 className="text-base sm:text-lg md:text-xl font-black text-amber-900 font-mono tracking-tight leading-none mt-1">৳{pendingFees.toLocaleString()}</h3>
+                  </div>
+                  <span className="p-1.5 sm:p-2 rounded-xl bg-amber-50 text-amber-700 shrink-0 border border-amber-100/30">
+                    <Clock size={16} className="stroke-[2.5]" />
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center gap-1 text-[9px] font-bold text-amber-655">
+                  <span className={`h-1.5 w-1.5 rounded-full ${pendingFees > 0 ? 'bg-amber-500 animate-pulse' : 'bg-slate-300'}`} />
+                  <span>{pendingCount}টি পেমেন্ট যাচাইকরণের জন্য অপেক্ষারত</span>
+                </div>
+                <div className="absolute right-0 bottom-0 w-12 h-12 bg-amber-50/50 rounded-tl-full -mr-3 -mb-3 pointer-events-none" />
+              </div>
+
+              {/* Card 4: Due/Remaining Payment */}
+              <div className="bg-gradient-to-br from-rose-50/70 via-white to-rose-100/20 border border-rose-150 p-4.5 sm:p-5 rounded-2xl shadow-3xs relative overflow-hidden group hover:shadow-xs hover:border-rose-300 transition-all duration-300 text-left">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="space-y-1">
+                    <span className="text-[9px] sm:text-[10px] font-black uppercase text-rose-600 tracking-widest block leading-none">অবশিষ্ট বকেয়া (Due Debt)</span>
+                    <h3 className="text-base sm:text-lg md:text-xl font-black text-rose-950 font-mono tracking-tight leading-none mt-1">৳{dueFees.toLocaleString()}</h3>
+                  </div>
+                  <span className="p-1.5 sm:p-2 rounded-xl bg-rose-50 text-rose-650 shrink-0 border border-rose-100/30">
+                    <TrendingDown size={16} className="stroke-[2.5]" />
+                  </span>
+                </div>
+                <div className="mt-3 flex items-center gap-1 text-[9px] font-bold text-rose-655">
+                  <span className={`h-1.5 w-1.5 rounded-full ${dueFees > 0 ? 'bg-rose-550 animate-ping' : 'bg-emerald-500'}`} />
+                  <span>{dueFees > 0 ? 'অনুগ্রহ করে বকেয়া পরিশোধ করুন' : 'আপনার আর কোনো বকেয়া বাকি নেই'}</span>
+                </div>
+                <div className="absolute right-0 bottom-0 w-12 h-12 bg-rose-50/50 rounded-tl-full -mr-3 -mb-3 pointer-events-none" />
+              </div>
+            </div>
+
             {/* USER PROFILE & SUMMARY STATS BENTO CARDS */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Profile Card */}
