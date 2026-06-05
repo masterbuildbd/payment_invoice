@@ -159,7 +159,7 @@ export function Layout({ children, activeTab, onMenuToggle, onLogoutRequest }: L
 
   return (
     <div className="flex-1 flex flex-col min-h-screen bg-[#f8fafc] w-full max-w-full overflow-x-hidden md:dark:bg-slate-900 dark:bg-slate-950">
-      <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-10 w-full">
+      <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-30 w-full">
         <div className="flex items-center gap-4">
           <button 
             onClick={onMenuToggle}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, Activity, FileText, Banknote, Check, X, Clock, CreditCard, CheckCircle, ShieldAlert, Sparkles, PhoneCall, Gift, RefreshCw, Users, Settings, Lock, Eye, EyeOff, Megaphone, Bell, Plus, ExternalLink, ChevronRight, BarChart3, Copy, MessageSquare, Search, AlertCircle, Mail } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, Activity, FileText, Banknote, Check, X, Clock, CreditCard, CheckCircle, ShieldAlert, Sparkles, PhoneCall, Gift, RefreshCw, Users, Settings, Lock, Eye, EyeOff, Megaphone, Bell, Plus, ExternalLink, ChevronRight, BarChart3, Copy, MessageSquare, Search, AlertCircle, Mail, Cpu, Layers, Play, Sliders, ChevronUp, ChevronDown, Pin, PinOff, ArrowLeft, ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../lib/auth';
 import { updateDocument, safeStringify } from '../lib/storage';
@@ -38,12 +38,109 @@ const defaultChartData = [
   { name: 'Sun', income: 3490 },
 ];
 
-type ModalType = 'app' | 'decoder' | 'panel' | 'user' | 'invoice' | null;
+type ModalType = 'app' | 'decoder' | 'panel' | 'user' | 'invoice' | 'create_invoice_direct' | null;
 
 export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onLogoutRequest: () => void; activeSubTab?: string }) {
   const { t } = useLanguage();
   const { user } = useAuth();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
+
+  // Floating Quick Actions States
+  const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
+  const [directInvoiceNum, setDirectInvoiceNum] = useState('');
+  const [directInvoiceType, setDirectInvoiceType] = useState('Apps');
+  const [directInvoiceCustomerName, setDirectInvoiceCustomerName] = useState('');
+  const [directInvoiceCountryCode, setDirectInvoiceCountryCode] = useState('+880');
+  const [directInvoicePhone, setDirectInvoicePhone] = useState('');
+  const [directInvoicePaymentMethod, setDirectInvoicePaymentMethod] = useState('bKash');
+  const [directInvoiceTxnId, setDirectInvoiceTxnId] = useState('');
+  const [directInvoiceAmount, setDirectInvoiceAmount] = useState('');
+  const [directInvoicePaid, setDirectInvoicePaid] = useState('');
+  const [directInvoiceDue, setDirectInvoiceDue] = useState('0');
+  const [directInvoiceNote, setDirectInvoiceNote] = useState('');
+  const [isDirectInvoiceSaving, setIsDirectInvoiceSaving] = useState(false);
+
+  const localCountryCodes = [
+    { code: '+880', label: 'BD' },
+    { code: '+966', label: 'SA' },
+    { code: '+974', label: 'QA' },
+    { code: '+968', label: 'OM' },
+    { code: '+965', label: 'KW' },
+    { code: '+971', label: 'AE' },
+    { code: '+256', label: 'UG' },
+    { code: '+91', label: 'IN' },
+    { code: '+92', label: 'PK' },
+    { code: '+973', label: 'BH' },
+  ];
+
+  // Hook to generate unique ID and reset inputs when direct invoice modal is opened
+  useEffect(() => {
+    if (activeModal === 'create_invoice_direct') {
+      const uniqueId = `INV-${Math.floor(100000 + Math.random() * 900000)}`;
+      setDirectInvoiceNum(uniqueId);
+      setDirectInvoiceCustomerName('');
+      setDirectInvoicePhone('');
+      setDirectInvoiceTxnId('');
+      setDirectInvoiceAmount('');
+      setDirectInvoicePaid('');
+      setDirectInvoiceDue('0');
+      setDirectInvoiceNote('');
+    }
+  }, [activeModal]);
+
+  const handleDirectInvoiceAmountChange = (val: string, type: 'amount' | 'paid') => {
+    if (type === 'amount') {
+      setDirectInvoiceAmount(val);
+      const amt = parseFloat(val) || 0;
+      const pd = parseFloat(directInvoicePaid) || 0;
+      setDirectInvoiceDue(Math.max(0, amt - pd).toString());
+    } else {
+      setDirectInvoicePaid(val);
+      const amt = parseFloat(directInvoiceAmount) || 0;
+      const pd = parseFloat(val) || 0;
+      setDirectInvoiceDue(Math.max(0, amt - pd).toString());
+    }
+  };
+
+  const handleCreateDirectInvoiceSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsDirectInvoiceSaving(true);
+    try {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const dateStr = now.toISOString().split('T')[0];
+      const fullDate = `${dateStr} ${timeStr}`;
+
+      const amt = parseFloat(directInvoiceAmount) || 0;
+      const pd = parseFloat(directInvoicePaid) || 0;
+      const due = Math.max(0, amt - pd);
+
+      const invoiceData: any = {
+        id: directInvoiceNum,
+        customerName: directInvoiceCustomerName,
+        customerNumber: `${directInvoiceCountryCode} ${directInvoicePhone}`,
+        paymentMethod: directInvoicePaymentMethod,
+        transactionId: directInvoiceTxnId,
+        amount: amt,
+        paidAmount: pd,
+        dueAmount: due,
+        status: due > 0 ? 'pending' : 'paid',
+        createdAt: fullDate,
+        date: dateStr,
+        cashierName: currentUserData?.name || user?.name || 'Administrator',
+        type: directInvoiceType,
+        note: directInvoiceNote,
+        items: [{ description: `${directInvoiceType} Service`, quantity: 1, price: amt }]
+      };
+
+      await createInvoice(invoiceData);
+      setActiveModal(null);
+    } catch (err) {
+      console.error('Error creating direct invoice:', err);
+    } finally {
+      setIsDirectInvoiceSaving(false);
+    }
+  };
   const [invoices, setInvoices] = useState<Invoice[]>(() => {
     try {
       const cached = localStorage.getItem('cached_dashboard_invoices');
@@ -216,6 +313,267 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
     return localStorage.getItem('admin_desktop_sticky_notes') || '';
   });
   const [notesSaveSuccess, setNotesSaveSuccess] = useState(false);
+
+  // --- Admin Customizable Pinned Metrics & Dynamic Widgets Configuration System ---
+  // System-level list states for widgets (exclusive to Admin)
+  const [allDecoders, setAllDecoders] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_dashboard_all_decoders');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [allApps, setAllApps] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_dashboard_all_apps');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [allPanels, setAllPanels] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_dashboard_all_panels');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    const isAdminUser = currentUserData?.role === 'admin' || user?.role === 'admin';
+    if (isAdminUser) {
+      const unsubAllDecoders = subscribeToCollection<any>('decoders', (list) => {
+        setAllDecoders(list);
+        try {
+          localStorage.setItem('cached_dashboard_all_decoders', JSON.stringify(list));
+        } catch {}
+      });
+      const unsubAllApps = subscribeToCollection<any>('apps', (list) => {
+        setAllApps(list);
+        try {
+          localStorage.setItem('cached_dashboard_all_apps', JSON.stringify(list));
+        } catch {}
+      });
+      const unsubAllPanels = subscribeToCollection<any>('panels', (list) => {
+        setAllPanels(list);
+        try {
+          localStorage.setItem('cached_dashboard_all_panels', JSON.stringify(list));
+        } catch {}
+      });
+      return () => {
+        unsubAllDecoders && unsubAllDecoders();
+        unsubAllApps && unsubAllApps();
+        unsubAllPanels && unsubAllPanels();
+      };
+    }
+  }, [currentUserData?.role, user?.role]);
+
+  // Widgets state
+  const [widgets, setWidgets] = useState<any[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_dashboard_pinned_widgets');
+      if (cached) {
+        return JSON.parse(cached);
+      }
+    } catch (e) {
+      console.error('Error parsing cached pinned widgets:', e);
+    }
+    // Default system fallback
+    return [
+      { id: 'totalRevenue', label: 'Total Revenue', bangla: 'সর্বমোট রেভিনিউ', icon: 'Banknote', color: 'bg-indigo-50 text-indigo-600 border-indigo-150/40', isPinned: true },
+      { id: 'totalInvestment', label: 'Total Investment', bangla: 'সর্বমোট ইনভেস্টমেন্ট', icon: 'TrendingDown', color: 'bg-rose-50 text-rose-600 border-rose-150/40', isPinned: true },
+      { id: 'netProfit', label: 'Net Profit', bangla: 'প্রকৃত প্রফিট', icon: 'TrendingUp', color: 'bg-emerald-50 text-emerald-700 border-emerald-150/40', isPinned: true },
+      { id: 'dueBalance', label: 'Due Balance', bangla: 'গ্রাহক বকেয়া ঋণ', icon: 'Activity', color: 'bg-slate-900 text-rose-300 border-slate-800', isPinned: true, isDark: true },
+      { id: 'totalUsers', label: 'Registered Customers', bangla: 'রেজিস্টার্ড গ্রাহক', icon: 'Users', color: 'bg-violet-50 text-violet-600 border-violet-150/40', isPinned: true },
+      { id: 'todayPending', label: 'Today\'s Pending Payments', bangla: 'আজকের পেন্ডিং পেমেন্ট', icon: 'Clock', color: 'bg-amber-50 text-amber-600 border-amber-150/40', isPinned: false },
+      { id: 'todayRevenue', label: 'Today\'s Revenue', bangla: 'আজকের মোট কালেকশন', icon: 'Wallet', color: 'bg-teal-50 text-teal-600 border-teal-150/40', isPinned: false },
+      { id: 'activeDecoders', label: 'Total Active Decoders', bangla: 'মোট সক্রিয় ডিকোডার', icon: 'Cpu', color: 'bg-sky-50 text-sky-600 border-sky-150/40', isPinned: false },
+      { id: 'activePanels', label: 'Total Active Panels', bangla: 'মোট সক্রিয় প্যানেল', icon: 'Layers', color: 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-150/40', isPinned: false },
+      { id: 'activeApps', label: 'Total Created Apps', bangla: 'তৈরিকৃত মোট অ্যাপস', icon: 'Play', color: 'bg-red-50 text-red-650 border-red-150/40', isPinned: false },
+    ];
+  });
+
+  const [isWidgetModalOpen, setIsWidgetModalOpen] = useState(false);
+  const [draggedWidgetIndex, setDraggedWidgetIndex] = useState<number | null>(null);
+
+  // Today-specific pending/revenue stats calculations
+  const todayPendingPayments = React.useMemo(() => {
+    const now = new Date();
+    const yearStr = now.getFullYear();
+    const monthStr = String(now.getMonth() + 1).padStart(2, '0');
+    const dayStr = String(now.getDate()).padStart(2, '0');
+    const todayDateStr = `${yearStr}-${monthStr}-${dayStr}`;
+    
+    return invoices.filter(inv => {
+      const isPending = inv.status === 'pending' || inv.status === 'overdue';
+      return isPending && inv.date === todayDateStr;
+    });
+  }, [invoices]);
+
+  const todayPendingPaymentsCount = todayPendingPayments.length;
+  const todayPendingPaymentsAmount = todayPendingPayments.reduce((sum, inv) => sum + (inv.amount || 0), 0);
+
+  const todayCollectedRevenue = React.useMemo(() => {
+    const now = new Date();
+    const yearStr = now.getFullYear();
+    const monthStr = String(now.getMonth() + 1).padStart(2, '0');
+    const dayStr = String(now.getDate()).padStart(2, '0');
+    const todayDateStr = `${yearStr}-${monthStr}-${dayStr}`;
+    
+    return invoices
+      .filter(inv => (inv.status === 'paid' || inv.status === 'approved') && inv.date === todayDateStr)
+      .reduce((sum, inv) => sum + (inv.paidAmount || inv.amount || 0), 0);
+  }, [invoices]);
+
+  const toggleWidgetPin = (widgetId: string) => {
+    const updated = widgets.map(w => {
+      if (w.id === widgetId) {
+        return { ...w, isPinned: !w.isPinned };
+      }
+      return w;
+    });
+    setWidgets(updated);
+    localStorage.setItem('cached_dashboard_pinned_widgets', JSON.stringify(updated));
+  };
+
+  const moveWidget = (index: number, direction: 'up' | 'down') => {
+    const nextIndex = direction === 'up' ? index - 1 : index + 1;
+    if (nextIndex < 0 || nextIndex >= widgets.length) return;
+
+    const reordered = [...widgets];
+    const temp = reordered[index];
+    reordered[index] = reordered[nextIndex];
+    reordered[nextIndex] = temp;
+
+    setWidgets(reordered);
+    localStorage.setItem('cached_dashboard_pinned_widgets', JSON.stringify(reordered));
+  };
+
+  // Drag and drop event handlers
+  const handleDragStart = (index: number) => {
+    setDraggedWidgetIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (index: number) => {
+    if (draggedWidgetIndex === null) return;
+    const reordered = [...widgets];
+    const [removed] = reordered.splice(draggedWidgetIndex, 1);
+    reordered.splice(index, 0, removed);
+    setWidgets(reordered);
+    localStorage.setItem('cached_dashboard_pinned_widgets', JSON.stringify(reordered));
+    setDraggedWidgetIndex(null);
+  };
+
+  const getWidgetIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'Banknote': return <Banknote size={18} />;
+      case 'TrendingDown': return <TrendingDown size={18} />;
+      case 'TrendingUp': return <TrendingUp size={18} />;
+      case 'Activity': return <Activity size={18} />;
+      case 'Users': return <Users size={18} />;
+      case 'Clock': return <Clock size={15} className="animate-spin" style={{ animationDuration: '4s' }} />;
+      case 'Wallet': return <Wallet size={18} />;
+      case 'Cpu': return <Cpu size={18} />;
+      case 'Layers': return <Layers size={18} />;
+      case 'Play': return <Play size={18} />;
+      default: return <Activity size={18} />;
+    }
+  };
+
+  const getWidgetValueAndInfo = (id: string) => {
+    switch (id) {
+      case 'totalRevenue':
+        return {
+          value: `৳${stats.totalRevenue.toLocaleString()}`,
+          subText: 'সংগৃহীত সর্বমোট টাকা',
+          bottomText: 'রিয়েলটাইম লিংকার',
+          sparkLine: true,
+          sparkColor: 'text-emerald-500',
+        };
+      case 'totalInvestment':
+        return {
+          value: `৳${stats.totalInvestment.toLocaleString()}`,
+          subText: 'সর্বমোট কাজের খরচ',
+          bottomText: 'Expenses Tracked',
+          sparkLine: true,
+          sparkColor: 'text-rose-500',
+          sparkDown: true,
+        };
+      case 'netProfit':
+        return {
+          value: `৳${stats.netProfit.toLocaleString()}`,
+          subText: 'অর্জিত প্রকৃত প্রফিট',
+          bottomText: 'Yielding Ledger Yield',
+          badge: true,
+          badgeColor: stats.netProfit >= 0 ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white',
+        };
+      case 'dueBalance':
+        return {
+          value: `৳${stats.dueBalance.toLocaleString()}`,
+          subText: 'গ্রাহকদের মোট বাকি বা বকেয়া',
+          bottomText: `${stats.pendingInvoicesCount} ${t('pending_invoices_status')}`,
+          badge: true,
+          badgeColor: 'bg-rose-500/25 text-rose-300',
+          badgeLabel: '● Pending Review',
+        };
+      case 'totalUsers':
+        return {
+          value: `${totalUsersCount} জন`,
+          subText: 'অ্যাক্টিভ গ্রাহক তালিকা সংখ্যা',
+          bottomText: 'Database Users list',
+          avatars: true,
+        };
+      case 'todayPending':
+        return {
+          value: `${todayPendingPaymentsCount} টি`,
+          subText: `আজকের পেন্ডিং পেমেন্ট (৳${todayPendingPaymentsAmount.toLocaleString()})`,
+          bottomText: 'পেমেন্ট অনুমোদনের অপেক্ষা',
+          iconAlert: true,
+        };
+      case 'todayRevenue':
+        return {
+          value: `৳${todayCollectedRevenue.toLocaleString()}`,
+          subText: 'আজকের সর্বমোট কালেকশন',
+          bottomText: "Today's Approved/Paid Revenue",
+          indicator: 'bg-emerald-500',
+        };
+      case 'activeDecoders':
+        return {
+          value: `${allDecoders.length} টি`,
+          subText: 'মোট সক্রিয় ডিকোডার সংযোগসমূহ',
+          bottomText: 'Decoder Licenses Count',
+          indicator: 'bg-amber-500',
+        };
+      case 'activePanels':
+        return {
+          value: `${allPanels.length} টি`,
+          subText: 'সক্রিয় রিসেলার প্যানেলসমূহ',
+          bottomText: 'Reseller Panels Pack Count',
+          indicator: 'bg-indigo-500',
+        };
+      case 'activeApps':
+        return {
+          value: `${allApps.length} টি`,
+          subText: 'তৈরিকৃত মোট অ্যান্ড্রয়েড অ্যাপ',
+          bottomText: 'Client-built Applications List',
+          indicator: 'bg-purple-500',
+        };
+      default:
+        return {
+          value: 'N/A',
+          subText: '',
+          bottomText: '',
+        };
+    }
+  };
 
   // Sync customer SMS logs
   const [allSmsLogs, setAllSmsLogs] = useState<any[]>(() => {
@@ -2815,177 +3173,149 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
         </div>
       )}
 
+      {/* Dynamic Widget Settings Trigger Panel */}
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center bg-slate-50 border border-slate-200 rounded-[2rem] p-5.5 gap-4 shadow-xs/50 animate-fade-in">
+        <div className="flex items-center gap-3.5">
+          <div className="p-3 bg-indigo-50 text-indigo-650 rounded-2xl border border-indigo-100/50 shadow-sm shrink-0">
+            <Sliders size={20} className="stroke-[2.5]" />
+          </div>
+          <div>
+            <h3 className="text-xs font-black text-slate-850 uppercase tracking-widest">কাস্টমাইজড উইজেট কন্ট্রোল (Custom Layout & Drag-and-Drop)</h3>
+            <p className="text-[11px] text-slate-500 font-semibold font-sans mt-0.5">ড্যাশবোর্ড মেট্রিক কার্ডগুলো পিন/আনপিন করতে অথবা ড্র্যাগ করে পজিশন পরিবর্তন করতে এই কন্ট্রোল ব্যবহার করুন।</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsWidgetModalOpen(true)}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black uppercase tracking-wider py-2.5 px-4.5 rounded-xl flex items-center gap-2 shadow-md shadow-indigo-600/10 active:scale-95 transition-all outline-none"
+        >
+          <Sliders size={13} />
+          <span>উইজেট সাজান (Configure Panel)</span>
+        </button>
+      </div>
+
       {/* Bento Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-        {/* Metric 1: Total Revenue */}
-        <motion.div 
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow h-full flex flex-col justify-between min-h-[170px]"
-        >
-          <div className="relative z-10">
-            <div className="flex justify-between items-start">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('total_revenue')}</span>
-              <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl group-hover:scale-110 transition-transform">
-                <Banknote size={18} />
+        {widgets.filter(w => w.isPinned).map((widget) => {
+          const helper = getWidgetValueAndInfo(widget.id);
+          const isDarkCard = widget.isDark;
+
+          return (
+            <motion.div 
+              key={widget.id}
+              layoutId={`widget-card-${widget.id}`}
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData('text/plain', widget.id);
+              }}
+              onDragOver={(e) => {
+                e.preventDefault();
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                const sourceId = e.dataTransfer.getData('text/plain');
+                if (!sourceId || sourceId === widget.id) return;
+
+                const sourceIndex = widgets.findIndex(w => w.id === sourceId);
+                const targetIndex = widgets.findIndex(w => w.id === widget.id);
+                if (sourceIndex === -1 || targetIndex === -1) return;
+
+                const reordered = [...widgets];
+                const [removed] = reordered.splice(sourceIndex, 1);
+                reordered.splice(targetIndex, 0, removed);
+                
+                setWidgets(reordered);
+                localStorage.setItem('cached_dashboard_pinned_widgets', JSON.stringify(reordered));
+              }}
+              className={`cursor-grab active:cursor-grabbing p-6 rounded-[2rem] border shadow-xs relative overflow-hidden group hover:shadow-md hover:border-slate-350 transition-all h-full flex flex-col justify-between min-h-[170px] ${
+                isDarkCard 
+                  ? 'bg-slate-900 border-slate-800 text-white shadow-xl hover:bg-slate-950' 
+                  : 'bg-white border-slate-200 text-slate-800'
+              }`}
+            >
+              <div className="relative z-10">
+                <div className="flex justify-between items-start">
+                  <span className={`text-[10px] font-black uppercase tracking-widest ${isDarkCard ? 'text-indigo-300' : 'text-slate-400'}`}>
+                    {widget.id === 'totalRevenue' ? t('total_revenue') : widget.id === 'totalInvestment' ? t('total_investment') : widget.id === 'netProfit' ? t('net_profit') : widget.id === 'dueBalance' ? t('due_balance') : widget.label}
+                  </span>
+                  <div className={`p-2.5 rounded-xl group-hover:scale-110 transition-all ${
+                    isDarkCard 
+                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/10' 
+                      : widget.color
+                  }`}>
+                    {getWidgetIcon(widget.icon)}
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <span className={`text-[10px] font-bold block mb-0.5 font-sans ${isDarkCard ? 'text-rose-400' : 'text-slate-500'}`}>
+                    {widget.bangla}
+                  </span>
+                  <h3 className={`text-2xl sm:text-3xl font-black font-mono tracking-tight ${isDarkCard ? 'text-white' : 'text-slate-900'}`}>
+                    {helper.value}
+                  </h3>
+                </div>
               </div>
-            </div>
-            
-            <div className="mt-4">
-              <span className="text-[10px] text-indigo-600 font-bold block mb-0.5 font-sans">সংগৃহীত সর্বমোট টাকা</span>
-              <h3 className="text-2xl sm:text-3xl font-black text-slate-900 font-mono tracking-tight">
-                ৳{stats.totalRevenue.toLocaleString()}
-              </h3>
-            </div>
-          </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between relative z-10">
-            <div className="flex items-center gap-1 text-emerald-600 font-bold text-[9px] bg-emerald-50 px-2.5 py-0.5 rounded-full">
-              <ArrowUpRight size={10} />
-              <span>রিয়েলটাইম লিংকার</span>
-            </div>
-            {/* SVG Sparkline Sparkle Graphic */}
-            <svg className="w-16 h-5 text-emerald-500 overflow-visible shrink-0" viewBox="0 0 100 20" fill="none">
-              <path d="M0,15 L20,8 L40,17 L60,4 L80,12 L100,2" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-          <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-indigo-50/20 rounded-full blur-2xl group-hover:bg-indigo-50/45 transition-colors"></div>
-        </motion.div>
-
-        {/* Metric 2: Total Investment */}
-        <motion.div 
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow h-full flex flex-col justify-between min-h-[170px]"
-        >
-          <div className="relative z-10">
-            <div className="flex justify-between items-start">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('total_investment')}</span>
-              <div className="p-2.5 bg-rose-50 text-rose-600 rounded-xl group-hover:scale-110 transition-transform">
-                <TrendingDown size={18} />
+              <div className={`mt-4 pt-3 border-t flex items-center justify-between relative z-10 ${isDarkCard ? 'border-white/5' : 'border-slate-100'}`}>
+                {helper.sparkLine ? (
+                  <>
+                    <div className={`flex items-center gap-1 text-[9px] font-bold px-2.5 py-0.5 rounded-full ${helper.sparkDown ? 'text-rose-650 bg-rose-50' : 'text-emerald-700 bg-emerald-50'}`}>
+                      {!helper.sparkDown && <ArrowUpRight size={10} />}
+                      <span>{helper.bottomText}</span>
+                    </div>
+                    {/* SVG Sparkline Sparkle Graphic */}
+                    <svg className={`w-16 h-5 overflow-visible shrink-0 ${helper.sparkColor}`} viewBox="0 0 100 20" fill="none">
+                      <path 
+                        d={helper.sparkDown ? "M0,2 L20,14 L40,7 L60,18 L80,9 L100,15" : "M0,15 L20,8 L40,17 L60,4 L80,12 L100,2"} 
+                        stroke="currentColor" 
+                        strokeWidth="2.5" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                      />
+                    </svg>
+                  </>
+                ) : helper.badge ? (
+                  <>
+                    <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${isDarkCard ? 'bg-white/5' : 'bg-slate-100'}`}>
+                      {helper.bottomText}
+                    </span>
+                    <span className={`text-[9px] font-black animate-pulse flex items-center gap-1 ${isDarkCard ? 'text-rose-400' : 'text-slate-600'}`}>
+                      {helper.badgeLabel || '● Active Tracking'}
+                    </span>
+                  </>
+                ) : helper.avatars ? (
+                  <>
+                    <span className="text-[9px] font-bold text-slate-400">{helper.bottomText}</span>
+                    <div className="flex -space-x-2.5 overflow-hidden filter saturate-110">
+                      <div className="w-5.5 h-5.5 rounded-full border-2 border-white bg-indigo-400 text-[8px] font-black flex items-center justify-center text-white">A</div>
+                      <div className="w-5.5 h-5.5 rounded-full border-2 border-white bg-emerald-400 text-[8px] font-black flex items-center justify-center text-white">S</div>
+                      <div className="w-5.5 h-5.5 rounded-full border-2 border-white bg-indigo-500 text-[8px] font-black flex items-center justify-center text-white">M</div>
+                    </div>
+                  </>
+                ) : helper.iconAlert ? (
+                  <div className="flex items-center gap-1 text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-100/40 px-2.5 py-0.5 rounded-md animate-pulse">
+                    <span>⚠️ {helper.bottomText}</span>
+                  </div>
+                ) : (
+                  <>
+                    <span className="text-[9.5px] font-bold italic text-slate-400">
+                      {helper.bottomText}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <div className={`w-2 h-2 rounded-full ${helper.indicator || 'bg-indigo-500'} animate-pulse shadow-md`} />
+                    </div>
+                  </>
+                )}
               </div>
-            </div>
-
-            <div className="mt-4">
-              <span className="text-[10px] text-rose-500 font-bold block mb-0.5 font-sans">সর্বমোট কাজের খরচ</span>
-              <h3 className="text-2xl sm:text-3xl font-black text-rose-600 font-mono tracking-tight">
-                ৳{stats.totalInvestment.toLocaleString()}
-              </h3>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between relative z-10">
-            <div className="flex items-center gap-1 text-rose-600 font-bold text-[9px] bg-rose-50 px-2.5 py-0.5 rounded-full">
-              <span>Expenses Tracked</span>
-            </div>
-            <svg className="w-16 h-5 text-rose-500 overflow-visible shrink-0" viewBox="0 0 100 20" fill="none">
-              <path d="M0,2 L20,14 L40,7 L60,18 L80,9 L100,15" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-          <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-rose-50/20 rounded-full blur-2xl group-hover:bg-rose-50/45 transition-colors"></div>
-        </motion.div>
-
-        {/* Metric 3: Net Profit */}
-        <motion.div 
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow h-full flex flex-col justify-between min-h-[170px]"
-        >
-          <div className="relative z-10">
-            <div className="flex justify-between items-start">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('net_profit')}</span>
-              <div className={`p-2.5 rounded-xl group-hover:scale-110 transition-transform ${stats.netProfit >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                <TrendingUp size={18} />
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <span className="text-[10px] text-emerald-600 font-bold block mb-0.5 font-sans">অর্জিত প্রকৃত প্রফিট</span>
-              <h3 className={`text-2xl sm:text-3xl font-black font-mono tracking-tight ${stats.netProfit >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                ৳{stats.netProfit.toLocaleString()}
-              </h3>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between relative z-10">
-            <span className="text-[9.5px] font-bold text-slate-400 italic">Yielding Ledger Yield</span>
-            <div className={`w-2 h-2 rounded-full ${stats.netProfit >= 0 ? 'bg-emerald-500 shadow-emerald-200' : 'bg-rose-500 shadow-rose-200'} animate-pulse shadow-md`}></div>
-          </div>
-          <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-emerald-50/20 rounded-full blur-2xl group-hover:bg-emerald-50/45 transition-colors"></div>
-        </motion.div>
-
-        {/* Metric 4: Due Balance */}
-        <motion.div 
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-slate-900 border border-slate-800 text-white p-6 rounded-[2rem] shadow-lg relative overflow-hidden group h-full flex flex-col justify-between min-h-[170px]"
-        >
-          <div className="relative z-10">
-            <div className="flex justify-between items-start">
-              <span className="text-[10px] font-black text-indigo-300 uppercase tracking-widest">{t('due_balance')}</span>
-              <div className="p-2.5 bg-rose-500/20 text-rose-300 rounded-xl group-hover:scale-110 transition-transform border border-rose-500/10">
-                <Activity size={18} className="animate-pulse" />
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <span className="text-[10px] text-rose-450 font-bold block mb-0.5 font-sans">গ্রাহকদের মোট বাকি বা বকেয়া</span>
-              <h3 className="text-2xl sm:text-3xl font-black text-white font-mono tracking-tight">
-                ৳{stats.dueBalance.toLocaleString()}
-              </h3>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between relative z-10">
-            <span className="text-[9px] font-black text-indigo-200/60 uppercase tracking-wider bg-white/5 px-2 py-0.5 rounded-md">
-              {stats.pendingInvoicesCount} {t('pending_invoices_status')}
-            </span>
-            <span className="text-[9px] text-rose-400 font-black animate-pulse flex items-center gap-1">
-              ● Pending Review
-            </span>
-          </div>
-          <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-rose-500/10 rounded-full blur-2xl group-hover:bg-rose-500/25 transition-colors"></div>
-        </motion.div>
-
-        {/* Metric 5: Total Users */}
-        <motion.div 
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow h-full flex flex-col justify-between min-h-[170px]"
-        >
-          <div className="relative z-10">
-            <div className="flex justify-between items-start">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">রেজিস্টার্ড কাস্টমার</span>
-              <div className="p-2.5 bg-violet-50 text-violet-600 rounded-xl group-hover:scale-110 transition-transform">
-                <Users size={18} />
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <span className="text-[10px] text-violet-600 font-bold block mb-0.5 font-sans">অ্যাক্টিভ গ্রাহক তালিকা সংখ্যা</span>
-              <h3 className="text-2xl sm:text-3xl font-black text-indigo-900 font-mono tracking-tight">
-                {totalUsersCount} জন
-              </h3>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between relative z-10 font-sans">
-            <span className="text-[9px] font-bold text-slate-400">Database Users list</span>
-            <div className="flex -space-x-2.5 overflow-hidden filter saturate-110">
-              <div className="w-5.5 h-5.5 rounded-full border-2 border-white bg-indigo-400 text-[8px] font-black flex items-center justify-center text-white">A</div>
-              <div className="w-5.5 h-5.5 rounded-full border-2 border-white bg-emerald-400 text-[8px] font-black flex items-center justify-center text-white">S</div>
-              <div className="w-5.5 h-5.5 rounded-full border-2 border-white bg-indigo-500 text-[8px] font-black flex items-center justify-center text-white">M</div>
-            </div>
-          </div>
-          <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-violet-50/20 rounded-full blur-2xl group-hover:bg-violet-50/45 transition-colors"></div>
-        </motion.div>
+              <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-slate-500/10 rounded-full blur-2xl group-hover:bg-slate-500/20 transition-all"></div>
+            </motion.div>
+          );
+        })}
       </div>
 
       {/* Daily Revenue Trends & Advanced Graph System Section */}
+      {false && (
       <div className="bg-white p-6 sm:p-8 border border-slate-200 rounded-[2rem] shadow-sm space-y-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-slate-100 pb-5">
           <div className="space-y-1">
@@ -3296,11 +3626,12 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
           </div>
         </div>
       </div>
+      )}
 
       {/* 📊 ADVANCED LEDGER PERFORMANCE INSIGHTS (অ্যাডভান্সড কোম্পানির খতিয়ান ও পারফরম্যান্স বিশ্লেষণ হাব) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* 1. Service Sales Contribution Breakdown (ক্যাটাগরি ভিত্তিক বিক্রয় বিশ্লেষণ) */}
-        <div className="col-span-12 lg:col-span-4 bg-white p-6 border border-slate-200 rounded-[2rem] shadow-xs flex flex-col justify-between">
+        <div className="col-span-12 lg:col-span-6 bg-white p-6 border border-slate-200 rounded-[2rem] shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div className="space-y-0.5">
@@ -3342,7 +3673,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
         </div>
 
         {/* 2. Audit Ledger & Financial Diagnostic Rating (ফাইন্যান্সিয়াল হেলথ স্কোর) */}
-        <div className="col-span-12 md:col-span-6 lg:col-span-4 bg-white p-6 border border-slate-200 rounded-[2rem] shadow-xs flex flex-col justify-between">
+        <div className="col-span-12 md:col-span-6 lg:col-span-6 bg-white p-6 border border-slate-200 rounded-[2rem] shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div className="space-y-0.5">
@@ -3406,6 +3737,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
         </div>
 
         {/* 3. Actionable Admin Notes (লাইভ নোটপ্যাড যা ব্রাউজারে সংরক্ষিত থাকবে) */}
+        {false && (
         <div className="col-span-12 md:col-span-6 lg:col-span-4 bg-white p-6 border border-slate-200 rounded-[2rem] shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
@@ -3453,11 +3785,13 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
             <span className="text-[9.5px] font-mono text-slate-400 font-semibold italic">● অটো-সেভ ইনডেক্স একটিভ</span>
           </div>
         </div>
+        )}
       </div>
 
       {/* Main Row: Double Panels */}
       <div className="grid grid-cols-12 gap-6">
         {/* Left Column: Financial Graph Area Flow */}
+        {false && (
         <div className="col-span-12 lg:col-span-8">
           <div className="bg-white p-6 sm:p-8 border border-slate-200 rounded-[2rem] shadow-sm flex flex-col justify-between h-full">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -3550,9 +3884,10 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
             </div>
           </div>
         </div>
+        )}
 
         {/* Right Column: Activities and Recent Invoices Split Container */}
-        <div className="col-span-12 lg:col-span-4 space-y-6">
+        <div className="col-span-12 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           {/* Recent Activity Log Lists */}
           <div className="bg-white border border-slate-200 rounded-[2rem] flex flex-col overflow-hidden h-fit">
             <div className="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
@@ -3663,6 +3998,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
       </div>
 
       {/* Admin Quick Action Bento Hub - Activated & Polished (Moved Below) */}
+      {false && (
       <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm mt-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
           <div className="space-y-1">
@@ -3743,6 +4079,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
           ))}
         </div>
       </div>
+      )}
 
       {/* Modals */}
       <Modal 
@@ -3786,6 +4123,311 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
           <p className="text-sm text-slate-500 mb-4">{t('invoice_gen_desc')}</p>
           <button onClick={() => setActiveModal(null)} className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-lg pointer-events-auto">{t('understood')}</button>
         </div>
+      </Modal>
+
+      {/* Dynamic Widget Configuration Controller Modal */}
+      <Modal
+        isOpen={isWidgetModalOpen}
+        onClose={() => setIsWidgetModalOpen(false)}
+        title="⚙️ ড্যাশবোর্ড উইজেট সেটিংস (Configure Metrics Layout)"
+      >
+        <div className="space-y-6 max-h-[80vh] overflow-y-auto pr-1">
+          <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4.5 flex gap-3">
+            <span className="text-xl shrink-0">💡</span>
+            <div>
+              <p className="text-[11px] font-black uppercase text-indigo-700 tracking-wider">উইজেট সর্টিং ও পিন পরামর্শ:</p>
+              <p className="text-[11.5px] text-indigo-900 leading-relaxed font-sans font-medium mt-1">
+                আপনার ড্যাশবোর্ডে কোন কোন মেট্রিক প্রদর্শন করতে চান তা নির্বাচন করুন। আপনি মোবাইল বা টাচ ডিভাইসে ড্যাশবোর্ড সাজাতে ২ পাশের <b>Chevron Arrow</b> বাটনগুলো ব্যবহার করে উপরে/নিচে করতে পারেন অথবা ডাবল-ক্লিক ড্র্যাগ করে ড্রপ করতে পারেন।
+              </p>
+            </div>
+          </div>
+
+          <div 
+            className="space-y-2.5 font-sans"
+            onDragOver={handleDragOver}
+          >
+            {widgets.map((widget, index) => {
+              const helper = getWidgetValueAndInfo(widget.id);
+              const isFirst = index === 0;
+              const isLast = index === widgets.length - 1;
+
+              return (
+                <div
+                  key={widget.id}
+                  draggable
+                  onDragStart={() => handleDragStart(index)}
+                  onDrop={() => handleDrop(index)}
+                  className={`flex items-center justify-between p-3.5 border rounded-2xl transition-all cursor-move group select-none ${
+                    widget.isPinned 
+                      ? 'bg-slate-50 border-slate-300 shadow-xs' 
+                      : 'bg-white border-slate-150 opacity-65 hover:opacity-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="flex flex-col gap-0.5 pointer-events-none text-slate-300 group-hover:text-slate-450 shrink-0">
+                      <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-current" />
+                    </div>
+
+                    <div className={`p-2 rounded-xl shrink-0 ${widget.isDark ? 'bg-slate-900 text-rose-300' : widget.color}`}>
+                      {getWidgetIcon(widget.icon)}
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-[12px] font-black text-slate-800 uppercase tracking-tight truncate">
+                          {widget.label}
+                        </h4>
+                        {widget.isPinned && (
+                          <span className="bg-indigo-100 text-indigo-700 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                            <Pin size={8} /> Pinned
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-slate-500 font-bold truncate mt-0.5">
+                        {widget.bangla} • <span className="font-mono">{helper.value}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    {/* Touch device order switchers */}
+                    <div className="flex items-center bg-slate-150/40 rounded-xl border border-slate-200/50 overflow-hidden divide-x divide-slate-200/55">
+                      <button
+                        type="button"
+                        onClick={() => moveWidget(index, 'up')}
+                        disabled={isFirst}
+                        className={`p-2 transition-colors ${isFirst ? 'text-slate-250 cursor-not-allowed' : 'text-slate-500 hover:bg-slate-200/80'}`}
+                      >
+                        <ChevronUp size={14} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveWidget(index, 'down')}
+                        disabled={isLast}
+                        className={`p-2 transition-colors ${isLast ? 'text-slate-250 cursor-not-allowed' : 'text-slate-500 hover:bg-slate-200/80'}`}
+                      >
+                        <ChevronDown size={14} />
+                      </button>
+                    </div>
+
+                    {/* Pin/Unpin trigger button */}
+                    <button
+                      type="button"
+                      onClick={() => toggleWidgetPin(widget.id)}
+                      className={`flex items-center gap-1.5 text-[9.5px] font-black uppercase tracking-wider px-3 py-2 rounded-xl transition-all ${
+                        widget.isPinned 
+                          ? 'bg-indigo-650 hover:bg-indigo-750 text-white shadow-xs' 
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-650'
+                      }`}
+                    >
+                      {widget.isPinned ? <PinOff size={11} /> : <Pin size={11} />}
+                      <span>{widget.isPinned ? 'Unpin' : 'Pin'}</span>
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="pt-3 border-t border-slate-150 flex justify-end gap-3.5">
+            <button
+              onClick={() => {
+                const defaults = [
+                  { id: 'totalRevenue', label: 'Total Revenue', bangla: 'সর্বমোট রেভিনিউ', icon: 'Banknote', color: 'bg-indigo-50 text-indigo-600 border-indigo-150/40', isPinned: true },
+                  { id: 'totalInvestment', label: 'Total Investment', bangla: 'সর্বমোট ইনভেস্টমেন্ট', icon: 'TrendingDown', color: 'bg-rose-50 text-rose-600 border-rose-150/40', isPinned: true },
+                  { id: 'netProfit', label: 'Net Profit', bangla: 'প্রকৃত প্রফিট', icon: 'TrendingUp', color: 'bg-emerald-50 text-emerald-700 border-emerald-150/40', isPinned: true },
+                  { id: 'dueBalance', label: 'Due Balance', bangla: 'গ্রাহক বকেয়া ঋণ', icon: 'Activity', color: 'bg-slate-900 text-rose-300 border-slate-800', isPinned: true, isDark: true },
+                  { id: 'totalUsers', label: 'Registered Customers', bangla: 'রেজিস্টার্ড গ্রাহক', icon: 'Users', color: 'bg-violet-50 text-violet-600 border-violet-150/40', isPinned: true },
+                  { id: 'todayPending', label: 'Today\'s Pending Payments', bangla: 'আজকের পেন্ডিং পেমেন্ট', icon: 'Clock', color: 'bg-amber-50 text-amber-600 border-amber-150/40', isPinned: false },
+                  { id: 'todayRevenue', label: 'Today\'s Revenue', bangla: 'আজকের মোট কালেকশন', icon: 'Wallet', color: 'bg-teal-50 text-teal-600 border-teal-150/40', isPinned: false },
+                  { id: 'activeDecoders', label: 'Total Active Decoders', bangla: 'মোট সক্রিয় ডিকোডার', icon: 'Cpu', color: 'bg-sky-50 text-sky-600 border-sky-150/40', isPinned: false },
+                  { id: 'activePanels', label: 'Total Active Panels', bangla: 'মোট সক্রিয় প্যানেল', icon: 'Layers', color: 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-150/40', isPinned: false },
+                  { id: 'activeApps', label: 'Total Created Apps', bangla: 'তৈরিকৃত মোট অ্যাপস', icon: 'Play', color: 'bg-red-50 text-red-650 border-red-150/40', isPinned: false },
+                ];
+                setWidgets(defaults);
+                localStorage.setItem('cached_dashboard_pinned_widgets', JSON.stringify(defaults));
+              }}
+              className="px-4 py-2 border border-slate-200 text-slate-500 hover:text-slate-800 text-[10.5px] font-black uppercase tracking-wider rounded-xl hover:bg-slate-50 transition-colors"
+            >
+              রিসেট (Reset Layout)
+            </button>
+            <button
+              onClick={() => setIsWidgetModalOpen(false)}
+              className="px-5 py-2.5 bg-slate-900 hover:bg-slate-950 text-white text-[10.5px] font-black uppercase tracking-wider rounded-xl transition-all shadow-xs"
+            >
+              সম্পূর্ণ (Close)
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Direct Create Invoice Modal */}
+      <Modal
+        isOpen={activeModal === 'create_invoice_direct'}
+        onClose={() => setActiveModal(null)}
+        title="📝 নতুন ইনভয়েস তৈরি করুন (Create General Invoice)"
+      >
+        <form onSubmit={handleCreateDirectInvoiceSubmit} className="space-y-4 font-sans text-left">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Invoice Number</label>
+              <input
+                type="text"
+                required
+                value={directInvoiceNum}
+                onChange={(e) => setDirectInvoiceNum(e.target.value)}
+                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-bold"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Service / Invoice Type</label>
+              <select
+                value={directInvoiceType}
+                onChange={(e) => setDirectInvoiceType(e.target.value)}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-bold cursor-pointer"
+              >
+                <option value="Apps">Android Apps</option>
+                <option value="Decoder">Decoder Package</option>
+                <option value="Panel">Reseller Panel</option>
+                <option value="User">User Account</option>
+                <option value="Finance">General Service</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Customer Name (গ্রাহকের নাম)</label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. Abdur Rahman"
+              value={directInvoiceCustomerName}
+              onChange={(e) => setDirectInvoiceCustomerName(e.target.value)}
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-semibold"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-1">
+              <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Country</label>
+              <select
+                value={directInvoiceCountryCode}
+                onChange={(e) => setDirectInvoiceCountryCode(e.target.value)}
+                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-black cursor-pointer"
+              >
+                {localCountryCodes.map((c) => (
+                  <option key={c.code} value={c.code}>{c.label} {c.code}</option>
+                ))}
+              </select>
+            </div>
+            <div className="col-span-2">
+              <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Phone Number</label>
+              <input
+                type="tel"
+                required
+                placeholder="17XXXXXXXX"
+                value={directInvoicePhone}
+                onChange={(e) => setDirectInvoicePhone(e.target.value)}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-semibold font-mono"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Payment Method</label>
+              <select
+                value={directInvoicePaymentMethod}
+                onChange={(e) => setDirectInvoicePaymentMethod(e.target.value)}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-semibold cursor-pointer"
+              >
+                <option value="bKash">bKash</option>
+                <option value="Nagad">Nagad</option>
+                <option value="Rocket">Rocket</option>
+                <option value="Upay">Upay</option>
+                <option value="CellFin">CellFin</option>
+                <option value="Bank">Bank Transfer</option>
+                <option value="Binance">Binance (USDT)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Transaction ID</label>
+              <input
+                type="text"
+                placeholder="TXN-XXXXXX"
+                value={directInvoiceTxnId}
+                onChange={(e) => setDirectInvoiceTxnId(e.target.value)}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-semibold font-mono"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Total Fee (টাকা)</label>
+              <input
+                type="number"
+                required
+                min="0"
+                placeholder="0"
+                value={directInvoiceAmount}
+                onChange={(e) => handleDirectInvoiceAmountChange(e.target.value, 'amount')}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-bold font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Paid Amount (পরিশোধ)</label>
+              <input
+                type="number"
+                required
+                min="0"
+                placeholder="0"
+                value={directInvoicePaid}
+                onChange={(e) => handleDirectInvoiceAmountChange(e.target.value, 'paid')}
+                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-bold font-mono"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Due Amount (বকেয়া)</label>
+              <input
+                type="text"
+                readOnly
+                value={`৳${directInvoiceDue}`}
+                className="w-full px-4 py-2.5 bg-slate-100 border border-slate-150 rounded-xl text-slate-650 cursor-not-allowed outline-none text-xs font-black font-mono"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Note / Description (মন্তব্য)</label>
+            <textarea
+              placeholder="e.g. Initial customer setup fee"
+              value={directInvoiceNote}
+              onChange={(e) => setDirectInvoiceNote(e.target.value)}
+              rows={2}
+              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-medium resize-none"
+            />
+          </div>
+
+          <div className="pt-4 border-t border-slate-150 flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setActiveModal(null)}
+              className="px-5 py-2 border border-slate-200 text-slate-500 hover:text-slate-800 text-[11px] font-black uppercase tracking-wider rounded-xl hover:bg-slate-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isDirectInvoiceSaving}
+              className="px-5 py-2.5 bg-indigo-650 hover:bg-indigo-750 text-white text-[11px] font-black uppercase tracking-wider rounded-xl transition-all shadow-xs flex items-center gap-1.5 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+            >
+              {isDirectInvoiceSaving ? 'তৈরি হচ্ছে...' : 'ইনভয়েস তৈরি করুন (Generate)'}
+            </button>
+          </div>
+        </form>
       </Modal>
 
       {/* User Invoice Preview Modal */}
@@ -3998,6 +4640,97 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
           );
         })()}
       </Modal>
+
+      {/* Floating Quick Actions Button */}
+      {isAdmin && (
+        <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3 font-sans">
+          {/* Backdrop Click Dismiss for Menu */}
+          {isQuickActionsOpen && (
+            <div 
+              className="fixed inset-0 z-10 bg-transparent" 
+              onClick={() => setIsQuickActionsOpen(false)}
+            />
+          )}
+
+          {/* Expanded Menu Actions */}
+          {isQuickActionsOpen && (
+            <div className="relative z-20 flex flex-col gap-2 bg-slate-900 border border-slate-800 text-white shadow-2xl rounded-2xl p-3 min-w-[210px] animate-fade-in">
+              <div className="px-2 py-1 border-b border-white/10 mb-1 flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Quick Actions</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span>
+              </div>
+
+              {/* Action: Create Invoice */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveModal('create_invoice_direct');
+                  setIsQuickActionsOpen(false);
+                }}
+                className="flex items-center gap-3 w-full p-2 hover:bg-white/10 rounded-xl transition-all text-left group cursor-pointer"
+              >
+                <div className="p-2 rounded-lg bg-indigo-500/20 text-indigo-300 group-hover:scale-105 transition-transform shrink-0">
+                  <FileText size={14} />
+                </div>
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-tight text-white group-hover:text-indigo-300 transition-colors">Create Invoice</p>
+                  <p className="text-[9.5px] text-slate-400 font-semibold truncate mt-0.5">নতুন ইনভয়েস তৈরি</p>
+                </div>
+              </button>
+
+              {/* Action: Add User */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveModal('user');
+                  setIsQuickActionsOpen(false);
+                }}
+                className="flex items-center gap-3 w-full p-2 hover:bg-white/10 rounded-xl transition-all text-left group cursor-pointer"
+              >
+                <div className="p-2 rounded-lg bg-violet-500/20 text-violet-300 group-hover:scale-105 transition-transform shrink-0">
+                  <Users size={14} />
+                </div>
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-tight text-white group-hover:text-violet-300 transition-colors">Add User</p>
+                  <p className="text-[9.5px] text-slate-400 font-semibold truncate mt-0.5">নতুন কাস্টমার অ্যাকাউন্ট</p>
+                </div>
+              </button>
+
+              {/* Action: Register Decoder */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveModal('decoder');
+                  setIsQuickActionsOpen(false);
+                }}
+                className="flex items-center gap-3 w-full p-2 hover:bg-white/10 rounded-xl transition-all text-left group cursor-pointer"
+              >
+                <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-300 group-hover:scale-105 transition-transform shrink-0">
+                  <Cpu size={14} />
+                </div>
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-tight text-white group-hover:text-emerald-300 transition-colors">Register Decoder</p>
+                  <p className="text-[9.5px] text-slate-400 font-semibold truncate mt-0.5">ডিকোডার লাইসেন্স যুক্ত করুন</p>
+                </div>
+              </button>
+            </div>
+          )}
+
+          {/* Primary Trigger Button */}
+          <button
+            type="button"
+            onClick={() => setIsQuickActionsOpen(!isQuickActionsOpen)}
+            className="relative z-20 flex items-center gap-2 px-4.5 py-3.5 bg-indigo-650 hover:bg-indigo-750 text-white rounded-full shadow-lg shadow-indigo-600/30 font-bold transition-all hover:scale-105 active:scale-95 group focus:outline-none cursor-pointer"
+          >
+            {/* Beautiful Custom Rotating Plus Icon */}
+            <div className={`transition-transform duration-300 ${isQuickActionsOpen ? 'rotate-45' : ''}`}>
+              <Plus size={18} className="stroke-[2.5]" />
+            </div>
+            
+            <span className="text-xs font-black uppercase tracking-wider">Quick Actions</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
