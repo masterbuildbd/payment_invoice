@@ -1335,92 +1335,90 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
 
   const isAdmin = currentUserData?.role === 'admin' || user?.role === 'admin';
 
+  // Filter invoices related to this logged-in account
+  const userInvoicesList = React.useMemo(() => {
+    const targetUsername = currentUserData?.username || user?.username;
+    if (!targetUsername) return [];
+    return invoices.filter(inv => inv.username === targetUsername);
+  }, [invoices, currentUserData?.username, user?.username]);
+
+  // Calculate approved/paid invoice balance dynamically
+  const approvedInvoicesBalance = React.useMemo(() => {
+    return userInvoicesList
+      .filter(inv => inv.status === 'paid' || inv.status === 'approved')
+      .reduce((sum, inv) => sum + (inv.paidAmount || inv.amount || 0), 0);
+  }, [userInvoicesList]);
+
+  // Statistics counts representing approved, pending, and rejected invoices
+  const approvedCount = React.useMemo(() => {
+    return userInvoicesList.filter(inv => inv.status === 'paid' || inv.status === 'approved').length;
+  }, [userInvoicesList]);
+
+  const pendingCount = React.useMemo(() => {
+    return userInvoicesList.filter(inv => inv.status === 'pending').length;
+  }, [userInvoicesList]);
+
+  const rejectedCount = React.useMemo(() => {
+    return userInvoicesList.filter(inv => inv.status === 'rejected').length;
+  }, [userInvoicesList]);
+
+  // Join date calculations (date, month, year)
+  const joinedDateFormatted = React.useMemo(() => {
+    const rawDate = currentUserData?.createdAt || user?.createdAt;
+    if (!rawDate) return 'N/A';
+    try {
+      const dObj = new Date(rawDate);
+      if (isNaN(dObj.getTime())) return rawDate;
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${dObj.getDate()} ${months[dObj.getMonth()]} ${dObj.getFullYear()}`;
+    } catch {
+      return rawDate;
+    }
+  }, [currentUserData?.createdAt, user?.createdAt]);
+
+  const joinedDateBengali = React.useMemo(() => {
+    const rawDate = currentUserData?.createdAt || user?.createdAt;
+    if (!rawDate) return 'N/A';
+    try {
+      const dObj = new Date(rawDate);
+      if (isNaN(dObj.getTime())) return rawDate;
+      const bmonths = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+      return `${dObj.getDate()} ${bmonths[dObj.getMonth()]} ${dObj.getFullYear()}`;
+    } catch {
+      return rawDate;
+    }
+  }, [currentUserData?.createdAt, user?.createdAt]);
+
+  // States for Selected Payment Account Channel Viewer
+  const [selectedAccountTab, setSelectedAccountTab] = useState<'bKash' | 'Nagad' | 'Upay' | 'Rocket' | 'Mcash' | 'Bank' | 'Binance' | 'PayPal'>('bKash');
+
+  const activeProviders = React.useMemo(() => {
+    return [
+      { key: 'bKash', enabled: settings?.bkashEnabled !== false },
+      { key: 'Nagad', enabled: settings?.nagadEnabled !== false },
+      { key: 'Upay', enabled: settings?.upayEnabled !== false },
+      { key: 'Rocket', enabled: settings?.rocketEnabled !== false },
+      { key: 'Mcash', enabled: settings?.mcashEnabled !== false },
+      { key: 'Bank', enabled: settings?.bankEnabled !== false },
+      { key: 'Binance', enabled: settings?.binanceEnabled !== false },
+      { key: 'PayPal', enabled: settings?.paypalEnabled !== false },
+    ].filter(p => p.enabled).map(p => p.key);
+  }, [settings]);
+
+  useEffect(() => {
+    if (activeProviders.length > 0 && !activeProviders.includes(selectedAccountTab)) {
+      setSelectedAccountTab(activeProviders[0] as any);
+    }
+  }, [activeProviders, selectedAccountTab]);
+
+  const [copiedText, setCopiedText] = useState<string | null>(null);
+
   if (!isAdmin) {
-    // Filter invoices related to this logged-in account
-    const userInvoicesList = React.useMemo(() => {
-      const targetUsername = currentUserData?.username || user?.username;
-      if (!targetUsername) return [];
-      return invoices.filter(inv => inv.username === targetUsername);
-    }, [invoices, currentUserData?.username, user?.username]);
-
-    // Calculate approved/paid invoice balance dynamically
-    const approvedInvoicesBalance = React.useMemo(() => {
-      return userInvoicesList
-        .filter(inv => inv.status === 'paid' || inv.status === 'approved')
-        .reduce((sum, inv) => sum + (inv.paidAmount || inv.amount || 0), 0);
-    }, [userInvoicesList]);
-
-    // Statistics counts representing approved, pending, and rejected invoices
-    const approvedCount = React.useMemo(() => {
-      return userInvoicesList.filter(inv => inv.status === 'paid' || inv.status === 'approved').length;
-    }, [userInvoicesList]);
-
-    const pendingCount = React.useMemo(() => {
-      return userInvoicesList.filter(inv => inv.status === 'pending').length;
-    }, [userInvoicesList]);
-
-    const rejectedCount = React.useMemo(() => {
-      return userInvoicesList.filter(inv => inv.status === 'rejected').length;
-    }, [userInvoicesList]);
-
-    // Join date calculations (date, month, year)
-    const joinedDateFormatted = React.useMemo(() => {
-      const rawDate = currentUserData?.createdAt || user?.createdAt;
-      if (!rawDate) return 'N/A';
-      try {
-        const dObj = new Date(rawDate);
-        if (isNaN(dObj.getTime())) return rawDate;
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        return `${dObj.getDate()} ${months[dObj.getMonth()]} ${dObj.getFullYear()}`;
-      } catch {
-        return rawDate;
-      }
-    }, [currentUserData?.createdAt, user?.createdAt]);
-
-    const joinedDateBengali = React.useMemo(() => {
-      const rawDate = currentUserData?.createdAt || user?.createdAt;
-      if (!rawDate) return 'N/A';
-      try {
-        const dObj = new Date(rawDate);
-        if (isNaN(dObj.getTime())) return rawDate;
-        const bmonths = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
-        return `${dObj.getDate()} ${bmonths[dObj.getMonth()]} ${dObj.getFullYear()}`;
-      } catch {
-        return rawDate;
-      }
-    }, [currentUserData?.createdAt, user?.createdAt]);
-
     const totalFee = Number(currentUserData?.price) || 0;
     // Show only approved invoice balance on the dashboard
     const paidFees = approvedInvoicesBalance;
     const dueFees = Math.max(0, totalFee - paidFees);
 
-    // States for Selected Payment Account Channel Viewer
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const [selectedAccountTab, setSelectedAccountTab] = useState<'bKash' | 'Nagad' | 'Upay' | 'Rocket' | 'Mcash' | 'Bank' | 'Binance' | 'PayPal'>('bKash');
-
-    const activeProviders = React.useMemo(() => {
-      return [
-        { key: 'bKash', enabled: settings?.bkashEnabled !== false },
-        { key: 'Nagad', enabled: settings?.nagadEnabled !== false },
-        { key: 'Upay', enabled: settings?.upayEnabled !== false },
-        { key: 'Rocket', enabled: settings?.rocketEnabled !== false },
-        { key: 'Mcash', enabled: settings?.mcashEnabled !== false },
-        { key: 'Bank', enabled: settings?.bankEnabled !== false },
-        { key: 'Binance', enabled: settings?.binanceEnabled !== false },
-        { key: 'PayPal', enabled: settings?.paypalEnabled !== false },
-      ].filter(p => p.enabled).map(p => p.key);
-    }, [settings]);
-
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useEffect(() => {
-      if (activeProviders.length > 0 && !activeProviders.includes(selectedAccountTab)) {
-        setSelectedAccountTab(activeProviders[0] as any);
-      }
-    }, [activeProviders, selectedAccountTab]);
-
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const [copiedText, setCopiedText] = useState<string | null>(null);
     const handleCopyText = (text: string) => {
       navigator.clipboard.writeText(text);
       setCopiedText(text);
@@ -1936,55 +1934,84 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
           );
 
           return (
-            <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-xs animate-fade-in">
-              <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-slate-100 pb-3">
-                <Wallet size={16} className="text-indigo-600 animate-bounce" />
-                কোম্পানির অফিশিয়াল পেমেন্ট গেটওয়ে এবং অ্যাকাউন্ট অপশন (Active Gateways)
-              </h2>
-              <p className="text-xs text-slate-500 leading-relaxed mb-6">
-                নিচে কোম্পানির সচল লেনদেনের চ্যানেলসমূহ দেওয়া হলো। নির্দেশনা অনুযায়ী যেকোনো পেমেন্ট বা সেবামূল্য নিশ্চিত করতে ডানপাশে অ্যাকাউন্ট বিবরণী কপি করে নিন:
-              </p>
+            <div className="bg-white border border-slate-200 rounded-[1.8rem] p-6 sm:p-7 shadow-xs animate-fade-in space-y-6">
+              <div className="border-b border-slate-100 pb-4">
+                <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-1 px-1.5 flex items-center gap-2">
+                  <Wallet size={16} className="text-indigo-600 animate-bounce" />
+                  কোম্পানির অফিশিয়াল পেমেন্ট গেটওয়ে এবং অ্যাকাউন্ট অপশন (Active Gateways)
+                </h2>
+                <p className="text-xs text-slate-500 leading-relaxed px-1.5">
+                  নিচে কোম্পানির সচল লেনদেনের চ্যানেলসমূহ দেওয়া হলো। নিচে প্রথম ধাপ থেকে কাঙ্ক্ষিত পেমেন্ট অপশনটি সিলেক্ট করুন এবং দ্বিতীয় ধাপ থেকে অ্যাকাউন্ট বিবরণী কপি করে নিন:
+                </p>
+              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-                {/* Payment Methods Select Buttons */}
-                <div className="md:col-span-4 space-y-2.5">
-                  <span className="text-[10px] font-black tracking-widest uppercase text-slate-400 px-1 block mb-1">গেটওয়ে অপশন সিলেক্ট করুন </span>
-                  {[
-                    { key: 'bKash', label: 'bKash (বিকাশ)', logo: bKashLogo, color: 'bg-rose-50/80 text-rose-700 border-rose-200/70', enabled: settings?.bkashEnabled !== false },
-                    { key: 'Nagad', label: 'Nagad (নগদ)', logo: nagadLogo, color: 'bg-orange-50/80 text-orange-700 border-orange-200/70', enabled: settings?.nagadEnabled !== false },
-                    { key: 'Upay', label: 'Upay (ইউপে)', logo: upayLogo, color: 'bg-indigo-50/80 text-indigo-700 border-indigo-200/70', enabled: settings?.upayEnabled !== false },
-                    { key: 'Rocket', label: 'Rocket (রকেট)', logo: rocketLogo, color: 'bg-pink-50/80 text-pink-700 border-pink-200/70', enabled: settings?.rocketEnabled !== false },
-                    { key: 'Mcash', label: 'Mcash (এমক্যাশ)', logo: mcashLogo, color: 'bg-emerald-50/80 text-emerald-700 border-emerald-200/70', enabled: settings?.mcashEnabled !== false },
-                    { key: 'Bank', label: 'Bank Account (ব্যাংক)', logo: bankLogo, color: 'bg-blue-50/80 text-blue-700 border-blue-200/70', enabled: settings?.bankEnabled !== false },
-                    { key: 'Binance', label: 'Binance Pay ID (বাইনান্স)', logo: binanceLogo, color: 'bg-yellow-50/40 text-yellow-850 border-yellow-250', enabled: settings?.binanceEnabled !== false },
-                    { key: 'PayPal', label: 'PayPal Gateway (পেপ্যাল)', logo: paypalLogo, color: 'bg-indigo-50/80 text-indigo-700 border-indigo-200/70', enabled: settings?.paypalEnabled !== false },
-                  ].filter(provider => provider.enabled).map(provider => (
-                    <button
-                      key={provider.key}
-                      onClick={() => setSelectedAccountTab(provider.key as any)}
-                      className={`w-full flex items-center gap-3 p-3 rounded-2xl border text-xs font-bold transition-all ${
-                        selectedAccountTab === provider.key 
-                          ? `${provider.color} ring-2 ring-indigo-500/20 scale-[1.02] shadow-sm`
-                          : 'bg-white text-slate-700 border-slate-200/80 hover:bg-slate-50'
-                      }`}
-                    >
-                      {provider.logo}
-                      <div className="text-left flex-1">
-                        <div className="font-extrabold text-slate-800 text-xs">{provider.label}</div>
-                        <div className="text-[9px] text-slate-450 font-bold uppercase font-mono tracking-wider">Active Channel</div>
-                      </div>
-                      <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                    </button>
-                  ))}
+              {/* Step 1: Selector Grid */}
+              <div className="space-y-3.5">
+                <div className="flex items-center gap-2 px-1.5">
+                  <span className="text-[10px] font-black tracking-widest uppercase text-slate-450 bg-slate-50 border border-slate-200/60 px-3 py-1.5 rounded-xl shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]">
+                    ১. পেমেন্ট গেটওয়ে অপশন সিলেক্ট করুন (Select Gateway Option)
+                  </span>
                 </div>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  {[
+                    { key: 'bKash', label: 'bKash (বিকাশ)', logo: bKashLogo, activeBg: 'from-pink-50/80 to-rose-100/90 border-rose-300 text-rose-700 shadow-md ring-4 ring-rose-500/10 scale-[1.03]', textAccent: 'text-rose-500', enabled: settings?.bkashEnabled !== false },
+                    { key: 'Nagad', label: 'Nagad (নগদ)', logo: nagadLogo, activeBg: 'from-orange-50/80 to-amber-100/90 border-orange-300 text-orange-700 shadow-md ring-4 ring-orange-500/10 scale-[1.03]', textAccent: 'text-orange-500', enabled: settings?.nagadEnabled !== false },
+                    { key: 'Upay', label: 'Upay (ইউপে)', logo: upayLogo, activeBg: 'from-blue-50/80 to-indigo-100/90 border-indigo-300 text-indigo-850 shadow-md ring-4 ring-indigo-500/10 scale-[1.03]', textAccent: 'text-indigo-500', enabled: settings?.upayEnabled !== false },
+                    { key: 'Rocket', label: 'Rocket (রকেট)', logo: rocketLogo, activeBg: 'from-fuchsia-50/80 to-purple-100/90 border-purple-300 text-purple-700 shadow-md ring-4 ring-purple-500/10 scale-[1.03]', textAccent: 'text-purple-500', enabled: settings?.rocketEnabled !== false },
+                    { key: 'Mcash', label: 'Mcash (এমক্যাশ)', logo: mcashLogo, activeBg: 'from-emerald-50/80 to-green-100/90 border-green-300 text-emerald-700 shadow-md ring-4 ring-green-500/10 scale-[1.03]', textAccent: 'text-emerald-500', enabled: settings?.mcashEnabled !== false },
+                    { key: 'Bank', label: 'Bank Account (ব্যাংক)', logo: bankLogo, activeBg: 'from-blue-50/80 to-slate-100 border-blue-300 text-blue-700 shadow-md ring-4 ring-blue-500/10 scale-[1.03]', textAccent: 'text-blue-500', enabled: settings?.bankEnabled !== false },
+                    { key: 'Binance', label: 'Binance Pay ID (বাইনান্স)', logo: binanceLogo, activeBg: 'from-yellow-50/40 to-amber-100/60 border-yellow-300 text-slate-850 shadow-md ring-4 ring-yellow-500/10 scale-[1.03]', textAccent: 'text-amber-500', enabled: settings?.binanceEnabled !== false },
+                    { key: 'PayPal', label: 'PayPal Gateway (পেপ্যাল)', logo: paypalLogo, activeBg: 'from-sky-50/80 to-blue-100/90 border-blue-300 text-blue-800 shadow-md ring-4 ring-blue-500/10 scale-[1.03]', textAccent: 'text-blue-500', enabled: settings?.paypalEnabled !== false },
+                  ].filter(provider => provider.enabled).map(provider => {
+                    const isSelected = selectedAccountTab === provider.key;
+                    return (
+                      <button
+                        key={provider.key}
+                        onClick={() => setSelectedAccountTab(provider.key as any)}
+                        className={`group relative flex flex-col items-center justify-center p-5 rounded-[1.5rem] border text-center transition-all duration-300 pointer-events-auto cursor-pointer ${
+                          isSelected 
+                            ? `bg-gradient-to-br ${provider.activeBg}`
+                            : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200/80 hover:scale-[1.015] shadow-2xs hover:shadow-xs'
+                        }`}
+                      >
+                        {/* Selected Indicator Checkmark badge */}
+                        {isSelected && (
+                          <span className="absolute -top-1.5 -right-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm ring-2 ring-white animate-fade-in">
+                            <Check size={11} className="stroke-[3]" />
+                          </span>
+                        )}
 
-                {/* Accounts Detail Display Details Pane */}
-                <div className="md:col-span-8">
-                  <div className="bg-slate-900 text-white rounded-[1.6rem] p-6 border border-slate-800 shadow-xl h-full flex flex-col justify-between relative overflow-hidden min-h-[300px]">
+                        <div className={`p-3 rounded-2xl bg-white shadow-2xs group-hover:scale-105 transition-transform duration-300 ${isSelected ? 'ring-2 ring-white/50' : ''}`}>
+                          {provider.logo}
+                        </div>
+
+                        <div className="mt-3 space-y-0.5">
+                          <span className="font-extrabold text-slate-800 text-xs block">{provider.label}</span>
+                          <span className={`text-[8.5px] font-black uppercase font-mono tracking-widest ${isSelected ? provider.textAccent : 'text-slate-400'}`}>
+                            {isSelected ? 'Active Selection' : 'Click to View'}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Step 2: Accounts Detail Display Details Pane */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center gap-2 px-1.5">
+                  <span className="text-[10px] font-black tracking-widest uppercase text-slate-450 bg-slate-50 border border-slate-200/60 px-3 py-1.5 rounded-xl shadow-[inset_0_1px_2px_rgba(0,0,0,0.02)]">
+                    ২. অ্যাকাউন্ট ও রিসিভার বিবরণী কপি করুন (Copy Receiver Account Details)
+                  </span>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="bg-slate-900 text-white rounded-[1.8rem] p-6 border border-slate-850 shadow-xl relative overflow-hidden min-h-[300px] flex flex-col justify-between">
                     
                     {/* Glowing Accent Orbs */}
                     <div className="absolute right-0 top-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl"></div>
-                    <div className="absolute left-1/3 bottom-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl"></div>
+                    <div className="absolute left-1/3 bottom-0 w-32 h-32 bg-amber-500/5 rounded-full blur-2xl font-sans"></div>
 
                     <div className="relative z-10 space-y-4">
                       {selectedAccountTab === 'bKash' && (
