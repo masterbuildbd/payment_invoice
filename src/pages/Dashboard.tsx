@@ -1592,35 +1592,101 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
         {/* 1. DASHBOARD OVERVIEW SUB-TAB */}
         {activeSubTab === 'dashboard' && (
           <div className="space-y-6 animate-fade-in">
-            {/* USER PROFILE INFO */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-[0_4px_20px_rgba(0,0,0,0.015)]">
-              <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2.5 flex items-center gap-2">
-                <Users size={15} className="text-indigo-600" />
-                গ্রাহক প্রোফাইল তথ্য (Customer Profile)
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                  <span className="text-[10px] font-bold text-slate-400 block mb-1">গ্রাহকের নাম (Name)</span>
-                  <span className="text-xs text-slate-800 font-black block truncate">{currentUserData?.name || user?.name || 'N/A'}</span>
+            {/* 📢 LIVE SYSTEM NOTICE & QUICK PAYMENT GUIDE */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+              {/* Emergency News / Notice Card */}
+              <div className="lg:col-span-7 bg-white p-5 px-6 rounded-3xl border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.015)] text-left flex flex-col justify-between relative overflow-hidden group hover:border-indigo-200/80 transition-all duration-300">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50/30 rounded-full blur-2xl -mr-10 -mt-10 group-hover:bg-indigo-50/50 transition-all duration-300 pointer-events-none" />
+                
+                <div className="space-y-4 relative z-10">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center border border-indigo-100">
+                        <Megaphone size={14} className="stroke-[2.5] animate-bounce" />
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-800 font-sans">
+                        লাইভ সিস্টেম নোটিশ (Live Broadcast)
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wide border border-emerald-100">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
+                      সার্ভার স্ট্যাটাস: সচল (Excellent)
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-50/40 to-slate-50 border border-indigo-100/60 leading-relaxed text-xs font-bold text-slate-700">
+                    <p className="whitespace-pre-line">
+                      {settings.runningNotice || 'প্রিয় গ্রাহক, আমাদের যেকোনো নতুন আপডেট বা অফার সম্পর্কিত তথ্য এখন থেকে আপনি সরাসরি এখানে লাইভ দেখতে পাবেন। পেমেন্ট করার পর ৫-১০ মিনিট ধৈর্য ধরুন, আমাদের টিম আপনার পেমেন্টটি ভেরিফাই করার কাজ করছে। ধন্যবাদ!'}
+                    </p>
+                  </div>
                 </div>
-                <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                  <span className="text-[10px] font-bold text-slate-400 block mb-1">ইউজারনেম (Username)</span>
-                  <span className="text-xs text-slate-700 font-black block truncate">@{currentUserData?.username || user?.username || 'user'}</span>
-                </div>
-                <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                  <span className="text-[10px] font-bold text-slate-400 block mb-1">মোবাইল নাম্বার (Mobile)</span>
-                  <span className="text-xs text-slate-805 font-mono font-black block">{currentUserData?.phone || 'N/A'}</span>
-                </div>
-                <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                  <span className="text-[10px] font-bold text-slate-400 block mb-1">ইমেইল (Email)</span>
-                  <span className="text-xs text-slate-855 font-mono font-black block truncate">{currentUserData?.email || user?.email || 'N/A'}</span>
-                </div>
-                <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100 flex flex-col justify-center">
-                  <span className="text-[10px] font-bold text-slate-400 block mb-1">জয়েন ডেট (Joined)</span>
-                  <span className="text-indigo-650 font-extrabold bg-indigo-50/60 px-2 py-1 rounded border border-indigo-100/30 text-[10px] font-sans flex items-center gap-1.5 w-fit">
-                    <Clock size={11} />
-                    {joinedDateFormatted}
+
+                <div className="flex items-center justify-between gap-4 mt-4 pt-3 border-t border-slate-100 relative z-10">
+                  <div className="flex items-center gap-4 text-[9.5px] font-black text-slate-450 uppercase tracking-wider font-mono">
+                    <div className="flex items-center gap-1">
+                      <Clock size={11} className="text-slate-400" />
+                      TAT: ২-৮ মিনিট
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Cpu size={11} className="text-slate-400" />
+                      SSL সুরক্ষিত
+                    </div>
+                  </div>
+                  <span className="text-[8.5px] bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg uppercase font-mono font-black text-slate-500 tracking-wider">
+                    v1.6 Live Node
                   </span>
+                </div>
+              </div>
+
+              {/* Step By Step Guidelines Tool Card */}
+              <div className="lg:col-span-5 bg-gradient-to-br from-slate-900 to-indigo-950 p-5 px-6 rounded-3xl text-white text-left relative overflow-hidden flex flex-col justify-between shadow-xs border border-slate-800">
+                <div className="absolute right-0 bottom-0 w-36 h-36 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+                
+                <div>
+                  <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center border border-indigo-500/30">
+                        <Sparkles size={14} className="stroke-[2.5]" />
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300 font-sans">
+                        পেমেন্ট ও রিচার্জ নির্দেশাবলী
+                      </span>
+                    </div>
+                    <span className="text-[9px] bg-indigo-500/30 text-indigo-200 border border-indigo-500/30 px-2 py-0.5 rounded-full uppercase font-mono font-black">Help Guide</span>
+                  </div>
+
+                  <div className="space-y-3.5">
+                    <div className="flex items-start gap-3">
+                      <div className="h-5 w-5 rounded-full bg-indigo-500 text-white flex items-center justify-center font-mono font-black text-[10px] shrink-0 shadow-sm border border-indigo-400/40">
+                        ১
+                      </div>
+                      <p className="text-[11px] font-bold text-slate-200 leading-tight">
+                        নিচের তালিকা থেকে আপনার সুবিধাজনক পেমেন্ট মেথড বাছাই করে নম্বর কপি করুন।
+                      </p>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <div className="h-5 w-5 rounded-full bg-emerald-500 text-white flex items-center justify-center font-mono font-black text-[10px] shrink-0 shadow-sm border border-emerald-400/40">
+                        ২
+                      </div>
+                      <p className="text-[11px] font-bold text-slate-200 leading-tight">
+                        আপনার বিকাশ/নগদ/রকেট/বাইনান্স ওয়ালেট থেকে নির্দিষ্ট অর্থ সেন্ড মানি করুন।
+                      </p>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <div className="h-5 w-5 rounded-full bg-amber-500 text-white flex items-center justify-center font-mono font-black text-[10px] shrink-0 shadow-sm border border-amber-400/40">
+                        ৩
+                      </div>
+                      <p className="text-[11px] font-bold text-slate-200 leading-tight">
+                        রশিদ ফর্মের উদ্দেশ্য, প্রেরক নম্বর ও সঠিক এমাউন্ট প্রদান করে ব্যালেন্স রিকোয়েস্ট করুন।
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-[9.5px] text-slate-400 font-bold tracking-normal italic mt-4 border-t border-white/5 pt-3">
+                  ⚠️ ভুল বা অসত্য তথ্য প্রদান করলে সিস্টেম স্বয়ংক্রিয়ভাবে রিকোয়েস্ট ফিল্টার করতে পারে।
                 </div>
               </div>
             </div>

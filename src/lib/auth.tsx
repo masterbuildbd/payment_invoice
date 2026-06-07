@@ -153,7 +153,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         ]);
 
         const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Firebase timeout')), 1500)
+          setTimeout(() => reject(new Error('Firebase timeout')), 15000)
         );
 
         const [snapUsername, snapPhone, snapEmail] = await Promise.race([fetchPromise, timeoutPromise]);
