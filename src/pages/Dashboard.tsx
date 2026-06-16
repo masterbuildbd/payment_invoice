@@ -1073,6 +1073,48 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
       const finalPaidAmount = ticketPaidAmount ? (Number(ticketPaidAmount) || 0) : (Number(topUpAmount) || 0);
       const finalDueAmount = ticketDueAmount ? (Number(ticketDueAmount) || 0) : 0;
 
+      // Build dynamic items list to show individual rows inside the invoice item description
+      const totalAmt = Number(topUpAmount) || 0;
+      let generatedItems: { description: string; quantity: number; price: number }[] = [];
+
+      if (isAppPurchase) {
+        generatedItems = [
+          { description: `APP: ${appNameVal.toUpperCase()}`, quantity: 1, price: totalAmt },
+          { description: `PACKAGE: ${packageNameVal || 'N/A'}`, quantity: 1, price: 0 },
+          { description: `WORK: ${appWorkTypeVal || 'N/A'}`, quantity: 1, price: 0 },
+          { description: `PROTOCOL: ${protocolVal || 'N/A'}`, quantity: 1, price: 0 },
+          { description: `QUALITY: ${appsQualityVal || 'N/A'}`, quantity: 1, price: 0 },
+          { description: `TYPE: ${appsTryingVal || 'N/A'}`, quantity: 1, price: 0 },
+          { description: `REGION: ${currentUserData?.region || 'BANGLADESH'}`, quantity: 1, price: 0 }
+        ].filter(item => !item.description.includes('N/A'));
+      } else if (isPanelPurchase) {
+        generatedItems = [
+          { description: `PANEL: ${panelNameVal.toUpperCase()}`, quantity: 1, price: totalAmt },
+          { description: `URL: ${panelUrlVal || 'N/A'}`, quantity: 1, price: 0 },
+          { description: `REGION: ${currentUserData?.region || 'BANGLADESH'}`, quantity: 1, price: 0 },
+          { description: `DURATION: ${panelDurationVal || 'N/A'}`, quantity: 1, price: 0 },
+          { description: `TYPE: ${panelTypeVal || 'N/A'}`, quantity: 1, price: 0 }
+        ].filter(item => !item.description.includes('N/A'));
+      } else if (isDecoderPurchase) {
+        generatedItems = [
+          { description: `DECODER USER: ${decoderUsernameVal.toUpperCase()}`, quantity: 1, price: totalAmt },
+          { description: `REGION: ${currentUserData?.region || 'BANGLADESH'}`, quantity: 1, price: 0 },
+          { description: `DURATION: ${decoderDurationVal || 'N/A'}`, quantity: 1, price: 0 },
+          { description: `TYPE: ${decoderUserTypeVal || 'N/A'}`, quantity: 1, price: 0 }
+        ].filter(item => !item.description.includes('N/A'));
+      } else if (isOtherService) {
+        generatedItems = [
+          { description: `${topUpPurpose.toUpperCase()}`, quantity: 1, price: totalAmt },
+          { description: `DETAILS: ${serviceDetailsVal || 'N/A'}`, quantity: 1, price: 0 },
+          { description: `REGION: ${currentUserData?.region || 'BANGLADESH'}`, quantity: 1, price: 0 }
+        ].filter(item => !item.description.includes('N/A'));
+      } else {
+        generatedItems = [
+          { description: `WALLET RECHARGE / TOP-UP: ${topUpPurpose || 'Wallet Credit'}`, quantity: 1, price: totalAmt },
+          { description: `REGION: ${currentUserData?.region || 'BANGLADESH'}`, quantity: 1, price: 0 }
+        ];
+      }
+
       await createInvoice({
         id: finalInvoiceNumber,
         customerName: currentUserData?.name || user?.name || 'Customer',
@@ -1090,7 +1132,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
         transactionId: topUpTxn,
         note: `পেমেন্ট উদ্দেশ্য: ${topUpPurpose}. কাস্টমার ওয়ালেট টপ-আপ রিকোয়েস্ট ভেরিফিকেশন${extraNoteSuffix}`,
         type: topUpPurpose, // standard type
-        items: [{ description: `Purchase/Top-Up Purpose: ${topUpPurpose}`, quantity: 1, price: Number(topUpAmount) || 0 }], // standard schema items
+        items: generatedItems, // standard schema items
         appName: appNameVal || undefined,
         packageName: packageNameVal || undefined,
         protocol: protocolVal || undefined,
@@ -1124,7 +1166,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
         type: topUpPurpose,
         transactionId: topUpTxn,
         note: `পেমেন্ট উদ্দেশ্য: ${topUpPurpose}. কাস্টমার ওয়ালেট টপ-আপ রিকোয়েস্ট ভেরিফিকেশন${extraNoteSuffix}`,
-        items: [{ description: `Purchase/Top-Up Purpose: ${topUpPurpose}`, quantity: 1, price: Number(topUpAmount) || 0 }],
+        items: generatedItems,
         appName: appNameVal || undefined,
         packageName: packageNameVal || undefined,
         protocol: protocolVal || undefined,
@@ -4719,8 +4761,15 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
 
           const cleanPhone = (phone: string) => {
             let cleaned = phone.replace(/[^\d]/g, '');
+            if (cleaned.startsWith('880880')) {
+              cleaned = cleaned.slice(3);
+            } else if (cleaned.startsWith('8800')) {
+              cleaned = '880' + cleaned.slice(4);
+            }
             if (cleaned.startsWith('0') && cleaned.length === 11) {
               cleaned = '88' + cleaned;
+            } else if (cleaned.length === 10 && /^[13456789]/.test(cleaned)) {
+              cleaned = '880' + cleaned;
             }
             return cleaned;
           };

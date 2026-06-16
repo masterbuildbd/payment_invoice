@@ -629,8 +629,15 @@ export function PaymentRequests() {
 
     const cleanPhone = (phone: string) => {
       let cleaned = phone.replace(/[^\d]/g, '');
+      if (cleaned.startsWith('880880')) {
+        cleaned = cleaned.slice(3);
+      } else if (cleaned.startsWith('8800')) {
+        cleaned = '880' + cleaned.slice(4);
+      }
       if (cleaned.startsWith('0') && cleaned.length === 11) {
         cleaned = '88' + cleaned;
+      } else if (cleaned.length === 10 && /^[13456789]/.test(cleaned)) {
+        cleaned = '880' + cleaned;
       }
       return cleaned;
     };
@@ -1717,8 +1724,15 @@ export function PaymentRequests() {
 
           const cleanPhone = (phone: string) => {
             let cleaned = phone.replace(/[^\d]/g, '');
+            if (cleaned.startsWith('880880')) {
+              cleaned = cleaned.slice(3);
+            } else if (cleaned.startsWith('8800')) {
+              cleaned = '880' + cleaned.slice(4);
+            }
             if (cleaned.startsWith('0') && cleaned.length === 11) {
               cleaned = '88' + cleaned;
+            } else if (cleaned.length === 10 && /^[13456789]/.test(cleaned)) {
+              cleaned = '880' + cleaned;
             }
             return cleaned;
           };

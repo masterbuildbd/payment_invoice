@@ -15,6 +15,40 @@
           document.documentElement.classList.remove('dark');
         }
       } catch (e) {}
+
+      // Global error shield to prevent third-party scripts (like Tawk.to) from throwing noisy uncaught errors
+      window.addEventListener('error', function(event) {
+        try {
+          const msg = event.message || '';
+          const filename = event.filename || '';
+          if (
+            msg.includes('Tawk') || 
+            msg.includes('tawk') || 
+            msg.includes('getForm') || 
+            msg.includes('Socket server') ||
+            filename.includes('tawk.to')
+          ) {
+            event.stopImmediatePropagation();
+            event.preventDefault();
+            return true;
+          }
+        } catch (e) {}
+      }, true);
+
+      window.addEventListener('unhandledrejection', function(event) {
+        try {
+          const msg = (event.reason && event.reason.message) || '';
+          if (
+            msg.includes('Tawk') || 
+            msg.includes('tawk') || 
+            msg.includes('getForm') || 
+            msg.includes('Socket server')
+          ) {
+            event.stopImmediatePropagation();
+            event.preventDefault();
+          }
+        } catch (e) {}
+      }, true);
     </script>
   </head>
   <body>

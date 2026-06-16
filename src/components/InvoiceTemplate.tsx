@@ -172,7 +172,7 @@ export function InvoiceTemplate({ invoice, settings, id }: InvoiceTemplateProps)
       <div className="grid grid-cols-2 gap-12 pt-4 relative">
         <div className="space-y-6 relative">
           {/* Professional Official SVG Seal Design - Restored to Previous Position and Sized Down */}
-          <div className="absolute top-[-25px] left-[175px] -rotate-[15deg] pointer-events-none opacity-[0.35] z-0 select-none transform scale-[0.85]">
+          <div className="absolute top-[-25px] left-[215px] -rotate-[15deg] pointer-events-none opacity-[0.35] z-0 select-none transform scale-[0.85]">
             <svg width="160" height="160" viewBox="0 0 200 200" className="drop-shadow-xl">
               <defs>
                 <linearGradient id="stampGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -189,9 +189,9 @@ export function InvoiceTemplate({ invoice, settings, id }: InvoiceTemplateProps)
                 <path id="curveTop" d="M 30,100 A 70,70 0 0,1 170,100" fill="none" />
                 <path id="curveBottom" d="M 30,100 A 70,70 0 0,0 170,100" fill="none" />
 
-                <text fill="url(#stampGradient)" style={{ fontSize: '13px', fontWeight: '900', letterSpacing: '5px' }}>
+                <text fill="url(#stampGradient)" style={{ fontSize: '11px', fontWeight: '900', letterSpacing: '2.5px' }}>
                   <textPath xlinkHref="#curveTop" startOffset="50%" textAnchor="middle">
-                    OFFICIAL VERIFIED
+                    OFFICIAL VERIFIED DOCUMENT
                   </textPath>
                 </text>
 
@@ -216,6 +216,7 @@ export function InvoiceTemplate({ invoice, settings, id }: InvoiceTemplateProps)
               </g>
             </svg>
           </div>
+
           <div className="space-y-2">
             <h3 className="text-[10px] font-black uppercase flex items-center gap-1" style={{ color: '#1e3a8a' }}>
               <Landmark size={12} />
@@ -289,12 +290,57 @@ export function InvoiceTemplate({ invoice, settings, id }: InvoiceTemplateProps)
             </div>
 
             <div className="w-48 text-center relative flex flex-col items-center">
-              <div className="mb-2 font-cursive text-3xl italic text-black select-none pb-1 h-10 flex items-end justify-center" style={{ color: '#000000' }}>
+              {/* Professional Ink Stamp Over Right Side Signature Block */}
+              <div className="absolute top-[-20px] right-[-24px] -rotate-[10deg] pointer-events-none opacity-[0.36] z-0 select-none transform scale-[0.85]">
+                <svg width="120" height="120" viewBox="0 0 150 150" className="drop-shadow-sm">
+                  <defs>
+                    <linearGradient id="signatureStampGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor={invoice.status === 'paid' ? '#059669' : '#2563eb'} />
+                      <stop offset="100%" stopColor={invoice.status === 'paid' ? '#047857' : '#1d4ed8'} />
+                    </linearGradient>
+                  </defs>
+                  
+                  <g>
+                    {/* Ring Borders */}
+                    <circle cx="75" cy="75" r="68" fill="none" stroke="url(#signatureStampGrad)" strokeWidth="2.5" />
+                    <circle cx="75" cy="75" r="61" fill="none" stroke="url(#signatureStampGrad)" strokeWidth="1" strokeDasharray="3 1" />
+                    <circle cx="75" cy="75" r="57" fill="none" stroke="url(#signatureStampGrad)" strokeWidth="1" />
+                    
+                    {/* Curve text placements */}
+                    <path id="stampTxtTop" d="M 22,75 A 53,53 0 0,1 128,75" fill="none" />
+                    <path id="stampTxtBottom" d="M 22,75 A 53,53 0 0,0 128,75" fill="none" />
+
+                    <text fill="url(#signatureStampGrad)" style={{ fontSize: '9px', fontWeight: '900', letterSpacing: '2px' }}>
+                      <textPath xlinkHref="#stampTxtTop" startOffset="50%" textAnchor="middle">
+                        AUTHORIZED SIGNATURE
+                      </textPath>
+                    </text>
+
+                    <text fill="url(#signatureStampGrad)" style={{ fontSize: '8px', fontWeight: '900', letterSpacing: '1.5px' }}>
+                      <textPath xlinkHref="#stampTxtBottom" startOffset="50%" textAnchor="middle">
+                        MASTER BUILD BD
+                      </textPath>
+                    </text>
+
+                    {/* Centered label box with status or designator */}
+                    <path d="M 32,62 L 118,62 L 118,88 L 32,88 Z" fill="none" stroke="url(#signatureStampGrad)" strokeWidth="2" />
+                    
+                    <text x="75" y="79" textAnchor="middle" fill="url(#signatureStampGrad)" style={{ fontSize: '13px', fontWeight: '1000', letterSpacing: '1px' }}>
+                      {invoice.status === 'paid' ? 'RELEASED' : 'SECURE PAY'}
+                    </text>
+
+                    <circle cx="20" cy="75" r="2.5" fill="url(#signatureStampGrad)" />
+                    <circle cx="130" cy="75" r="2.5" fill="url(#signatureStampGrad)" />
+                  </g>
+                </svg>
+              </div>
+
+              <div className="mb-2 font-cursive text-3xl italic text-black select-none pb-1 h-10 flex items-end justify-center relative z-10" style={{ color: '#000000' }}>
                 {settings.signatureText || 'Manager'}
               </div>
-              <div className="h-px bg-slate-300 w-full mb-1" style={{ backgroundColor: '#cbd5e1' }}></div>
-              <p className="text-[10px] font-black uppercase" style={{ color: '#1e3a8a' }}>{settings.signatureName || 'Authorized Manager'}</p>
-              <p className="text-[8px] font-bold uppercase tracking-widest" style={{ color: '#94a3b8' }}>{settings.companyName}</p>
+              <div className="h-px bg-slate-300 w-full mb-1 relative z-10" style={{ backgroundColor: '#cbd5e1' }}></div>
+              <p className="text-[10px] font-black uppercase relative z-10" style={{ color: '#1e3a8a' }}>{settings.signatureName || 'Authorized Manager'}</p>
+              <p className="text-[8px] font-bold uppercase tracking-widest relative z-10" style={{ color: '#94a3b8' }}>{settings.companyName}</p>
             </div>
           </div>
         </div>
