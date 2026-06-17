@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, Activity, FileText, Banknote, Check, X, Clock, CreditCard, CheckCircle, ShieldAlert, Sparkles, PhoneCall, Gift, RefreshCw, Users, Settings, Lock, Eye, EyeOff, Megaphone, Bell, Plus, ExternalLink, ChevronRight, BarChart3, Copy, MessageSquare, Search, AlertCircle, Mail, Cpu, Layers, Play, Sliders, ChevronUp, ChevronDown, Pin, PinOff, ArrowLeft, ArrowRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, Activity, FileText, Banknote, Check, X, Clock, CreditCard, CheckCircle, ShieldAlert, Sparkles, PhoneCall, Gift, RefreshCw, Users, Settings, Lock, Eye, EyeOff, Megaphone, Bell, Plus, ExternalLink, ChevronRight, BarChart3, Copy, MessageSquare, Search, AlertCircle, Mail, Cpu, Layers, Play, Sliders, ChevronUp, ChevronDown, Pin, PinOff, ArrowLeft, ArrowRight, Download, ShieldCheck } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../lib/auth';
 import { updateDocument, safeStringify } from '../lib/storage';
@@ -683,6 +683,8 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
   const [selectedUserInvoice, setSelectedUserInvoice] = useState<Invoice | null>(null);
   const [showInvoicePreviewModal, setShowInvoicePreviewModal] = useState(false);
   const [isUserGeneratingPdf, setIsUserGeneratingPdf] = useState(false);
+  const [clientInvoiceSearch, setClientInvoiceSearch] = useState('');
+  const [clientInvoiceStatusFilter, setClientInvoiceStatusFilter] = useState<'all' | 'paid' | 'pending' | 'overdue'>('all');
 
   const handleClientPasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1683,29 +1685,27 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
           let greetTitle = 'শুভ সকাল';
           let greetSub = 'একটি সুন্দর ও নতুন日の শুভকামনা! আপনার দিনটি চমৎকার কাটুক।';
           let greetEmoji = '🌅';
-          let gradientStyle = 'from-rose-500 via-amber-500 to-indigo-950';
-          let borderGlow = 'rgba(244,63,94,0.35)';
+          let gradientStyle = 'from-amber-600 via-orange-600 to-indigo-900';
+          let borderGlow = 'rgba(217,119,6,0.3)';
 
           if (hr >= 12 && hr < 16) {
             greetTitle = 'শুভ দুপুর';
             greetSub = 'ব্যস্ত সময়ে একটু বিরতি নিয়ে সুস্থ, সচল এবং হাইড্রেটেড থাকুন!';
             greetEmoji = '☀️';
-            gradientStyle = 'from-cyan-400 via-indigo-600 to-pink-500';
-            borderGlow = 'rgba(6,182,212,0.4)';
-          } else if (hr >= 16 && hr < 14 + 10) { // hr < 24 (or let's keep original: hr >= 16 && hr < 20)
-            if (hr >= 16 && hr < 20) {
-              greetTitle = 'শুভ সন্ধ্যা';
-              greetSub = 'সারাদিনের ক্লান্তি মুছে দিতে সন্ধ্যার স্নিগ্ধতায় আপনাকে স্বাগত!';
-              greetEmoji = '🌇';
-              gradientStyle = 'from-orange-500 via-rose-600 to-violet-900';
-              borderGlow = 'rgba(236,72,153,0.4)';
-            } else {
-              greetTitle = 'শুভ রাত্রি';
-              greetSub = 'সারাদিনের ব্যস্ততা শেষে একটি শান্তিময় ও আরামদায়ক ঘুমের প্রত্যাশায়!';
-              greetEmoji = '🌙';
-              gradientStyle = 'from-violet-600 via-fuchsia-700 to-stone-950';
-              borderGlow = 'rgba(167,139,250,0.35)';
-            }
+            gradientStyle = 'from-sky-500 via-teal-600 to-indigo-850';
+            borderGlow = 'rgba(14,165,233,0.3)';
+          } else if (hr >= 16 && hr < 20) {
+            greetTitle = 'শুভ সন্ধ্যা';
+            greetSub = 'সারাদিনের ক্লান্তি মুছে দিতে সন্ধ্যার স্নিগ্ধতায় আপনাকে স্বাগত!';
+            greetEmoji = '🌇';
+            gradientStyle = 'from-orange-500 via-rose-500 to-indigo-900';
+            borderGlow = 'rgba(244,63,94,0.3)';
+          } else if (hr >= 20 || hr < 5) {
+            greetTitle = 'শুভ রাত্রি';
+            greetSub = 'সারাদিনের ব্যস্ততা শেষে একটি শান্তিময় ও আরামদায়ক ঘুমের প্রত্যাশায়!';
+            greetEmoji = '🌙';
+            gradientStyle = 'from-slate-900 via-purple-950 to-indigo-950';
+            borderGlow = 'rgba(139,92,246,0.3)';
           }
 
           return (
@@ -1799,19 +1799,19 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
               </h3>
               <div className="grid grid-cols-3 gap-3 sm:gap-4 md:gap-5 animate-fade-in">
                 {/* Approved */}
-                <div className="bg-gradient-to-br from-emerald-555 to-teal-600 dark:from-emerald-600 dark:to-teal-700 p-4.5 rounded-2xl text-center shadow-md hover:scale-[1.02] transition-transform duration-200 text-white border border-emerald-400/20">
-                  <div className="font-extrabold text-xl sm:text-3xl font-mono drop-shadow-md">{approvedCount}</div>
-                  <div className="text-[9.5px] sm:text-xs text-emerald-100 font-black uppercase mt-1">অনুমোদিত (Approved)</div>
+                <div className="bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-150 dark:border-emerald-900/30 p-4.5 rounded-2xl text-center shadow-3xs hover:scale-[1.02] transition-transform duration-200">
+                  <div className="text-emerald-600 dark:text-emerald-400 font-extrabold text-lg sm:text-2xl font-mono">{approvedCount}</div>
+                  <div className="text-[9.5px] sm:text-xs text-emerald-700 dark:text-emerald-305 font-black uppercase mt-1">অনুমোদিত (Approved)</div>
                 </div>
                 {/* Pending */}
-                <div className="bg-gradient-to-br from-amber-400 via-orange-500 to-amber-500 dark:from-amber-550 dark:to-orange-700 p-4.5 rounded-2xl text-center shadow-md hover:scale-[1.02] transition-transform duration-200 text-white border border-amber-300/20">
-                  <div className="font-extrabold text-xl sm:text-3xl font-mono drop-shadow-md">{pendingCount}</div>
-                  <div className="text-[9.5px] sm:text-xs text-amber-50 font-black uppercase mt-1">মূলতুবি (Pending)</div>
+                <div className="bg-amber-50/40 dark:bg-amber-955/20 border border-amber-150 dark:border-amber-900/35 p-4.5 rounded-2xl text-center shadow-3xs hover:scale-[1.02] transition-transform duration-200">
+                  <div className="text-amber-600 dark:text-amber-400 font-extrabold text-lg sm:text-2xl font-mono">{pendingCount}</div>
+                  <div className="text-[9.5px] sm:text-xs text-amber-700 dark:text-amber-305 font-black uppercase mt-1">মূলতুবি (Pending Review)</div>
                 </div>
                 {/* Rejected */}
-                <div className="bg-gradient-to-br from-rose-500 to-pink-650 dark:from-rose-600 dark:to-pink-700 p-4.5 rounded-2xl text-center shadow-md hover:scale-[1.02] transition-transform duration-200 text-white border border-rose-400/20">
-                  <div className="font-extrabold text-xl sm:text-3xl font-mono drop-shadow-md">{rejectedCount}</div>
-                  <div className="text-[9.5px] sm:text-xs text-rose-100 font-black uppercase mt-1">প্রত্যাখ্যাত (Rejected)</div>
+                <div className="bg-rose-50/20 dark:bg-rose-955/10 border border-rose-150 dark:border-rose-900/30 p-4.5 rounded-2xl text-center shadow-3xs hover:scale-[1.02] transition-transform duration-200">
+                  <div className="text-rose-655 dark:text-rose-455 font-extrabold text-lg sm:text-2xl font-mono">{rejectedCount}</div>
+                  <div className="text-[9.5px] sm:text-xs text-rose-600 dark:text-rose-405 font-black uppercase mt-1">প্রত্যাখ্যাত (Rejected)</div>
                 </div>
               </div>
               <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-4.5 text-center border-t border-slate-100 dark:border-slate-850 pt-3.5 font-medium">
@@ -3590,6 +3590,261 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                 </button>
               </div>
             </form>
+          </div>
+        )}
+
+        {/* 1.5 CLIENT INVOICES SUB-TAB: SHOW ACTIVE INVOICES */}
+        {activeSubTab === 'invoices' && (
+          <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-xs relative animate-fade-in space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+              <div>
+                <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <FileText size={16} className="text-indigo-600" />
+                  আপনার ইনভয়েস ও রসিদ খতিয়ান (Your Invoices & Receipts)
+                </h2>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  আপনার সকল জমাকৃত পেমেন্ট রিকোয়েস্ট, ব্যালেন্স ইতিহাস ও অনুমোদিত মেম্বারশিপের বিবরণ নিচে দেখতে পারেন।
+                </p>
+              </div>
+            </div>
+
+            {/* Sub-tab invoice lookup filters */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+                <input
+                  type="text"
+                  placeholder="ইনভয়েস আইডি, ট্রানজেকশন আইডি বা মেথড অনুসন্ধান করুন..."
+                  value={clientInvoiceSearch}
+                  onChange={(e) => setClientInvoiceSearch(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+                />
+              </div>
+              <div className="sm:w-48">
+                <select
+                  value={clientInvoiceStatusFilter}
+                  onChange={(e) => setClientInvoiceStatusFilter(e.target.value as any)}
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-755 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer"
+                >
+                  <option value="all">সকল স্ট্যাটাস (All Status)</option>
+                  <option value="paid">অনুমোদিত/পরিশোধিত (Paid)</option>
+                  <option value="pending">মূলতুবি (Pending)</option>
+                  <option value="overdue">ওভারডিউ (Overdue)</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Filtered list evaluation */}
+            {(() => {
+              const query = clientInvoiceSearch.toLowerCase().trim();
+              const filteredList = userInvoicesList.filter(inv => {
+                // Exclude 'rejected' here from regular invoices list as it is shown in the rejected_invoices tab
+                if (inv.status === 'rejected') return false;
+
+                if (clientInvoiceStatusFilter !== 'all') {
+                  const s = inv.status;
+                  if (clientInvoiceStatusFilter === 'paid' && s !== 'paid' && s !== 'approved') return false;
+                  if (clientInvoiceStatusFilter === 'pending' && s !== 'pending') return false;
+                  if (clientInvoiceStatusFilter === 'overdue' && s !== 'overdue') return false;
+                }
+
+                if (query) {
+                  const idMatch = inv.id?.toLowerCase().includes(query);
+                  const txnMatch = inv.transactionId?.toLowerCase().includes(query);
+                  const methodMatch = (inv.paymentMethod || (inv as any).method || '').toLowerCase().includes(query);
+                  const typeMatch = (inv.type || '').toLowerCase().includes(query);
+                  return idMatch || txnMatch || methodMatch || typeMatch;
+                }
+
+                return true;
+              });
+
+              if (filteredList.length === 0) {
+                return (
+                  <div className="p-12 text-center border-2 border-dashed border-slate-100 rounded-2xl">
+                    <FileText size={42} className="mx-auto text-slate-300 mb-3 block" />
+                    <span className="text-xs font-black text-slate-700 block">কোনো রশিদ বা ইনভয়েস রেকর্ড পাওয়া যায়নি</span>
+                    <span className="text-[10px] text-slate-400 font-semibold mt-1 block">আপনার কোনো রিকোয়েস্ট পেন্ডিং খতিয়ানে থাকলে অথবা অন্য কোনো ক্যাটাগরি ফিল্টারে থাকলে চেক করুন।</span>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="overflow-hidden border border-slate-150 rounded-2xl shadow-3xs bg-white dark:bg-slate-900">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-left text-xs font-medium text-slate-500">
+                      <thead className="bg-slate-50/75 border-b border-slate-150 text-slate-700 font-black uppercase text-[10px] tracking-wider">
+                        <tr>
+                          <th className="p-4">ইনভয়েস # / তারিখ</th>
+                          <th className="p-4">সার্ভিস টাইপ</th>
+                          <th className="p-4">পেমেন্ট ডিটেইলস</th>
+                          <th className="p-4">মোট টাকা</th>
+                          <th className="p-4">অবস্থা</th>
+                          <th className="p-4 text-right">অ্যাকশন</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {filteredList.map((inv) => {
+                          const isPaid = inv.status === 'paid' || inv.status === 'approved';
+                          const isPending = inv.status === 'pending';
+                          
+                          return (
+                            <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors">
+                              <td className="p-4 whitespace-nowrap">
+                                <span className="font-mono font-black text-indigo-700 bg-indigo-50/50 border border-indigo-100 px-1.5 py-0.5 rounded text-[10px] block w-fit mb-1">
+                                  #{inv.id.substring(0, 12).toUpperCase()}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-semibold font-mono block">
+                                  {inv.createdAt || inv.date || 'N/A'}
+                                </span>
+                              </td>
+                              <td className="p-4 whitespace-nowrap">
+                                <span className="p-1 px-2.5 rounded-lg bg-slate-100 text-slate-755 font-black text-[10px] uppercase">
+                                  {inv.type || 'TOP-UP'}
+                                </span>
+                              </td>
+                              <td className="p-4">
+                                <div className="space-y-0.5">
+                                  <div className="text-slate-800 font-black text-[11px] flex items-center gap-1">
+                                    <span className="p-0.5 px-1.5 bg-slate-100 border rounded text-[9px] font-mono uppercase">
+                                      {inv.paymentMethod || 'Wallet'}
+                                    </span>
+                                  </div>
+                                  <div className="text-[10px] text-slate-400 font-semibold font-mono">
+                                    TxID: <span className="text-slate-600 font-black select-all">{inv.transactionId || 'N/A'}</span>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="p-4 whitespace-nowrap">
+                                <span className="text-xs font-black text-slate-900 font-mono">
+                                  ৳{(inv.amount || 0).toLocaleString()}
+                                </span>
+                              </td>
+                              <td className="p-4 whitespace-nowrap">
+                                {isPaid ? (
+                                  <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-150 px-2 py-0.5 rounded-md">
+                                    ● {settings.clientPaymentSuccessStatusLabel || 'Approved'}
+                                  </span>
+                                ) : isPending ? (
+                                  <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-150 px-2 py-0.5 rounded-md">
+                                    ● {settings.clientPaymentPendingStatusLabel || 'Pending'}
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-rose-700 bg-rose-50 border border-rose-150 px-2 py-0.5 rounded-md">
+                                    ● Overdue
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-4 whitespace-nowrap text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={() => handleUserPreviewInvoice(inv)}
+                                    className="p-1.5 text-indigo-150 text-indigo-650 hover:bg-indigo-50 border border-indigo-150 rounded-lg transition-all active:scale-95 flex items-center justify-center cursor-pointer"
+                                    title="রশিদ প্রিভিউ"
+                                  >
+                                    <Eye size={13} className="mr-1" />
+                                    রশিদ
+                                  </button>
+                                  <button
+                                    onClick={() => handleUserDownloadInvoice(inv)}
+                                    className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 rounded-lg transition-all active:scale-95 flex items-center justify-center cursor-pointer"
+                                    title="পিডিএফ ডাউনলোড"
+                                  >
+                                    <Download size={13} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* 1.6 REJECTED INVOICES SUB-TAB: SHOW REJECTED PAYMENT REQUESTS */}
+        {activeSubTab === 'rejected_invoices' && (
+          <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-xs relative animate-fade-in space-y-5">
+            <div>
+              <h2 className="text-sm font-black text-rose-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <ShieldAlert size={16} className="text-rose-600" />
+                বাতিলকৃত রিকোয়েস্ট আর্কাইভ (Rejected Requests Archive)
+              </h2>
+              <p className="text-xs text-rose-650 leading-relaxed font-sans mt-0.5">
+                নিচের পেমেন্ট রিকোয়েস্টগুলো এডমিন বাতিল করেছেন। আপনি ডাটা এডিট করে ভুল ট্রানজেকশন বা মোবাইল নম্বর সংশোধন করে পুনরায় পাঠাতে পারেন।
+              </p>
+            </div>
+
+            {(() => {
+              const rejectedList = userInvoicesList.filter(inv => inv.status === 'rejected');
+
+              if (rejectedList.length === 0) {
+                return (
+                  <div className="p-12 text-center border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/20">
+                    <ShieldCheck size={42} className="mx-auto text-emerald-400 mb-3 block" />
+                    <span className="text-xs font-black text-slate-700 block">কোনো বাতিলকৃত রিকোয়েস্ট পাওয়া যায়নি!</span>
+                    <span className="text-[10px] text-slate-400 font-semibold mt-1 block">আপনার সকল পেমেন্ট ভেরিফিকেশন সফলভাবে সম্পন্ন আছে।</span>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-4">
+                  {rejectedList.map((inv) => {
+                    let extractedReason = 'ভুল ট্রানজেকশন আইডি বা টাকা জমা হয়নি।';
+                    if (inv.note && inv.note.includes('বাতিল করার কারণ:')) {
+                      const parts = inv.note.split('বাতিল করার কারণ:');
+                      if (parts.length > 1) {
+                        extractedReason = parts[1].split(']')[0].trim();
+                      }
+                    } else if (inv.note && inv.note.includes('[REJECTED')) {
+                      extractedReason = 'এডমিন কর্তৃক রিকোয়েস্ট বাতিল করা হয়েছে।';
+                    }
+
+                    return (
+                      <div key={inv.id} className="bg-white border border-rose-150 rounded-2xl p-4.5 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-rose-350 shadow-2xs">
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-black text-slate-850 font-mono bg-slate-50 border border-slate-150 px-2 py-0.5 rounded-md">
+                              #{inv.id.substring(0, 10).toUpperCase()}
+                            </span>
+                            <span className="text-[9.5px] uppercase font-mono font-black tracking-wider px-2 py-0.5 rounded-md bg-rose-100 text-rose-700">
+                              {inv.paymentMethod || (inv as any).method}
+                            </span>
+                            <span className="text-xs font-black text-rose-650 font-mono bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-md">
+                              ৳{(inv.amount || 0).toLocaleString()}
+                            </span>
+                          </div>
+                          
+                          <p className="text-[11px] font-bold text-slate-600 leading-relaxed font-sans pt-0.5">
+                            <strong className="text-rose-700 font-black">বাতিলের কারণ:</strong> {extractedReason}
+                          </p>
+
+                          <div className="text-[10px] text-slate-400 font-semibold font-mono pt-0.5">
+                            পূর্বের TxID: <span className="bg-slate-50 border border-rose-100 px-1.5 py-0.5 rounded text-rose-600 select-all font-black">{inv.transactionId || 'N/A'}</span> • {inv.createdAt}
+                          </div>
+                        </div>
+
+                        <div className="shrink-0 flex items-center">
+                          <button
+                            type="button"
+                            onClick={() => handleInitiateResubmit(inv)}
+                            className="bg-indigo-650 hover:bg-indigo-700 text-white font-sans text-xs font-black px-4 py-2.5 rounded-xl transition-all shadow-sm shadow-indigo-150 active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <RefreshCw size={12} className="animate-spin-slow" />
+                            সংশোধন করুন (Edit & Retry)
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         )}
 
