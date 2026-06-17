@@ -349,13 +349,18 @@ export function PaymentRequests() {
   };
 
   const processMatchApproval = async (invoice: Invoice, silent = false) => {
+    const hasDue = invoice.dueAmount && invoice.dueAmount > 0;
+    const approveStatus = hasDue ? 'overdue' : 'paid';
+    const finalPaidAmount = hasDue ? (invoice.paidAmount ?? 0) : invoice.amount;
+    const finalDueAmount = hasDue ? invoice.dueAmount : 0;
+
     try {
       await updateInvoice(invoice.id, {
-        status: 'paid',
-        paidAmount: invoice.amount,
-        dueAmount: 0,
+        status: approveStatus,
+        paidAmount: finalPaidAmount,
+        dueAmount: finalDueAmount,
         cashierName: settings.signatureName || 'Admin Approved via Matching',
-        note: (invoice.note || '') + ' [APPROVED VIA STATEMENT MATCHING]'
+        note: (invoice.note || '') + ` [APPROVED VIA STATEMENT MATCHING AS ${approveStatus.toUpperCase()}]`
       });
 
       if (invoice.username) {
@@ -364,7 +369,7 @@ export function PaymentRequests() {
         );
 
         if (matchingUser) {
-          const parsedAmount = Number(invoice.amount) || 0;
+          const parsedAmount = finalPaidAmount;
           const currentPaid = Number(matchingUser.paidAmount) || 0;
           const totalPaid = currentPaid + parsedAmount;
           const userPrice = Number(matchingUser.price) || 0;
@@ -488,14 +493,19 @@ export function PaymentRequests() {
   };
 
   const handleApproveRequest = async (invoice: Invoice) => {
+    const hasDue = invoice.dueAmount && invoice.dueAmount > 0;
+    const approveStatus = hasDue ? 'overdue' : 'paid';
+    const finalPaidAmount = hasDue ? (invoice.paidAmount ?? 0) : invoice.amount;
+    const finalDueAmount = hasDue ? invoice.dueAmount : 0;
+
     try {
-      // 1. Update invoice status to 'paid' (approved) and clear any due
+      // 1. Update invoice status to 'overdue' or 'paid' (approved) and preserve details
       await updateInvoice(invoice.id, {
-        status: 'paid',
-        paidAmount: invoice.amount,
-        dueAmount: 0,
+        status: approveStatus,
+        paidAmount: finalPaidAmount,
+        dueAmount: finalDueAmount,
         cashierName: settings.signatureName || 'Admin Approved',
-        note: (invoice.note || '') + ' [APPROVED BY ADMIN]'
+        note: (invoice.note || '') + ` [APPROVED BY ADMIN AS ${approveStatus.toUpperCase()}]`
       });
 
       // 2. See if there is a matching user to auto-approve their account
@@ -506,7 +516,7 @@ export function PaymentRequests() {
 
         if (matchingUser) {
           // Calculate new financial details for the user
-          const parsedAmount = Number(invoice.amount) || 0;
+          const parsedAmount = finalPaidAmount;
           const currentPaid = Number(matchingUser.paidAmount) || 0;
           const totalPaid = currentPaid + parsedAmount;
           const userPrice = Number(matchingUser.price) || 0;
@@ -1345,9 +1355,20 @@ export function PaymentRequests() {
 
                     {/* Amount */}
                     <td className="px-6 py-4">
-                      <span className="text-sm font-black text-rose-600 font-mono">
-                        ৳{(inv.amount || 0).toLocaleString()}
-                      </span>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-black text-rose-600 font-mono">
+                          ৳{(inv.amount || 0).toLocaleString()}
+                        </span>
+                        {inv.dueAmount !== undefined && inv.dueAmount > 0 ? (
+                          <div className="text-[10px] font-bold mt-1 text-slate-500 whitespace-nowrap bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded w-max">
+                            <span className="text-emerald-700">পেইড: ৳{(inv.paidAmount || 0).toLocaleString()}</span>
+                            <span className="mx-1">|</span>
+                            <span className="text-rose-605">বাকি: ৳{(inv.dueAmount || 0).toLocaleString()}</span>
+                          </div>
+                        ) : (
+                          <span className="text-[8px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-black max-w-max uppercase tracking-wider mt-1">Paid Full</span>
+                        )}
+                      </div>
                     </td>
 
                     {/* Status badge */}

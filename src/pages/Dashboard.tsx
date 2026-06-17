@@ -40,7 +40,7 @@ const defaultChartData = [
 
 type ModalType = 'app' | 'decoder' | 'panel' | 'user' | 'invoice' | 'create_invoice_direct' | null;
 
-export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onLogoutRequest: () => void; activeSubTab?: string }) {
+export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabChange }: { onLogoutRequest: () => void; activeSubTab?: string; onTabChange?: (tab: string) => void }) {
   const { t } = useLanguage();
   const { user } = useAuth();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
@@ -218,6 +218,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
   const [topUpSuccess, setTopUpSuccess] = useState('');
   const [topUpError, setTopUpError] = useState('');
   const [isTopUpLoading, setIsTopUpLoading] = useState(false);
+  const [resubmittingInvoiceId, setResubmittingInvoiceId] = useState<string | null>(null);
 
   // Automated fields for Client Invoice metadata
   const [clientInvoiceNumber, setClientInvoiceNumber] = useState('');
@@ -236,6 +237,35 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
     setClientInvoiceNumber(`INV-${random6Digits}`);
     setClientInvoiceDate(dateStr);
     setClientInvoiceTime(timeStr);
+  };
+
+  const handleInitiateResubmit = (inv: any) => {
+    setResubmittingInvoiceId(inv.id);
+    setTopUpMethod(inv.paymentMethod || inv.method || 'bKash');
+    setTopUpAmount(String(inv.amount || 0));
+    setTopUpTxn(inv.transactionId || '');
+    setTopUpPurpose(inv.type || 'Wallet Top-Up');
+    setTicketPaidAmount(String(inv.paidAmount || 0));
+    setTicketDueAmount(String(inv.dueAmount || 0));
+    
+    if (inv.date) {
+      setClientInvoiceDate(inv.date);
+    }
+    setClientInvoiceNumber(inv.id);
+
+    if (onTabChange) {
+      onTabChange('client_payment');
+    }
+    
+    setTopUpSuccess('');
+    setTopUpError('');
+    
+    setTimeout(() => {
+      const el = document.getElementById('client-billing-form-section');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 150);
   };
 
   // Generate when subtab is loaded
@@ -721,14 +751,19 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
 
   const handleApproveRequest = async (invoice: Invoice) => {
     setIsProcessingApproval(invoice.id);
+    const hasDue = invoice.dueAmount && invoice.dueAmount > 0;
+    const approveStatus = hasDue ? 'overdue' : 'paid';
+    const finalPaidAmount = hasDue ? (invoice.paidAmount ?? 0) : invoice.amount;
+    const finalDueAmount = hasDue ? invoice.dueAmount : 0;
+
     try {
-      // 1. Update invoice status to 'paid' (approved) and clear any due
+      // 1. Update invoice status to 'overdue' or 'paid' (approved) and preserve actual values
       await updateInvoice(invoice.id, {
-        status: 'paid',
-        paidAmount: invoice.amount,
-        dueAmount: 0,
+        status: approveStatus,
+        paidAmount: finalPaidAmount,
+        dueAmount: finalDueAmount,
         cashierName: settings.signatureName || 'Admin Approved',
-        note: (invoice.note || '') + ' [APPROVED BY DASHBOARD]'
+        note: (invoice.note || '') + ` [APPROVED BY DASHBOARD AS ${approveStatus.toUpperCase()}]`
       });
 
       // 2. See if there is a matching user to auto-approve their account
@@ -739,7 +774,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
 
         if (matchingUser) {
           // Calculate new financial details for the user
-          const parsedAmount = Number(invoice.amount) || 0;
+          const parsedAmount = finalPaidAmount;
           const currentPaid = Number(matchingUser.paidAmount) || 0;
           const totalPaid = currentPaid + parsedAmount;
           const userPrice = Number(matchingUser.price) || 0;
@@ -805,7 +840,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
 
       let updatedUser = matchingUser ? { ...matchingUser } : null;
       if (updatedUser) {
-        const parsedAmount = Number(invoice.amount) || 0;
+        const parsedAmount = finalPaidAmount;
         const currentPaid = Number(matchingUser?.paidAmount) || 0;
         const totalPaid = currentPaid + parsedAmount;
         const userPrice = Number(matchingUser?.price) || 0;
@@ -814,9 +849,17 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
         updatedUser.dueAmount = newDue;
       }
 
+      // Also update the local state of the invoice passed to the WhatsApp/Email template preview
+      const updatedInvoiceForNotification = {
+        ...invoice,
+        status: approveStatus,
+        paidAmount: finalPaidAmount,
+        dueAmount: finalDueAmount,
+      };
+
       setApprovedNotificationModal({
         isOpen: true,
-        invoice,
+        invoice: updatedInvoiceForNotification,
         user: updatedUser
       });
     } catch (err) {
@@ -1115,73 +1158,113 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
         ];
       }
 
-      await createInvoice({
-        id: finalInvoiceNumber,
-        customerName: currentUserData?.name || user?.name || 'Customer',
-        username: currentUserData?.username || user?.username,
-        amount: Number(topUpAmount) || 0,
-        paidAmount: finalPaidAmount,
-        dueAmount: finalDueAmount,
-        status: 'pending',
-        date: finalDate,
-        createdAt: fullDate,
-        phone: currentUserData?.phone || '',
-        customerNumber: currentUserData?.phone ? `+88 ${currentUserData.phone}` : 'N/A',
-        method: topUpMethod,
-        paymentMethod: topUpMethod, // standard
-        transactionId: topUpTxn,
-        note: `পেমেন্ট উদ্দেশ্য: ${topUpPurpose}. কাস্টমার ওয়ালেট টপ-আপ রিকোয়েস্ট ভেরিফিকেশন${extraNoteSuffix}`,
-        type: topUpPurpose, // standard type
-        items: generatedItems, // standard schema items
-        appName: appNameVal || undefined,
-        packageName: packageNameVal || undefined,
-        protocol: protocolVal || undefined,
-        appsQuality: appsQualityVal || undefined,
-        appsTrying: appsTryingVal || undefined,
-        appWorkType: appWorkTypeVal || undefined,
-        panelName: panelNameVal || undefined,
-        panelUrl: panelUrlVal || undefined,
-        panelDuration: panelDurationVal || undefined,
-        panelType: panelTypeVal || undefined,
-        decoderUsername: decoderUsernameVal || undefined,
-        decoderUserType: decoderUserTypeVal || undefined,
-        decoderDuration: decoderDurationVal || undefined,
-        serviceDetails: serviceDetailsVal || undefined
-      });
+      if (resubmittingInvoiceId) {
+        const origInv = myRejectedInvoices.find(i => i.id === resubmittingInvoiceId);
+        const originalNotes = origInv?.note || '';
+        const correctionNote = `[সংশোধিত পেমেন্ট রিকোয়েস্ট: নতুন TxID: ${topUpTxn} • পরিমাণ: ৳${topUpAmount} • মেথড: ${topUpMethod}]`;
+        const updatedNotes = originalNotes 
+          ? `${originalNotes}\n${correctionNote}` 
+          : `পেমেন্ট উদ্দেশ্য: ${topUpPurpose}. কাস্টমার ওয়ালেট টপ-আপ রিকোয়েস্ট সংশোধন${extraNoteSuffix}\n${correctionNote}`;
 
-      setMyInvoices(prev => [{
-        id: finalInvoiceNumber,
-        customerName: currentUserData?.name || user?.name || 'Customer',
-        username: currentUserData?.username || user?.username,
-        amount: Number(topUpAmount) || 0,
-        paidAmount: finalPaidAmount,
-        dueAmount: finalDueAmount,
-        status: 'pending',
-        date: finalDate,
-        createdAt: fullDate,
-        phone: currentUserData?.phone || '',
-        customerNumber: currentUserData?.phone ? `+88 ${currentUserData.phone}` : 'N/A',
-        method: topUpMethod,
-        paymentMethod: topUpMethod,
-        type: topUpPurpose,
-        transactionId: topUpTxn,
-        note: `পেমেন্ট উদ্দেশ্য: ${topUpPurpose}. কাস্টমার ওয়ালেট টপ-আপ রিকোয়েস্ট ভেরিফিকেশন${extraNoteSuffix}`,
-        items: generatedItems,
-        appName: appNameVal || undefined,
-        packageName: packageNameVal || undefined,
-        protocol: protocolVal || undefined,
-        appsQuality: appsQualityVal || undefined,
-        appsTrying: appsTryingVal || undefined,
-        appWorkType: appWorkTypeVal || undefined,
-        panelName: panelNameVal || undefined,
-        panelUrl: panelUrlVal || undefined,
-        panelDuration: panelDurationVal || undefined,
-        panelType: panelTypeVal || undefined,
-        decoderUsername: decoderUsernameVal || undefined,
-        decoderUserType: decoderUserTypeVal || undefined,
-        decoderDuration: decoderDurationVal || undefined,
-        serviceDetails: serviceDetailsVal || undefined
-      } as any, ...prev]);
+        await updateInvoice(resubmittingInvoiceId, {
+          amount: Number(topUpAmount) || 0,
+          paidAmount: finalPaidAmount,
+          dueAmount: finalDueAmount,
+          status: 'pending',
+          date: finalDate,
+          method: topUpMethod,
+          paymentMethod: topUpMethod,
+          transactionId: topUpTxn,
+          note: updatedNotes,
+          type: topUpPurpose,
+          items: generatedItems,
+          appName: appNameVal || undefined,
+          packageName: packageNameVal || undefined,
+          protocol: protocolVal || undefined,
+          appsQuality: appsQualityVal || undefined,
+          appsTrying: appsTryingVal || undefined,
+          appWorkType: appWorkTypeVal || undefined,
+          panelName: panelNameVal || undefined,
+          panelUrl: panelUrlVal || undefined,
+          panelDuration: panelDurationVal || undefined,
+          panelType: panelTypeVal || undefined,
+          decoderUsername: decoderUsernameVal || undefined,
+          decoderUserType: decoderUserTypeVal || undefined,
+          decoderDuration: decoderDurationVal || undefined,
+          serviceDetails: serviceDetailsVal || undefined
+        });
+
+        setMyRejectedInvoices(prev => prev.filter(i => i.id !== resubmittingInvoiceId));
+        setResubmittingInvoiceId(null);
+      } else {
+        await createInvoice({
+          id: finalInvoiceNumber,
+          customerName: currentUserData?.name || user?.name || 'Customer',
+          username: currentUserData?.username || user?.username,
+          amount: Number(topUpAmount) || 0,
+          paidAmount: finalPaidAmount,
+          dueAmount: finalDueAmount,
+          status: 'pending',
+          date: finalDate,
+          createdAt: fullDate,
+          phone: currentUserData?.phone || '',
+          customerNumber: currentUserData?.phone ? `+88 ${currentUserData.phone}` : 'N/A',
+          method: topUpMethod,
+          paymentMethod: topUpMethod, // standard
+          transactionId: topUpTxn,
+          note: `পেমেন্ট উদ্দেশ্য: ${topUpPurpose}. কাস্টমার ওয়ালেট টপ-আপ রিকোয়েস্ট ভেরিফিকেশন${extraNoteSuffix}`,
+          type: topUpPurpose, // standard type
+          items: generatedItems, // standard schema items
+          appName: appNameVal || undefined,
+          packageName: packageNameVal || undefined,
+          protocol: protocolVal || undefined,
+          appsQuality: appsQualityVal || undefined,
+          appsTrying: appsTryingVal || undefined,
+          appWorkType: appWorkTypeVal || undefined,
+          panelName: panelNameVal || undefined,
+          panelUrl: panelUrlVal || undefined,
+          panelDuration: panelDurationVal || undefined,
+          panelType: panelTypeVal || undefined,
+          decoderUsername: decoderUsernameVal || undefined,
+          decoderUserType: decoderUserTypeVal || undefined,
+          decoderDuration: decoderDurationVal || undefined,
+          serviceDetails: serviceDetailsVal || undefined
+        });
+
+        setMyInvoices(prev => [{
+          id: finalInvoiceNumber,
+          customerName: currentUserData?.name || user?.name || 'Customer',
+          username: currentUserData?.username || user?.username,
+          amount: Number(topUpAmount) || 0,
+          paidAmount: finalPaidAmount,
+          dueAmount: finalDueAmount,
+          status: 'pending',
+          date: finalDate,
+          createdAt: fullDate,
+          phone: currentUserData?.phone || '',
+          customerNumber: currentUserData?.phone ? `+88 ${currentUserData.phone}` : 'N/A',
+          method: topUpMethod,
+          paymentMethod: topUpMethod,
+          type: topUpPurpose,
+          transactionId: topUpTxn,
+          note: `পেমেন্ট উদ্দেশ্য: ${topUpPurpose}. কাস্টমার ওয়ালেট টপ-আপ রিকোয়েস্ট ভেরিফিকেশন${extraNoteSuffix}`,
+          items: generatedItems,
+          appName: appNameVal || undefined,
+          packageName: packageNameVal || undefined,
+          protocol: protocolVal || undefined,
+          appsQuality: appsQualityVal || undefined,
+          appsTrying: appsTryingVal || undefined,
+          appWorkType: appWorkTypeVal || undefined,
+          panelName: panelNameVal || undefined,
+          panelUrl: panelUrlVal || undefined,
+          panelDuration: panelDurationVal || undefined,
+          panelType: panelTypeVal || undefined,
+          decoderUsername: decoderUsernameVal || undefined,
+          decoderUserType: decoderUserTypeVal || undefined,
+          decoderDuration: decoderDurationVal || undefined,
+          serviceDetails: serviceDetailsVal || undefined
+        } as any, ...prev]);
+      }
 
       const successTemplate = settings.clientPaymentSuccessMessage || 'পেমেন্ট রিকোয়েস্ট ("{purpose}") এডমিনের কাছে জমা হয়েছে! এডমিন শীঘ্রই এটি ভেরিফাই করে ব্যালেন্স আপডেট করে দেবেন।';
       const resolvedSuccess = successTemplate.replace('{purpose}', topUpPurpose);
@@ -1634,6 +1717,76 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
         {/* 1. DASHBOARD OVERVIEW SUB-TAB */}
         {activeSubTab === 'dashboard' && (
           <div className="space-y-6 animate-fade-in">
+            {/* 🚨 REJECTED INVOICES HANDLER - RE-SUBMISSION PANEL */}
+            {myRejectedInvoices.length > 0 && (
+              <div className="bg-rose-50/70 border border-rose-200 p-5 rounded-3xl text-left shadow-2xs">
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="h-7 w-7 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center border border-rose-200 shrink-0">
+                    <ShieldAlert size={15} className="stroke-[2.5]" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black text-rose-800 uppercase tracking-widest font-sans">
+                      প্রত্যাখ্যাত পেমেন্ট রিকোয়েস্ট ({myRejectedInvoices.length}টি বাতিল)
+                    </h3>
+                    <p className="text-[10px] text-rose-600 font-bold mt-0.5 font-sans leading-none">
+                      নিচের পেমেন্ট রিকোয়েস্টগুলো এডমিন বাতিল করেছেন। সঠিক তথ্য দিয়ে সংশোধন করে সাবমিট করুন।
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 mt-4">
+                  {myRejectedInvoices.map((inv) => {
+                    let extractedReason = 'ভুল ট্রানজেকশন আইডি বা টাকা জমা হয়নি।';
+                    if (inv.note && inv.note.includes('বাতিল করার কারণ:')) {
+                      const parts = inv.note.split('বাতিল করার কারণ:');
+                      if (parts.length > 1) {
+                        extractedReason = parts[1].split(']')[0].trim();
+                      }
+                    } else if (inv.note && inv.note.includes('[REJECTED')) {
+                      extractedReason = 'এডমিন কর্তৃক রিকোয়েস্ট বাতিল করা হয়েছে।';
+                    }
+
+                    return (
+                      <div key={inv.id} className="bg-white border border-rose-150 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-rose-350 shadow-2xs">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs font-black text-slate-800 font-mono bg-slate-50 border border-slate-150 px-2 py-0.5 rounded-md">
+                              #{inv.id.substring(0, 10).toUpperCase()}
+                            </span>
+                            <span className="text-[9px] uppercase font-mono font-black tracking-wider px-2 py-0.5 rounded-md bg-rose-100 text-rose-700">
+                              {inv.paymentMethod || inv.method}
+                            </span>
+                            <span className="text-xs font-black text-rose-650 font-mono bg-rose-50 border border-rose-100/30 px-2 py-0.5 rounded-md">
+                              ৳{(inv.amount || 0).toLocaleString()}
+                            </span>
+                          </div>
+                          
+                          <p className="text-[11px] font-bold text-slate-655 leading-relaxed font-sans pt-1">
+                            <strong className="text-rose-705 font-black">বাতিলের কারণ:</strong> {extractedReason}
+                          </p>
+
+                          <div className="text-[10px] text-slate-400 font-semibold font-mono pt-0.5">
+                            পূর্বের TxID: <span className="bg-slate-50 border px-1.5 py-0.5 rounded text-rose-700 select-all font-black">{inv.transactionId || 'N/A'}</span> • {inv.createdAt}
+                          </div>
+                        </div>
+
+                        <div className="shrink-0 flex items-center">
+                          <button
+                            type="button"
+                            onClick={() => handleInitiateResubmit(inv)}
+                            className="bg-indigo-650 hover:bg-indigo-700 text-white font-sans text-xs font-black px-4 py-2 rounded-xl transition-all shadow-sm shadow-indigo-150 active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <RefreshCw size={12} />
+                            সংশোধন করুন (Edit & Retry)
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* 📢 LIVE SYSTEM NOTICE & QUICK PAYMENT GUIDE */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
               {/* Emergency News / Notice Card */}
@@ -2480,7 +2633,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
 
 
         {activeSubTab === 'payment' && (
-<div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-xs relative animate-fade-in">
+<div id="client-billing-form-section" className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-xs relative animate-fade-in scroll-mt-6">
             <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-slate-100 pb-3">
               <CreditCard size={16} className="text-indigo-600" />
               {settings.clientPaymentFormTitle || 'পেমেন্ট রিপোর্টিং অপশন (Submit Payment Ticket Form)'}
@@ -2490,15 +2643,41 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
               {settings.clientPaymentFormSubtitle || 'টাকা প্রেরণের পর পেমেন্ট রশিদ ভেরিফিকেশন ফর্মে আপনার পরিশোধিত মাধ্যম, অ্যামাউন্ট এবং লাস্ট নম্বর বা ট্রানজেকশন আইডি প্রদান করে ব্যালেন্স রিকোয়েস্ট তৈরি করুন:'}
             </p>
 
+            {resubmittingInvoiceId && (
+              <div className="bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold p-4 rounded-2xl mb-6 animate-fade-in flex flex-col sm:flex-row sm:items-center justify-between gap-3 leading-relaxed">
+                <div className="flex items-start gap-2.5 text-left">
+                  <ShieldAlert size={18} className="shrink-0 text-rose-500 mt-0.5" />
+                  <div>
+                    <span className="block font-black text-rose-900 mb-0.5">পেমেন্ট রিকোয়েস্ট সংশোধন মোড (Correction Active)</span>
+                    <span>আপনি <strong className="font-mono text-indigo-700 bg-indigo-50/50 border border-indigo-150 px-1.5 py-0.5 rounded select-all font-black">#{resubmittingInvoiceId}</strong> নাম্বার ইনভয়েসটির ভুল সংশোধনের জন্য রিভিউ করছেন। সংশোধন ফর্ম পূরণ করে পাঠান।</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResubmittingInvoiceId(null);
+                    setTopUpMethod('');
+                    setTopUpAmount('');
+                    setTopUpTxn('');
+                    setTopUpPurpose('');
+                    generateNewInvoiceMeta();
+                  }}
+                  className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 hover:border-slate-350 text-[10px] font-black uppercase tracking-wider px-3.5 py-1.5 rounded-xl transition-all cursor-pointer font-sans active:scale-95 shrink-0"
+                >
+                  সংশোধন বাতিল (Cancel)
+                </button>
+              </div>
+            )}
+
             {topUpSuccess && (
-              <div className="bg-emerald-50 text-emerald-700 text-xs font-bold p-4 rounded-xl border border-emerald-200/60 mb-6 animate-fade-in flex items-start gap-2 leading-relaxed">
+              <div className="bg-emerald-50 text-emerald-700 text-xs font-bold p-4 rounded-xl border border-emerald-200/60 mb-6 animate-fade-in flex items-start gap-2 leading-relaxed text-left">
                 <CheckCircle size={18} className="shrink-0 text-emerald-500 mt-0.5" />
                 <span>{topUpSuccess}</span>
               </div>
             )}
 
             {topUpError && (
-              <div className="bg-rose-50 text-rose-600 text-xs font-bold p-4 rounded-xl border border-rose-200/60 mb-6 animate-fade-in flex items-start gap-2">
+              <div className="bg-rose-50 text-rose-600 text-xs font-bold p-4 rounded-xl border border-rose-200/60 mb-6 animate-fade-in flex items-start gap-2 text-left">
                 <ShieldAlert size={18} className="shrink-0 text-rose-500 mt-0.5" />
                 <span>{topUpError}</span>
               </div>
@@ -2520,14 +2699,16 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
                       className="w-full bg-slate-100 border border-slate-250 rounded-xl py-2.5 pl-3.5 pr-10 text-xs font-mono font-black text-slate-700 outline-none select-all"
                       placeholder="Generating..."
                     />
-                    <button 
-                      type="button" 
-                      onClick={generateNewInvoiceMeta}
-                      title="নতুন ইনভয়েস নাম্বার জেনারেট করুন"
-                      className="absolute right-2 p-1.5 bg-white text-indigo-600 hover:text-indigo-800 rounded-lg border border-slate-200/80 hover:bg-slate-50 transition-all font-sans active:scale-90"
-                    >
-                      <RefreshCw size={12} className="animate-spin-once" />
-                    </button>
+                    {!resubmittingInvoiceId && (
+                      <button 
+                        type="button" 
+                        onClick={generateNewInvoiceMeta}
+                        title="নতুন ইনভয়েস নাম্বার জেনারেট করুন"
+                        className="absolute right-2 p-1.5 bg-white text-indigo-600 hover:text-indigo-800 rounded-lg border border-slate-200/80 hover:bg-slate-50 transition-all font-sans active:scale-90"
+                      >
+                        <RefreshCw size={12} className="animate-spin-once" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -3090,7 +3271,9 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
                       অনুরোধ প্রসেস করা হচ্ছে...
                     </>
                   ) : (
-                    settings.clientPaymentSubmitButtonLabel || 'পেমেন্ট রিকোয়েস্ট সাবমিট করুন (Submit Payment Ticket)'
+                    resubmittingInvoiceId
+                      ? 'সংশোধন করে পুনরায় পাঠান (Resubmit Corrected Payment)'
+                      : (settings.clientPaymentSubmitButtonLabel || 'পেমেন্ট রিকোয়েস্ট সাবমিট করুন (Submit Payment Ticket)')
                   )}
                 </button>
               </div>
@@ -3365,9 +3548,17 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard' }: { onL
                         <span className="text-[11px] font-black text-slate-700 font-mono select-all block mt-0.5">{inv.paymentMethod || 'bKash/Nagad/Rocket'}</span>
                         <span className="text-[10px] text-indigo-600 font-mono bg-indigo-55/60 px-1 py-0.2 rounded border border-indigo-150 select-all font-bold tracking-tight inline-block mt-1">{inv.transactionId || 'No TxID'}</span>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex flex-col items-end">
                         <span className="text-[9.5px] text-rose-500 font-bold block uppercase tracking-wider">টাকার পরিমাণ</span>
                         <span className="text-base font-black text-rose-600 font-mono">৳{(inv.amount || 0).toLocaleString()}</span>
+                        {inv.dueAmount && inv.dueAmount > 0 ? (
+                          <div className="text-[9px] font-black mt-1 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded text-amber-800 flex flex-col text-right">
+                            <span className="text-emerald-700 font-bold">পেইডঃ ৳{(inv.paidAmount || 0).toLocaleString()}</span>
+                            <span className="text-rose-605 font-bold">বাকিঃ ৳{(inv.dueAmount || 0).toLocaleString()}</span>
+                          </div>
+                        ) : (
+                          <span className="text-[8px] bg-emerald-100 text-emerald-800 font-black px-1.5 py-0.5 rounded uppercase tracking-wider block mt-1">FULL PAID</span>
+                        )}
                       </div>
                     </div>
                   </div>

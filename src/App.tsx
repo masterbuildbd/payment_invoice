@@ -229,7 +229,7 @@ function ProtectedApp() {
         'client_settings': 'settings'
       };
       
-      return <Dashboard activeSubTab={subTabMap[resolvedTab] || 'dashboard'} onLogoutRequest={() => setShowLogoutConfirm(true)} />;
+      return <Dashboard activeSubTab={subTabMap[resolvedTab] || 'dashboard'} onLogoutRequest={() => setShowLogoutConfirm(true)} onTabChange={handleTabChange} />;
     }
 
     switch (activeTab) {

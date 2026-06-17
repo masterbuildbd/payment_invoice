@@ -269,6 +269,9 @@ export function Invoices({ initialStatusFilter = 'all' }: InvoicesProps) {
       case 'paid': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
       case 'pending': return 'bg-amber-50 text-amber-600 border-amber-100';
       case 'overdue': return 'bg-rose-50 text-rose-600 border-rose-100';
+      case 'rejected':
+      case 'cancelled':
+        return 'bg-rose-50 text-rose-600 border-rose-100';
       default: return 'bg-slate-50 text-slate-600 border-slate-100';
     }
   };
