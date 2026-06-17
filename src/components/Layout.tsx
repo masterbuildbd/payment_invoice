@@ -93,30 +93,59 @@ export function Layout({ children, activeTab, onMenuToggle, onLogoutRequest }: L
   }, [darkMode]);
 
   const getLabel = (tab: string) => {
+    const DEFAULTS_MAP: Record<string, string> = {
+      adminDashboardLabel: 'সারাংশ (Admin Dashboard)',
+      clientDashboardLabel: 'সারাংশ (Dashboard Overview)',
+      clientInvoicesLabel: 'ইনভয়েস শো (Invoices Show)',
+      clientRejectedInvoicesLabel: 'রিজেক্ট ইনভয়েস (Rejected Invoices)',
+      clientAccountLabel: 'অ্যাকাউন্ট অপশন (Payment Accounts)',
+      clientPaymentLabel: 'পেমেন্ট অপশন (Payment Form)',
+      clientSmsLabel: 'এসএমএস ইনবক্স (SMS Inbox)',
+      clientSettingsLabel: 'সেটিংস অপশন (User Settings)',
+      adminPaymentRequestsLabel: 'পেমেন্ট রিকোয়েস্ট (Payment Requests)',
+      adminInvoicesLabel: 'ইনভয়েস লিস্ট (Invoice List)',
+      adminUnpaidLabel: 'বকেয়া ইনভয়েস (Unpaid Invoices)',
+      adminPendingUsersLabel: 'পেন্ডিং গ্রাহক (Pending Registrations)',
+      adminFinancesLabel: 'ফাইন্যান্সিয়াল খতিয়ান (Financial Accounts)',
+      adminSmsLabel: 'এসএমএস পোর্টাল (SMS Portal)',
+      adminSettingsLabel: 'সেটিংস কন্ট্রোল (Admin Configs)',
+      appLabel: 'অ্যান্ড্রয়েড অ্যাপ্স (Android Apps)',
+      decoderLabel: 'ডিকোড লাইসেন্স (Decoder Licenses)',
+      panelLabel: 'রিসেলার প্যানেল (Reseller Panels)',
+      userLabel: 'গ্রাহক তালিকা (Users Registry)'
+    };
+
+    const getVal = (val: string | undefined, mapKey: string, fallbackKey: string) => {
+      if (!val || val === DEFAULTS_MAP[mapKey]) {
+        return t(fallbackKey);
+      }
+      return val;
+    };
+
     const labels: Record<string, string> = {
       // Client tabs
       'dashboard': isAdmin 
-        ? (settings.adminDashboardLabel || 'সারাংশ (Admin Dashboard)') 
-        : (settings.clientDashboardLabel || 'সারাংশ (Dashboard Overview)'),
-      'client_invoices': settings.clientInvoicesLabel || 'ইনভয়েস শো (Invoices Show)',
-      'client_rejected_invoices': settings.clientRejectedInvoicesLabel || 'রিজেক্ট ইনভয়েস (Rejected Invoices)',
-      'client_account': settings.clientAccountLabel || 'অ্যাকাউন্ট অপশন (Payment Accounts)',
-      'client_payment': settings.clientPaymentLabel || 'পেমেন্ট অপশন (Payment Form)',
-      'client_settings': settings.clientSettingsLabel || 'সেটিংস অপশন (User Settings)',
-      'client_sms': settings.clientSmsLabel || 'এসএমএস ইনবক্স (SMS Inbox)',
+        ? getVal(settings.adminDashboardLabel, 'adminDashboardLabel', 'dashboard') 
+        : getVal(settings.clientDashboardLabel, 'clientDashboardLabel', 'dashboard'),
+      'client_invoices': getVal(settings.clientInvoicesLabel, 'clientInvoicesLabel', 'client_invoices'),
+      'client_rejected_invoices': getVal(settings.clientRejectedInvoicesLabel, 'clientRejectedInvoicesLabel', 'client_rejected_invoices'),
+      'client_account': getVal(settings.clientAccountLabel, 'clientAccountLabel', 'client_account'),
+      'client_payment': getVal(settings.clientPaymentLabel, 'clientPaymentLabel', 'client_payment'),
+      'client_settings': getVal(settings.clientSettingsLabel, 'clientSettingsLabel', 'client_settings'),
+      'client_sms': getVal(settings.clientSmsLabel, 'clientSmsLabel', 'client_sms'),
 
       // Admin tabs
-      'payment_requests': settings.adminPaymentRequestsLabel || 'পেমেন্ট রিকোয়েস্ট (Payment Requests)',
-      'invoices': settings.adminInvoicesLabel || t('invoices'),
-      'unpaid': settings.adminUnpaidLabel || t('unpaid'),
-      'apps': settings.appLabel || t('apps'),
-      'panels': settings.panelLabel || t('panels'),
-      'decoders': settings.decoderLabel || t('decoders'),
-      'users': settings.userLabel || t('users'),
-      'pending_users': settings.adminPendingUsersLabel || t('pending_users'),
-      'finances': settings.adminFinancesLabel || t('finances'),
-      'sms': settings.adminSmsLabel || 'এসএমএস পোর্টাল (SMS Portal)',
-      'settings': settings.adminSettingsLabel || t('settings'),
+      'payment_requests': getVal(settings.adminPaymentRequestsLabel, 'adminPaymentRequestsLabel', 'payment_requests'),
+      'invoices': getVal(settings.adminInvoicesLabel, 'adminInvoicesLabel', 'invoices'),
+      'unpaid': getVal(settings.adminUnpaidLabel, 'adminUnpaidLabel', 'unpaid'),
+      'apps': getVal(settings.appLabel, 'appLabel', 'apps'),
+      'panels': getVal(settings.panelLabel, 'panelLabel', 'panels'),
+      'decoders': getVal(settings.decoderLabel, 'decoderLabel', 'decoders'),
+      'users': getVal(settings.userLabel, 'userLabel', 'users'),
+      'pending_users': getVal(settings.adminPendingUsersLabel, 'adminPendingUsersLabel', 'pending_users'),
+      'finances': getVal(settings.adminFinancesLabel, 'adminFinancesLabel', 'finances'),
+      'sms': getVal(settings.adminSmsLabel, 'adminSmsLabel', 'sms'),
+      'settings': getVal(settings.adminSettingsLabel, 'adminSettingsLabel', 'settings'),
     };
     return labels[tab] || t(tab) || tab;
   };
@@ -126,6 +155,7 @@ export function Layout({ children, activeTab, onMenuToggle, onLogoutRequest }: L
     { code: 'BN', label: 'Bangla', flag: '🇧🇩' },
     { code: 'UR', label: 'Urdu', flag: '🇵🇰' },
     { code: 'HI', label: 'Hindi', flag: '🇮🇳' },
+    { code: 'AR', label: 'Arabic', flag: '🇸🇦' },
   ];
 
   const unreadCount = notifications.filter(n => !n.read).length;

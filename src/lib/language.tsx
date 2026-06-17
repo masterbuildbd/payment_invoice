@@ -96,7 +96,15 @@ const translations: Record<Language, Record<string, string>> = {
     pending: 'Pending',
     overdue: 'Overdue',
     unpaid_status: 'Unpaid',
-    time: 'Time'
+    time: 'Time',
+    client_invoices: 'Your Invoices',
+    client_rejected_invoices: 'Rejected Invoices',
+    client_account: 'Payment Accounts',
+    client_payment: 'Payment Form',
+    client_sms: 'SMS Inbox',
+    client_settings: 'User Settings',
+    payment_requests: 'Payment Requests',
+    sms: 'SMS Portal'
   },
   BN: {
     dashboard: 'ড্যাশবোর্ড ওভারভিউ',
@@ -182,7 +190,15 @@ const translations: Record<Language, Record<string, string>> = {
     pending: 'অপেক্ষমান',
     overdue: 'বকেয়া',
     unpaid_status: 'বকেয়া',
-    time: 'সময়'
+    time: 'সময়',
+    client_invoices: 'আপনার ইনভয়েস',
+    client_rejected_invoices: 'বাতিলকৃত ইনভয়েস',
+    client_account: 'পেমেন্ট অ্যাকাউন্টস',
+    client_payment: 'পেমেন্ট ফরম',
+    client_sms: 'এসএমএস ইনবক্স',
+    client_settings: 'ইউজার সেটিংস',
+    payment_requests: 'পেমেন্ট রিকোয়েস্ট',
+    sms: 'এসএমএস পোর্টাল'
   },
   UR: {
     dashboard: 'ڈیش بورڈ جائزہ',
@@ -235,7 +251,15 @@ const translations: Record<Language, Record<string, string>> = {
     pending: 'زیر التواء',
     overdue: 'واجب الادا',
     unpaid_status: 'غیر ادا شدہ',
-    time: 'وقت'
+    time: 'وقت',
+    client_invoices: 'آپ کے انوائس',
+    client_rejected_invoices: 'مسترد شدہ انوائس',
+    client_account: 'ادائیگی کے اکاؤنٹس',
+    client_payment: 'ادائیگی کا فارم',
+    client_sms: 'ایس ایم ایس ان باکس',
+    client_settings: 'صارف کی ترتیبات',
+    payment_requests: 'ادائیگی کی درخواستیں',
+    sms: 'ایس ایم ایس پورٹل'
   },
   HI: {
     dashboard: 'डैशबोर्ड अवलोकन',
@@ -288,7 +312,15 @@ const translations: Record<Language, Record<string, string>> = {
     pending: 'लंबित',
     overdue: 'विलंबित',
     unpaid_status: 'अवैतनिक',
-    time: 'समय'
+    time: 'समय',
+    client_invoices: 'आपके चालान',
+    client_rejected_invoices: 'अस्वीकृत चालान',
+    client_account: 'भुगतान खाते',
+    client_payment: 'भुगतान प्रपत्र',
+    client_sms: 'एसएमएस इनबॉक्स',
+    client_settings: 'उपयोगकर्ता सेटिंग्स',
+    payment_requests: 'भुगतान अनुरोध',
+    sms: 'एसएमएस पोर्टल'
   },
   AR: {
     dashboard: 'نظرة عامة على لوحة القيادة',
@@ -376,7 +408,15 @@ const translations: Record<Language, Record<string, string>> = {
     pending: 'قيد الانتظار',
     overdue: 'متأخر',
     unpaid_status: 'غير مدفوع',
-    time: 'الوقت'
+    time: 'الوقت',
+    client_invoices: 'الفواتير الخاصة بك',
+    client_rejected_invoices: 'الفواتير المرفوضة',
+    client_account: 'حسابات الدفع',
+    client_payment: 'نموذج الدفع',
+    client_sms: 'صندوق رسائل قصيرة',
+    client_settings: 'إعدادات المستخدم',
+    payment_requests: 'طلبات الدفع',
+    sms: 'بوابة الرسائل القصيرة'
   }
 };
 

@@ -98,30 +98,59 @@ export function Sidebar({ activeTab, setActiveTab, isOpen, onClose }: SidebarPro
   }, [pendingPaymentsCount]);
 
   const isAdmin = currentUserData?.role === 'admin' || user?.role === 'admin';
+
+  const DEFAULTS_MAP: Record<string, string> = {
+    adminDashboardLabel: 'সারাংশ (Admin Dashboard)',
+    clientDashboardLabel: 'সারাংশ (Dashboard Overview)',
+    clientInvoicesLabel: 'ইনভয়েস শো (Invoices Show)',
+    clientRejectedInvoicesLabel: 'রিজেক্ট ইনভয়েস (Rejected Invoices)',
+    clientAccountLabel: 'অ্যাকাউন্ট অপশন (Payment Accounts)',
+    clientPaymentLabel: 'পেমেন্ট অপশন (Payment Form)',
+    clientSmsLabel: 'এসএমএস ইনবক্স (SMS Inbox)',
+    clientSettingsLabel: 'সেটিংস অপশন (User Settings)',
+    adminPaymentRequestsLabel: 'পেমেন্ট রিকোয়েস্ট (Payment Requests)',
+    adminInvoicesLabel: 'ইনভয়েস লিস্ট (Invoice List)',
+    adminUnpaidLabel: 'বকেয়া ইনভয়েস (Unpaid Invoices)',
+    adminPendingUsersLabel: 'পেন্ডিং গ্রাহক (Pending Registrations)',
+    adminFinancesLabel: 'ফাইন্যান্সিয়াল খতিয়ান (Financial Accounts)',
+    adminSmsLabel: 'এসএমএস পোর্টাল (SMS Portal)',
+    adminSettingsLabel: 'সেটিংস কন্ট্রোল (Admin Configs)',
+    appLabel: 'অ্যান্ড্রয়েড অ্যাপ্স (Android Apps)',
+    decoderLabel: 'ডিকোড লাইসেন্স (Decoder Licenses)',
+    panelLabel: 'রিসেলার প্যানেল (Reseller Panels)',
+    userLabel: 'গ্রাহক তালিকা (Users Registry)'
+  };
+
+  const getVal = (val: string | undefined, mapKey: string, fallbackKey: string) => {
+    if (!val || val === DEFAULTS_MAP[mapKey]) {
+      return t(fallbackKey);
+    }
+    return val;
+  };
   
   const rawClientItems = [
-    { id: 'dashboard', label: settings.clientDashboardLabel || 'সারাংশ (Dashboard Overview)', icon: LayoutDashboard, enabled: settings.clientDashboardEnabled !== false },
-    { id: 'client_invoices', label: settings.clientInvoicesLabel || 'ইনভয়েস শো (Invoices Show)', icon: FileText, enabled: settings.clientInvoicesEnabled !== false },
-    { id: 'client_rejected_invoices', label: settings.clientRejectedInvoicesLabel || 'রিজেক্ট ইনভয়েস (Rejected Invoices)', icon: AlertCircle, enabled: settings.clientRejectedInvoicesEnabled !== false },
-    { id: 'client_account', label: settings.clientAccountLabel || 'অ্যাকাউন্ট অপশন (Payment Accounts)', icon: Wallet, enabled: settings.clientAccountEnabled !== false },
-    { id: 'client_payment', label: settings.clientPaymentLabel || 'পেমেন্ট অপশন (Payment Form)', icon: Banknote, enabled: settings.clientPaymentEnabled !== false },
-    { id: 'client_sms', label: settings.clientSmsLabel || 'এসএমএস ইনবক্স (SMS Inbox)', icon: MessageSquare, enabled: settings.clientSmsEnabled !== false },
-    { id: 'client_settings', label: settings.clientSettingsLabel || 'সেটিংস অপশন (User Settings)', icon: Settings, enabled: settings.clientSettingsEnabled !== false },
+    { id: 'dashboard', label: getVal(settings.clientDashboardLabel, 'clientDashboardLabel', 'dashboard'), icon: LayoutDashboard, enabled: settings.clientDashboardEnabled !== false },
+    { id: 'client_invoices', label: getVal(settings.clientInvoicesLabel, 'clientInvoicesLabel', 'client_invoices'), icon: FileText, enabled: settings.clientInvoicesEnabled !== false },
+    { id: 'client_rejected_invoices', label: getVal(settings.clientRejectedInvoicesLabel, 'clientRejectedInvoicesLabel', 'client_rejected_invoices'), icon: AlertCircle, enabled: settings.clientRejectedInvoicesEnabled !== false },
+    { id: 'client_account', label: getVal(settings.clientAccountLabel, 'clientAccountLabel', 'client_account'), icon: Wallet, enabled: settings.clientAccountEnabled !== false },
+    { id: 'client_payment', label: getVal(settings.clientPaymentLabel, 'clientPaymentLabel', 'client_payment'), icon: Banknote, enabled: settings.clientPaymentEnabled !== false },
+    { id: 'client_sms', label: getVal(settings.clientSmsLabel, 'clientSmsLabel', 'client_sms'), icon: MessageSquare, enabled: settings.clientSmsEnabled !== false },
+    { id: 'client_settings', label: getVal(settings.clientSettingsLabel, 'clientSettingsLabel', 'client_settings'), icon: Settings, enabled: settings.clientSettingsEnabled !== false },
   ];
 
   const menuItems = isAdmin ? [
-    { id: 'dashboard', label: settings.adminDashboardLabel || t('dashboard'), icon: LayoutDashboard },
-    { id: 'payment_requests', label: settings.adminPaymentRequestsLabel || 'পেমেন্ট রিকোয়েস্ট (Payment Requests)', icon: Banknote, badge: pendingPaymentsCount > 0 ? pendingPaymentsCount : undefined },
-    { id: 'invoices', label: settings.adminInvoicesLabel || t('invoices'), icon: FileText },
-    { id: 'unpaid', label: settings.adminUnpaidLabel || t('unpaid'), icon: AlertCircle },
-    { id: 'apps', label: settings.appLabel || t('apps'), icon: AppWindow },
-    { id: 'panels', label: settings.panelLabel || t('panels'), icon: LayoutGrid },
-    { id: 'decoders', label: settings.decoderLabel || t('decoders'), icon: Cpu },
-    { id: 'users', label: settings.userLabel || t('users'), icon: Users },
-    { id: 'pending_users', label: settings.adminPendingUsersLabel || t('pending_users'), icon: Users, badge: pendingCount > 0 ? pendingCount : undefined },
-    { id: 'finances', label: settings.adminFinancesLabel || t('finances'), icon: Banknote },
-    { id: 'sms', label: settings.adminSmsLabel || 'এসএমএস পোর্টাল (SMS Portal)', icon: MessageSquare },
-    { id: 'settings', label: settings.adminSettingsLabel || t('settings'), icon: Settings },
+    { id: 'dashboard', label: getVal(settings.adminDashboardLabel, 'adminDashboardLabel', 'dashboard'), icon: LayoutDashboard },
+    { id: 'payment_requests', label: getVal(settings.adminPaymentRequestsLabel, 'adminPaymentRequestsLabel', 'payment_requests'), icon: Banknote, badge: pendingPaymentsCount > 0 ? pendingPaymentsCount : undefined },
+    { id: 'invoices', label: getVal(settings.adminInvoicesLabel, 'adminInvoicesLabel', 'invoices'), icon: FileText },
+    { id: 'unpaid', label: getVal(settings.adminUnpaidLabel, 'adminUnpaidLabel', 'unpaid'), icon: AlertCircle },
+    { id: 'apps', label: getVal(settings.appLabel, 'appLabel', 'apps'), icon: AppWindow },
+    { id: 'panels', label: getVal(settings.panelLabel, 'panelLabel', 'panels'), icon: LayoutGrid },
+    { id: 'decoders', label: getVal(settings.decoderLabel, 'decoderLabel', 'decoders'), icon: Cpu },
+    { id: 'users', label: getVal(settings.userLabel, 'userLabel', 'users'), icon: Users },
+    { id: 'pending_users', label: getVal(settings.adminPendingUsersLabel, 'adminPendingUsersLabel', 'pending_users'), icon: Users, badge: pendingCount > 0 ? pendingCount : undefined },
+    { id: 'finances', label: getVal(settings.adminFinancesLabel, 'adminFinancesLabel', 'finances'), icon: Banknote },
+    { id: 'sms', label: getVal(settings.adminSmsLabel, 'adminSmsLabel', 'sms'), icon: MessageSquare },
+    { id: 'settings', label: getVal(settings.adminSettingsLabel, 'adminSettingsLabel', 'settings'), icon: Settings },
   ] : rawClientItems.filter(item => item.enabled);
   return (
     <>
