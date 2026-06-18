@@ -1685,27 +1685,21 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
           let greetTitle = 'শুভ সকাল';
           let greetSub = 'একটি সুন্দর ও নতুন日の শুভকামনা! আপনার দিনটি চমৎকার কাটুক।';
           let greetEmoji = '🌅';
-          let gradientStyle = 'from-amber-600 via-orange-600 to-indigo-900';
-          let borderGlow = 'rgba(217,119,6,0.3)';
+          let gradientStyle = 'from-slate-900 via-indigo-950 to-slate-900';
+          let borderGlow = 'rgba(99,102,241,0.25)';
 
           if (hr >= 12 && hr < 16) {
             greetTitle = 'শুভ দুপুর';
             greetSub = 'ব্যস্ত সময়ে একটু বিরতি নিয়ে সুস্থ, সচল এবং হাইড্রেটেড থাকুন!';
             greetEmoji = '☀️';
-            gradientStyle = 'from-sky-500 via-teal-600 to-indigo-850';
-            borderGlow = 'rgba(14,165,233,0.3)';
           } else if (hr >= 16 && hr < 20) {
             greetTitle = 'শুভ সন্ধ্যা';
             greetSub = 'সারাদিনের ক্লান্তি মুছে দিতে সন্ধ্যার স্নিগ্ধতায় আপনাকে স্বাগত!';
             greetEmoji = '🌇';
-            gradientStyle = 'from-orange-500 via-rose-500 to-indigo-900';
-            borderGlow = 'rgba(244,63,94,0.3)';
           } else if (hr >= 20 || hr < 5) {
             greetTitle = 'শুভ রাত্রি';
             greetSub = 'সারাদিনের ব্যস্ততা শেষে একটি শান্তিময় ও আরামদায়ক ঘুমের প্রত্যাশায়!';
             greetEmoji = '🌙';
-            gradientStyle = 'from-slate-900 via-purple-950 to-indigo-950';
-            borderGlow = 'rgba(139,92,246,0.3)';
           }
 
           return (
@@ -1714,7 +1708,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.45 }}
               style={{ boxShadow: `0 10px 30px -5px ${borderGlow}` }}
-              className={`bg-gradient-to-br ${gradientStyle} p-6 sm:p-8 rounded-[1.8rem] text-white relative overflow-hidden`}
+              className={`bg-gradient-to-r ${gradientStyle} p-6 sm:p-8 rounded-[2rem] text-white relative overflow-hidden border border-slate-800 shadow-xl`}
             >
               <div className="absolute right-0 bottom-0 w-80 h-80 bg-white/5 rounded-full blur-3xl pointer-events-none" />
               <div className="absolute -left-20 -top-20 w-60 h-60 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
@@ -1792,29 +1786,34 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
         {activeSubTab === 'dashboard' && (
           <div className="space-y-6 animate-fade-in">
             {/* Status Counters Card (Invoice Live Counter) */}
-            <div className="bg-white dark:bg-slate-900 p-5.5 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-[0_4px_25px_rgba(0,0,0,0.012)]">
-              <h3 className="text-xs font-black text-slate-855 dark:text-slate-100 uppercase tracking-widest mb-4 border-b border-slate-100 dark:border-slate-850 pb-2.5 flex items-center gap-2">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.02)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-2 h-full bg-indigo-600 dark:bg-indigo-400 pointer-events-none" />
+              <h3 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest mb-4 border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2 font-mono">
                 <FileText size={15} className="text-indigo-600 dark:text-indigo-400" />
                 পেমেন্ট রিকোয়েস্ট লাইভ ট্র্যাকিং কাউন্টার (Invoice Live Ledger)
               </h3>
               <div className="grid grid-cols-3 gap-3 sm:gap-4 md:gap-5 animate-fade-in">
                 {/* Approved */}
-                <div className="bg-emerald-50/40 dark:bg-emerald-950/20 border border-emerald-150 dark:border-emerald-900/30 p-4.5 rounded-2xl text-center shadow-3xs hover:scale-[1.02] transition-transform duration-200">
-                  <div className="text-emerald-600 dark:text-emerald-400 font-extrabold text-lg sm:text-2xl font-mono">{approvedCount}</div>
-                  <div className="text-[9.5px] sm:text-xs text-emerald-700 dark:text-emerald-305 font-black uppercase mt-1">অনুমোদিত (Approved)</div>
+                <div className="bg-gradient-to-b from-emerald-50/30 to-emerald-500/[0.02] dark:from-emerald-950/20 dark:to-transparent border border-emerald-150 dark:border-emerald-900/30 p-5 rounded-2xl text-center shadow-3xs hover:scale-[1.02] hover:shadow-sm transition-all duration-300 relative group overflow-hidden">
+                  <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                  <div className="text-emerald-600 dark:text-emerald-400 font-extrabold text-xl sm:text-3xl font-mono leading-none">{approvedCount}</div>
+                  <div className="text-[9.5px] sm:text-xs text-emerald-800 dark:text-emerald-305 font-black uppercase mt-2.5 tracking-wider">অনুমোদিত (Approved)</div>
                 </div>
                 {/* Pending */}
-                <div className="bg-amber-50/40 dark:bg-amber-955/20 border border-amber-150 dark:border-amber-900/35 p-4.5 rounded-2xl text-center shadow-3xs hover:scale-[1.02] transition-transform duration-200">
-                  <div className="text-amber-600 dark:text-amber-400 font-extrabold text-lg sm:text-2xl font-mono">{pendingCount}</div>
-                  <div className="text-[9.5px] sm:text-xs text-amber-700 dark:text-amber-305 font-black uppercase mt-1">মূলতুবি (Pending Review)</div>
+                <div className="bg-gradient-to-b from-amber-50/30 to-amber-500/[0.02] dark:from-amber-955/20 dark:to-transparent border border-amber-150 dark:border-amber-900/35 p-5 rounded-2xl text-center shadow-3xs hover:scale-[1.02] hover:shadow-sm transition-all duration-300 relative group overflow-hidden">
+                  <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                  <div className="text-amber-600 dark:text-amber-400 font-extrabold text-xl sm:text-3xl font-mono leading-none">{pendingCount}</div>
+                  <div className="text-[9.5px] sm:text-xs text-amber-800 dark:text-amber-305 font-black uppercase mt-2.5 tracking-wider font-sans">মূলতুবি (Pending Review)</div>
                 </div>
                 {/* Rejected */}
-                <div className="bg-rose-50/20 dark:bg-rose-955/10 border border-rose-150 dark:border-rose-900/30 p-4.5 rounded-2xl text-center shadow-3xs hover:scale-[1.02] transition-transform duration-200">
-                  <div className="text-rose-655 dark:text-rose-455 font-extrabold text-lg sm:text-2xl font-mono">{rejectedCount}</div>
-                  <div className="text-[9.5px] sm:text-xs text-rose-600 dark:text-rose-405 font-black uppercase mt-1">প্রত্যাখ্যাত (Rejected)</div>
+                <div className="bg-gradient-to-b from-rose-50/25 to-rose-500/[0.01] dark:from-rose-955/10 dark:to-transparent border border-rose-150 dark:border-rose-900/30 p-5 rounded-2xl text-center shadow-3xs hover:scale-[1.02] hover:shadow-sm transition-all duration-300 relative group overflow-hidden">
+                  <div className="absolute inset-0 bg-rose-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                  <div className="text-rose-655 dark:text-rose-455 font-extrabold text-xl sm:text-3xl font-mono leading-none">{rejectedCount}</div>
+                  <div className="text-[9.5px] sm:text-xs text-rose-700 dark:text-rose-405 font-black uppercase mt-2.5 tracking-wider font-sans">প্রত্যাখ্যাত (Rejected)</div>
                 </div>
               </div>
-              <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-4.5 text-center border-t border-slate-100 dark:border-slate-850 pt-3.5 font-medium">
+              <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-4 text-center border-t border-slate-100 dark:border-slate-800 pt-3.5 font-medium flex items-center justify-center gap-1.5">
+                <span className="inline-block w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
                 * এডমিন কর্তৃক রিভিউ সম্পন্ন হলে ব্যালেন্স ও স্ট্যাটাস স্বয়ংক্রিয়ভাবে আপডেট হয়।
               </div>
             </div>
@@ -1961,75 +1960,82 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
               </div>
 
             {/* 🔥 HIGH-END UNCOMMON LAUNCHPAD: GORGEOUS BENTO QUICK TRIGGER SHORTCUTS */}
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl text-left shadow-[0_4px_25px_rgba(0,0,0,0.015)] space-y-4">
-              <div className="border-b border-slate-100 dark:border-slate-850 pb-3 flex items-center justify-between">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 rounded-3xl text-left shadow-[0_8px_30px_rgb(0,0,0,0.015)] space-y-4 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
+              <div className="border-b border-slate-150/70 dark:border-slate-800 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                  <h3 className="text-xs font-black text-slate-855 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2">
-                    <Sparkles size={14} className="text-indigo-600 dark:text-indigo-400" />
+                  <h3 className="text-xs font-black text-slate-805 dark:text-slate-100 uppercase tracking-widest flex items-center gap-2 font-mono">
+                    <Sparkles size={14} className="text-indigo-600 dark:text-indigo-400 animate-pulse" />
                     সহজ ড্যাশবোর্ড লঞ্চ প্যাড (Interactive Quick Launch Deck)
                   </h3>
-                  <p className="text-[10px] text-slate-455 dark:text-slate-400 font-bold font-sans mt-0.5">
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold font-sans mt-0.5">
                     এক ক্লিকে আপনার সবচেয়ে বেশি ব্যবহৃত পোর্টাল ফিচারসমূহে সরাসরি প্রবেশ করুন।
                   </p>
                 </div>
-                <span className="text-[9px] bg-indigo-50 dark:bg-indigo-950 text-indigo-650 dark:text-indigo-400 font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded-md border border-indigo-150/40 dark:border-indigo-900/30">Active Deck</span>
+                <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                  <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-[9px] bg-indigo-500/10 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-mono font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-900/30">Active Deck</span>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Shortcut 1: Send Payment Form */}
                 <motion.div
                   onClick={() => onTabChange?.('client_payment')}
-                  whileHover={{ scale: 1.025, y: -2 }}
+                  whileHover={{ scale: 1.025, y: -3 }}
                   whileTap={{ scale: 0.985 }}
-                  className="p-4 bg-indigo-50/50 dark:bg-indigo-950/15 hover:bg-indigo-50 dark:hover:bg-indigo-950/25 border border-indigo-100/70 dark:border-indigo-900/20 hover:border-indigo-350 dark:hover:border-indigo-700 rounded-2xl cursor-pointer text-left transition-all duration-200 flex flex-col justify-between h-32 group"
+                  className="p-5 bg-gradient-to-b from-indigo-50/40 via-white to-white dark:from-indigo-950/10 dark:to-slate-900/50 hover:shadow-md border border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-400 dark:hover:border-indigo-600 rounded-2xl cursor-pointer text-left transition-all duration-300 flex flex-col justify-between h-36 group relative overflow-hidden"
                 >
+                  <div className="absolute top-0 right-0 text-[8.5px] font-black uppercase bg-indigo-500/10 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400 px-2.5 py-1 rounded-bl-xl font-mono border-l border-b border-indigo-100/10">Deposit</div>
                   <div className="flex items-center justify-between">
-                    <span className="p-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-650 dark:text-indigo-400 rounded-xl group-hover:bg-indigo-650 group-hover:text-white transition-colors">
+                    <span className="p-2.5 bg-indigo-100 dark:bg-indigo-950 text-indigo-650 dark:text-indigo-400 rounded-xl group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300 shadow-2xs">
                       <Banknote size={16} />
                     </span>
-                    <ChevronRight size={14} className="text-indigo-455 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight size={14} className="text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 group-hover:translate-x-1.5 transition-all duration-300" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-black text-slate-855 dark:text-slate-100 Bengali-Heading">পেমেন্ট রশিদ পাঠান (Deposit)</h4>
-                    <p className="text-[10px] text-[#64748b] dark:text-slate-400 font-medium leading-normal pt-0.5">সেন্ড মানি করার পর ট্রানজেকশন স্লিপ জমা দিতে এখানে চাপুন।</p>
+                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 Bengali-Heading group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">পেমেন্ট রশিদ পাঠান</h4>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold leading-normal pt-1">সেন্ড মানি করার পর ট্রানজেকশন স্লিপ জমা দিতে এখানে চাপুন।</p>
                   </div>
                 </motion.div>
 
                 {/* Shortcut 2: View Payment Accounts */}
                 <motion.div
                   onClick={() => onTabChange?.('client_account')}
-                  whileHover={{ scale: 1.025, y: -2 }}
+                  whileHover={{ scale: 1.025, y: -3 }}
                   whileTap={{ scale: 0.985 }}
-                  className="p-4 bg-amber-50/40 dark:bg-amber-955/10 hover:bg-amber-50 dark:hover:bg-amber-955/15 border border-amber-100/50 dark:border-amber-900/20 hover:border-amber-350 dark:hover:border-amber-700 rounded-2xl cursor-pointer text-left transition-all duration-200 flex flex-col justify-between h-32 group"
+                  className="p-5 bg-gradient-to-b from-amber-50/40 via-white to-white dark:from-amber-955/5 dark:to-slate-900/50 hover:shadow-md border border-slate-200/80 dark:border-slate-800/80 hover:border-amber-400 dark:hover:border-amber-600 rounded-2xl cursor-pointer text-left transition-all duration-300 flex flex-col justify-between h-36 group relative overflow-hidden"
                 >
+                  <div className="absolute top-0 right-0 text-[8.5px] font-black uppercase bg-amber-500/10 text-amber-600 dark:bg-amber-955/10 dark:text-amber-400 px-2.5 py-1 rounded-bl-xl font-mono border-l border-b border-amber-100/10">Accounts</div>
                   <div className="flex items-center justify-between">
-                    <span className="p-2 bg-amber-100 dark:bg-amber-955/40 text-amber-700 dark:text-amber-450 rounded-xl group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                    <span className="p-2.5 bg-amber-100 dark:bg-amber-955/30 text-amber-700 dark:text-amber-450 rounded-xl group-hover:bg-amber-500 group-hover:text-white transition-all duration-300 shadow-2xs">
                       <Wallet size={16} />
                     </span>
-                    <ChevronRight size={14} className="text-amber-500 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight size={14} className="text-slate-400 group-hover:text-amber-600 dark:group-hover:text-amber-400 group-hover:translate-x-1.5 transition-all duration-300" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-black text-slate-855 dark:text-slate-100 Bengali-Heading">নম্বর ডিরেক্টরি (Accounts)</h4>
-                    <p className="text-[10px] text-[#64748b] dark:text-slate-400 font-medium leading-normal pt-0.5">কোম্পানির অফিশিয়াল বিকাশ, নগদ ও ব্যাংক একাউন্ট বিবরণ।</p>
+                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 Bengali-Heading group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">নম্বর ডিরেক্টরি</h4>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold leading-normal pt-1">কোম্পানির অফিশিয়াল বিকাশ, নগদ ও ব্যাংক একাউন্ট বিবরণ।</p>
                   </div>
                 </motion.div>
 
                 {/* Shortcut 3: Invoice Archives */}
                 <motion.div
                   onClick={() => onTabChange?.('client_invoices')}
-                  whileHover={{ scale: 1.025, y: -2 }}
+                  whileHover={{ scale: 1.025, y: -3 }}
                   whileTap={{ scale: 0.985 }}
-                  className="p-4 bg-emerald-50/40 dark:bg-emerald-955/10 hover:bg-emerald-50 dark:hover:bg-emerald-955/15 border border-emerald-100/50 dark:border-emerald-900/20 hover:border-emerald-350 dark:hover:border-emerald-700 rounded-2xl cursor-pointer text-left transition-all duration-200 flex flex-col justify-between h-32 group"
+                  className="p-5 bg-gradient-to-b from-emerald-50/40 via-white to-white dark:from-emerald-955/5 dark:to-slate-900/50 hover:shadow-md border border-slate-200/80 dark:border-slate-800/80 hover:border-emerald-400 dark:hover:border-emerald-600 rounded-2xl cursor-pointer text-left transition-all duration-300 flex flex-col justify-between h-36 group relative overflow-hidden"
                 >
+                  <div className="absolute top-0 right-0 text-[8.5px] font-black uppercase bg-emerald-500/10 text-emerald-600 dark:bg-emerald-955/10 dark:text-emerald-400 px-2.5 py-1 rounded-bl-xl font-mono border-l border-b border-emerald-100/10">History</div>
                   <div className="flex items-center justify-between">
-                    <span className="p-2 bg-emerald-100 dark:bg-emerald-955/40 text-emerald-700 dark:text-emerald-450 rounded-xl group-hover:bg-emerald-650 group-hover:text-white transition-colors">
+                    <span className="p-2.5 bg-emerald-100 dark:bg-emerald-955/30 text-emerald-700 dark:text-emerald-450 rounded-xl group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300 shadow-2xs">
                       <FileText size={16} />
                     </span>
-                    <ChevronRight size={14} className="text-emerald-500 group-hover:translate-x-1 transition-transform" />
+                    <ChevronRight size={14} className="text-slate-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 group-hover:translate-x-1.5 transition-all duration-300" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-black text-slate-855 dark:text-slate-100 Bengali-Heading">রশিদ ও পেমেন্ট হিস্ট্রি (History)</h4>
-                    <p className="text-[10px] text-[#64748b] dark:text-slate-400 font-medium leading-normal pt-0.5">সকল জমা রসিদ, অনুমোদিত ব্যালেন্স ও পিডিএফ ভাউচার আর্কাইভ।</p>
+                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 Bengali-Heading group-hover:text-emerald-600 dark:group-hover:text-emerald-405 transition-colors">রশিদ ও পেমেন্ট হিস্ট্রি</h4>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold leading-normal pt-1">সকল জমা রসিদ, অনুমোদিত ব্যালেন্স ও পিডিএফ ভাউচার আর্কাইভ।</p>
                   </div>
                 </motion.div>
 
@@ -2042,19 +2048,20 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                       window.open('https://wa.me/8801718070273', '_blank');
                     }
                   }}
-                  whileHover={{ scale: 1.025, y: -2 }}
+                  whileHover={{ scale: 1.025, y: -3 }}
                   whileTap={{ scale: 0.985 }}
-                  className="p-4 bg-rose-50/40 dark:bg-rose-955/10 hover:bg-rose-50 dark:hover:bg-rose-955/15 border border-rose-100/50 dark:border-rose-900/20 hover:border-rose-350 dark:hover:border-rose-700 rounded-2xl cursor-pointer text-left transition-all duration-200 flex flex-col justify-between h-32 group"
+                  className="p-5 bg-gradient-to-b from-rose-50/40 via-white to-white dark:from-rose-955/5 dark:to-slate-900/50 hover:shadow-md border border-slate-200/80 dark:border-slate-800/80 hover:border-rose-400 dark:hover:border-rose-600 rounded-2xl cursor-pointer text-left transition-all duration-300 flex flex-col justify-between h-36 group relative overflow-hidden"
                 >
+                  <div className="absolute top-0 right-0 text-[8.5px] font-black uppercase bg-rose-500/10 text-rose-600 dark:bg-rose-955/10 dark:text-rose-400 px-2.5 py-1 rounded-bl-xl font-mono border-l border-b border-rose-100/10">Support</div>
                   <div className="flex items-center justify-between">
-                    <span className="p-2 bg-rose-100 dark:bg-rose-955/40 text-rose-700 dark:text-rose-455 rounded-xl group-hover:bg-rose-555 group-hover:text-white transition-colors">
+                    <span className="p-2.5 bg-rose-100 dark:bg-rose-955/30 text-rose-700 dark:text-rose-455 rounded-xl group-hover:bg-rose-500 group-hover:text-white transition-all duration-300 shadow-2xs">
                       <MessageSquare size={16} />
                     </span>
-                    <ExternalLink size={12} className="text-rose-450 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" />
+                    <ExternalLink size={12} className="text-slate-400 group-hover:text-rose-655 dark:group-hover:text-rose-400 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-all duration-300" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-black text-slate-855 dark:text-slate-100 Bengali-Heading">সরাসরি হোয়াটসঅ্যাপ সাপোর্ট</h4>
-                    <p className="text-[10px] text-[#64748b] dark:text-slate-400 font-medium leading-normal pt-0.5">পেমেন্ট জটিলতা বা রিকোয়েস্ট দ্রুত এপ্রুভ করতে সরাসরি হেল্পডেস্ক কথা বলুন।</p>
+                    <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 Bengali-Heading group-hover:text-rose-655 dark:group-hover:text-rose-400 transition-colors">সরাসরি হোয়াটসঅ্যাপ সাপোর্ট</h4>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold leading-normal pt-1">পেমেন্ট জটিলতা বা রিকোয়েস্ট দ্রুত এপ্রুভ করতে সরাসরি হেল্পডেস্ক কথা বলুন।</p>
                   </div>
                 </motion.div>
               </div>
@@ -2174,54 +2181,61 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
               </div>
 
               {/* Step By Step Guidelines Tool Card with Neon Progress */}
-              <div className="bg-gradient-to-br from-slate-900 to-indigo-950 p-5.5 px-6 rounded-3xl text-white text-left relative overflow-hidden flex flex-col justify-between shadow-xs border border-slate-805">
+              <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950 p-6 rounded-3xl text-white text-left relative overflow-hidden flex flex-col justify-between shadow-[0_10px_35px_rgba(99,102,241,0.15)] border border-slate-800">
                 <div className="absolute right-0 bottom-0 w-36 h-36 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
                 
                 <div>
-                  <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
+                  <div className="flex items-center justify-between border-b border-white/10 pb-3.5 mb-5">
                     <div className="flex items-center gap-2">
-                      <div className="h-7 w-7 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center border border-indigo-500/30">
+                      <div className="h-7 w-7 rounded-lg bg-indigo-550/20 text-indigo-300 flex items-center justify-center border border-indigo-500/30">
                         <Sparkles size={14} className="stroke-[2.5]" />
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300 font-sans">
-                        পেমেন্ট ও রিচার্জ নির্দেশাবলী
+                      <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300 font-mono">
+                        পেমেন্ট ও রিচার্জ নির্দেশাবলী (Process Wizard)
                       </span>
                     </div>
-                    <span className="text-[9px] bg-indigo-500/30 text-indigo-200 border border-indigo-500/30 px-2 py-0.5 rounded-full uppercase font-mono font-black">Help Guide</span>
+                    <span className="text-[9px] bg-indigo-500/20 text-indigo-200 border border-indigo-500/30 px-2 py-0.5 rounded-full uppercase font-mono font-black">Timeline Guide</span>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      <div className="h-5 w-5 rounded-full bg-indigo-650 text-white flex items-center justify-center font-mono font-black text-[10px] shrink-0 shadow-sm border border-indigo-400/40">
-                        ১
+                  {/* Vertical Timeline Process Flow */}
+                  <div className="relative pl-6 border-l border-white/10 space-y-6 ml-3">
+                    {/* Step 1 */}
+                    <div className="relative">
+                      <div className="absolute -left-[31px] top-0 h-4.5 w-4.5 rounded-full bg-slate-900 border-2 border-indigo-500 flex items-center justify-center shadow-md shadow-indigo-500/20">
+                        <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
                       </div>
-                      <p className="text-[11.5px] font-bold text-slate-200 leading-relaxed Bengali-Heading">
-                        বামপাশের মেনুবার অথবা ওপরের ‘নম্বর ডিরেক্টরি’ বাটনে চাপ দিয়ে কোম্পানির ট্রাস্টেড নম্বরসমূহ কপি করুন।
+                      <span className="text-[9px] font-black uppercase tracking-widest text-indigo-400 font-mono">ধাপ ১ : নম্বর ডিরেক্টরি</span>
+                      <p className="text-[11.5px] font-bold text-slate-200 leading-relaxed Bengali-Heading mt-0.5">
+                        বামপাশের মেনুবার অথবা ওপরের <span className="text-indigo-300">‘নম্বর ডিরেক্টরি’</span> বাটনে চাপ দিয়ে কোম্পানির ট্রাস্টেড নম্বরসমূহ কপি করুন।
                       </p>
                     </div>
 
-                    <div className="flex items-start gap-3">
-                      <div className="h-5 w-5 rounded-full bg-emerald-500 text-white flex items-center justify-center font-mono font-black text-[10px] shrink-0 shadow-sm border border-emerald-400/40">
-                        ২
+                    {/* Step 2 */}
+                    <div className="relative">
+                      <div className="absolute -left-[31px] top-0 h-4.5 w-4.5 rounded-full bg-slate-900 border-2 border-emerald-500 flex items-center justify-center shadow-md shadow-emerald-500/20">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                       </div>
-                      <p className="text-[11.5px] font-bold text-slate-205 leading-relaxed Bengali-Heading">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 font-mono">ধাপ ২ : সেন্ড মানি করুন</span>
+                      <p className="text-[11.5px] font-bold text-slate-200 leading-relaxed Bengali-Heading mt-0.5">
                         আপনার বিকাশ/নগদ/রকেট/বাইনান্স ওয়ালেট থেকে নির্দিষ্ট অর্থ সেন্ড মানি (মেক পেমেন্ট) সম্পন্ন করুন।
                       </p>
                     </div>
 
-                    <div className="flex items-start gap-3">
-                      <div className="h-5 w-5 rounded-full bg-amber-500 text-white flex items-center justify-center font-mono font-black text-[10px] shrink-0 shadow-sm border border-amber-400/40">
-                        ৩
+                    {/* Step 3 */}
+                    <div className="relative">
+                      <div className="absolute -left-[31px] top-0 h-4.5 w-4.5 rounded-full bg-slate-900 border-2 border-amber-500 flex items-center justify-center shadow-md shadow-amber-500/20">
+                        <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
                       </div>
-                      <p className="text-[11.5px] font-bold text-slate-205 leading-relaxed Bengali-Heading">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-amber-400 font-mono">ধাপ ৩ : স্লিপ সাবমিট</span>
+                      <p className="text-[11.5px] font-bold text-slate-205 leading-relaxed Bengali-Heading mt-0.5">
                         রিচার্জ রশিদ ফর্মে আপনার প্রেরক নম্বর, সঠিক এমাউন্ট ও ট্রানজেকশন আইডি (TxID) প্রদান করে রিকোয়েস্টটি সাবমিট করুন।
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="text-[10px] text-slate-400 font-bold tracking-normal italic mt-5 border-t border-white/5 pt-3">
-                  ⚠️ ভুল বা অসত্য তথ্য প্রদান করলে সিস্টেম স্বয়ংক্রিয়ভাবে রিকোয়েস্ট ফিল্টার করতে পারে।
+                <div className="text-[9.5px] text-slate-400 font-bold tracking-normal italic mt-6 border-t border-white/5 pt-3 flex items-center gap-1.5 leading-tight">
+                  <span>⚠️ ভুল বা অসত্য তথ্য প্রদান করলে সিস্টেম স্বয়ংক্রিয়ভাবে রিকোয়েস্ট ফিল্টার করতে পারে।</span>
                 </div>
               </div>
             </div>
@@ -3599,10 +3613,10 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
               <div>
                 <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                  <FileText size={16} className="text-indigo-600" />
+                  <FileText size={16} className="text-indigo-650" />
                   আপনার ইনভয়েস ও রসিদ খতিয়ান (Your Invoices & Receipts)
                 </h2>
-                <p className="text-xs text-slate-500 leading-relaxed">
+                <p className="text-xs text-slate-500 leading-relaxed font-sans mt-0.5">
                   আপনার সকল জমাকৃত পেমেন্ট রিকোয়েস্ট, ব্যালেন্স ইতিহাস ও অনুমোদিত মেম্বারশিপের বিবরণ নিচে দেখতে পারেন।
                 </p>
               </div>
@@ -3617,19 +3631,19 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                   placeholder="ইনভয়েস আইডি, ট্রানজেকশন আইডি বা মেথড অনুসন্ধান করুন..."
                   value={clientInvoiceSearch}
                   onChange={(e) => setClientInvoiceSearch(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all font-sans"
                 />
               </div>
               <div className="sm:w-48">
                 <select
                   value={clientInvoiceStatusFilter}
                   onChange={(e) => setClientInvoiceStatusFilter(e.target.value as any)}
-                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-755 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer"
+                  className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-755 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all cursor-pointer font-sans"
                 >
                   <option value="all">সকল স্ট্যাটাস (All Status)</option>
                   <option value="paid">অনুমোদিত/পরিশোধিত (Paid)</option>
                   <option value="pending">মূলতুবি (Pending)</option>
-                  <option value="overdue">ওভারডিউ (Overdue)</option>
+                  <option value="overdue">오버두 (Overdue)</option>
                 </select>
               </div>
             </div>
@@ -3663,27 +3677,27 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                 return (
                   <div className="p-12 text-center border-2 border-dashed border-slate-100 rounded-2xl">
                     <FileText size={42} className="mx-auto text-slate-300 mb-3 block" />
-                    <span className="text-xs font-black text-slate-700 block">কোনো রশিদ বা ইনভয়েস রেকর্ড পাওয়া যায়নি</span>
-                    <span className="text-[10px] text-slate-400 font-semibold mt-1 block">আপনার কোনো রিকোয়েস্ট পেন্ডিং খতিয়ানে থাকলে অথবা অন্য কোনো ক্যাটাগরি ফিল্টারে থাকলে চেক করুন।</span>
+                    <span className="text-xs font-black text-slate-700 block font-sans">কোনো রশিদ বা ইনভয়েস রেকর্ড পাওয়া যায়নি</span>
+                    <span className="text-[10px] text-slate-400 font-semibold mt-1 block font-sans">আপনার কোনো রিকোয়েস্ট পেন্ডিং খতিয়ানে থাকলে অথবা অন্য কোনো ক্যাটাগরি ফিল্টারে থাকলে চেক করুন।</span>
                   </div>
                 );
               }
 
               return (
-                <div className="overflow-hidden border border-slate-150 rounded-2xl shadow-3xs bg-white dark:bg-slate-900">
+                <div className="overflow-hidden border border-slate-150 rounded-2xl shadow-3xs bg-white">
                   <div className="overflow-x-auto">
                     <table className="w-full border-collapse text-left text-xs font-medium text-slate-500">
-                      <thead className="bg-slate-50/75 border-b border-slate-150 text-slate-700 font-black uppercase text-[10px] tracking-wider">
+                      <thead className="bg-slate-50/75 border-b border-slate-150 text-slate-700 font-black uppercase text-[10px] tracking-wider font-sans">
                         <tr>
                           <th className="p-4">ইনভয়েস # / তারিখ</th>
                           <th className="p-4">সার্ভিস টাইপ</th>
                           <th className="p-4">পেমেন্ট ডিটেইলস</th>
                           <th className="p-4">মোট টাকা</th>
                           <th className="p-4">অবস্থা</th>
-                          <th className="p-4 text-right">অ্যাকশন</th>
+                          <th className="p-4 text-right font-sans">অ্যাকশন</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-100">
+                      <tbody className="divide-y divide-slate-100 font-sans">
                         {filteredList.map((inv) => {
                           const isPaid = inv.status === 'paid' || inv.status === 'approved';
                           const isPending = inv.status === 'pending';
@@ -3699,8 +3713,8 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                                 </span>
                               </td>
                               <td className="p-4 whitespace-nowrap">
-                                <span className="p-1 px-2.5 rounded-lg bg-slate-100 text-slate-755 font-black text-[10px] uppercase">
-                                  {inv.type || 'TOP-UP'}
+                                <span className="p-1 px-2.5 rounded-lg bg-slate-100 text-slate-755 font-black text-[10px] uppercase font-mono">
+                                  {inv.type || 'P-UP'}
                                 </span>
                               </td>
                               <td className="p-4">
@@ -3786,7 +3800,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                 return (
                   <div className="p-12 text-center border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/20">
                     <ShieldCheck size={42} className="mx-auto text-emerald-400 mb-3 block" />
-                    <span className="text-xs font-black text-slate-700 block">কোনো বাতিলকৃত রিকোয়েস্ট পাওয়া যায়নি!</span>
+                    <span className="text-xs font-black text-slate-700 block mt-1">কোনো বাতিলকৃত রিকোয়েস্ট পাওয়া যায়নি!</span>
                     <span className="text-[10px] text-slate-400 font-semibold mt-1 block">আপনার সকল পেমেন্ট ভেরিফিকেশন সফলভাবে সম্পন্ন আছে।</span>
                   </div>
                 );
@@ -3848,76 +3862,41 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
           </div>
         )}
 
-        {/* 5. SETTINGS SUB-TAB: SHOW PROFILE DETAILS AND PASSWORD RESET */}
+        {/* 1.7 USER PROFILE & ACCOUNT SETTINGS SUB-TAB */}
         {activeSubTab === 'settings' && (
-          <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-xs relative animate-fade-in">
-            <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5 border-b border-slate-100 pb-3">
-              <Lock size={16} className="text-indigo-650" />
-              ব্যক্তিগত প্রোফাইল ও নিরাপত্তা পরিবর্তন (Profile & Security Options)
-            </h2>
-            
-            <p className="text-xs text-slate-500 leading-relaxed mb-6">
-              এখানে আপনার বর্তমান প্রোফাইল ডাটাবেস দেখতে পারেন এবং নিরাপত্তার স্বার্থে সিকিউর পাসওয়ার্ড পরিবর্তন করতে পারেন।
-            </p>
+          <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-xs relative animate-fade-in space-y-6">
+            <div>
+              <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <Lock size={16} className="text-indigo-650" />
+                আমার প্রোফাইল ও ইউজার সেটিংস (Profile & Security)
+              </h2>
+              <p className="text-xs text-slate-500 leading-relaxed font-sans mt-0.5">
+                আপনার পাসওয়ার্ড পরিবর্তন করুন এবং বিলিং সংক্রান্ত সাময়িক সারাংশ দেখুন।
+              </p>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Profile Details Card */}
-              <div className="space-y-4">
-                <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2 flex items-center gap-1.5">
-                  <Users size={14} className="text-indigo-650" />
-                  ব্যক্তিগত একাউন্ট প্রোফাইল (Account Profile Data)
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  <div className="p-3.5 bg-slate-50 border border-slate-150 rounded-2xl">
-                    <span className="text-[10px] text-slate-400 font-bold block">পূর্ণ নাম (Display Name)</span>
-                    <span className="text-xs text-slate-800 font-sans font-black mt-0.5 block">
-                      {currentUserData?.name || user?.name || 'Customer'}
-                    </span>
-                  </div>
-                  <div className="p-3.5 bg-slate-50 border border-slate-150 rounded-2xl">
-                    <span className="text-[10px] text-slate-400 font-bold block">ইউজারনেম (Username)</span>
-                    <span className="text-xs text-slate-800 font-sans font-black mt-0.5 block">
-                      @{currentUserData?.username || user?.username || 'user'}
-                    </span>
-                  </div>
-                  <div className="p-3.5 bg-slate-50 border border-slate-150 rounded-2xl">
-                    <span className="text-[10px] text-slate-400 font-bold block">মোবাইল নম্বর (Phone)</span>
-                    <span className="text-xs text-slate-800 font-mono font-black mt-0.5 block">
-                      {currentUserData?.phone || 'N/A'}
-                    </span>
-                  </div>
-                  <div className="p-3.5 bg-slate-50 border border-slate-150 rounded-2xl">
-                    <span className="text-[10px] text-slate-400 font-bold block">ইমেইল ঠিকানা (Email)</span>
-                    <span className="text-xs text-slate-800 font-mono font-black mt-0.5 block truncate">
-                      {currentUserData?.email || user?.email || 'N/A'}
-                    </span>
-                  </div>
-                  <div className="p-3.5 bg-slate-50 border border-slate-150 rounded-2xl">
-                    <span className="text-[10px] text-slate-400 font-bold block">নিবন্ধন টাইপ (Status)</span>
-                    <span className="inline-flex items-center gap-1.5 text-[9.5px] font-black uppercase text-white bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-md mt-1 shrink-0">
-                      ● {currentUserData?.status || 'approved'}
-                    </span>
-                  </div>
-                  <div className="p-3.5 bg-slate-50 border border-slate-150 rounded-2xl">
-                    <span className="text-[10px] text-slate-400 font-bold block">নিবন্ধনের তারিখ (Registered At)</span>
-                    <span className="text-xs text-slate-800 font-mono font-black mt-0.5 block">
-                      {joinedDateFormatted}
-                    </span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Profile Card & Billing Balance */}
+              <div className="bg-indigo-50/15 border border-indigo-100/70 p-5 rounded-3xl relative overflow-hidden flex flex-col justify-between h-[340px]">
+                <div>
+                  <span className="text-[10px] bg-indigo-100 text-indigo-700 px-2.5 py-0.5 rounded-full uppercase font-mono font-black">Account Overview</span>
+                  <div className="mt-4">
+                    <h4 className="text-sm font-black text-slate-800 font-sans">{currentUserData?.name || user?.name || 'User'}</h4>
+                    <span className="text-xs text-slate-400 font-mono">@{currentUserData?.username || user?.username}</span>
                   </div>
                 </div>
 
-                <div className="p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl space-y-2">
-                  <span className="text-[10px] font-black text-indigo-650 uppercase tracking-wider block">কম্পানি পেমেন্ট ডেজার খতিয়ান</span>
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                    <div className="p-2 bg-white rounded-xl border border-indigo-50/60">
-                      <span className="text-[9px] text-slate-400 font-bold block">মোট মূল্য</span>
-                      <strong className="text-slate-800 font-black">৳{totalFee.toLocaleString()}</strong>
-                    </div>
-                    <div className="p-2 bg-white rounded-xl border border-indigo-50/60">
+                <div className="mt-6 border-t border-indigo-100/40 pt-4 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-slate-500 font-bold">মোট বিলিং ফিঃ</span>
+                    <strong className="text-sm text-slate-800 font-black">৳{totalFee.toLocaleString()}</strong>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3 mt-2">
+                    <div className="p-2 bg-white rounded-xl border border-indigo-50/60 font-mono">
                       <span className="text-[9px] text-emerald-500 font-bold block">পরিশোধিত</span>
                       <strong className="text-emerald-600 font-black">৳{paidFees.toLocaleString()}</strong>
                     </div>
-                    <div className="p-2 bg-white rounded-xl border border-indigo-50/60">
+                    <div className="p-2 bg-white rounded-xl border border-indigo-50/60 font-mono">
                       <span className="text-[9px] text-rose-500 font-bold block">বকেয়া বিল</span>
                       <strong className="text-rose-600 font-black">৳{dueFees.toLocaleString()}</strong>
                     </div>
@@ -3940,7 +3919,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                   )}
 
                   {clientPassSuccess && (
-                     <div className="p-3.5 bg-emerald-50 border border-emerald-100 rounded-xl text-[11px] font-bold text-emerald-600 leading-relaxed">
+                    <div className="p-3.5 bg-emerald-50 border border-emerald-100 rounded-xl text-[11px] font-bold text-emerald-600 leading-relaxed">
                       ✅ {clientPassSuccess}
                     </div>
                   )}
@@ -3959,7 +3938,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                       <button
                         type="button"
                         onClick={() => setShowClientPass(!showClientPass)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-655 focus:outline-none"
                       >
                         {showClientPass ? <EyeOff size={15} /> : <Eye size={15} />}
                       </button>
@@ -4023,18 +4002,22 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
   return (
     <div className="space-y-8 pb-12">
 {/* Premium Welcome & Control Tower Header */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-[2rem] p-6 sm:p-8 shadow-xl border border-slate-800 animate-fade-in">
-        {/* Abstract Background Vectors */}
+      <div className="relative overflow-hidden bg-gradient-to-tr from-slate-950 via-slate-900 to-indigo-950 text-white rounded-[2rem] p-6 sm:p-8 shadow-xl border border-slate-800 animate-fade-in relative">
+        {/* Decorative Grid Mesh & Light Effects */}
+        <div className="absolute inset-0 bg-[radial-gradient(#312e81_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
         <div className="absolute right-0 top-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
         <div className="absolute left-1/3 bottom-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20"></div>
         
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 bg-indigo-500/30 text-indigo-200 backdrop-blur-md px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-500/20">
-              <Sparkles size={12} className="text-indigo-400 animate-pulse" />
+          <div className="space-y-2.5">
+            <div className="inline-flex items-center gap-2 bg-indigo-505/15 text-indigo-300 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-500/20 font-mono">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+              </span>
               মাস্টার কন্ট্রোল ড্যাশবোর্ড (Live Admin Control Center)
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-200 bg-clip-text text-transparent">
+            <h1 className="text-2xl sm:text-3.5xl font-black tracking-tight leading-none bg-gradient-to-r from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent animate-fade-in">
               {currentUserData?.name || user?.name || 'Administrator'} 👋
             </h1>
             <p className="text-xs text-slate-400 leading-relaxed font-sans max-w-xl">
@@ -4043,22 +4026,25 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
           </div>
 
           {/* System Telemetry & Clock Widget */}
-          <div className="flex flex-wrap items-center gap-3 sm:gap-4 bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/10 shrink-0">
+          <div className="flex flex-wrap items-center gap-3 sm:gap-5 bg-white/[0.03] backdrop-blur-md p-5 rounded-2xl border border-white/10 shrink-0 shadow-lg">
             <div className="space-y-1">
-              <span className="text-[9px] font-bold text-slate-400 uppercase block tracking-wider">চলতি সময় (Dhaka Local)</span>
-              <div className="flex items-center gap-1.5 font-sans">
-                <Clock size={13} className="text-emerald-400" />
-                <span className="text-xs font-black tracking-wider text-white">
+              <span className="text-[9px] font-bold text-slate-400 uppercase block tracking-wider font-mono">চলতি সময় (Dhaka Local)</span>
+              <div className="flex items-center gap-2 font-sans">
+                <Clock size={14} className="text-emerald-400" />
+                <span className="text-xs font-black tracking-wider text-slate-100">
                   {new Date().toLocaleDateString('bn-BD', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 </span>
               </div>
             </div>
             <div className="h-8 w-[1px] bg-white/10 hidden sm:block"></div>
             <div className="space-y-1">
-              <span className="text-[9px] font-bold text-slate-400 uppercase block tracking-wider">সার্ভার স্ট্যাটাস</span>
-              <div className="flex items-center gap-1.5 font-sans">
-                <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                <span className="text-[10px] font-black uppercase text-emerald-400 tracking-wider">99.9% Uptime Active</span>
+              <span className="text-[9px] font-bold text-slate-400 uppercase block tracking-wider font-mono">সার্ভার স্ট্যাটাস</span>
+              <div className="flex items-center gap-2 font-sans">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="text-[10px] font-black uppercase text-emerald-400 tracking-wider font-mono">99.9% Uptime Active</span>
               </div>
             </div>
           </div>
@@ -4067,18 +4053,23 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
 
       {/* ⚡ DIRECT ACTION: Pending Approval Requests Console (সরাসরি পেমেন্ট অনুমোদন প্যানেল) */}
       {invoices.filter(inv => inv.status === 'pending').length > 0 ? (
-        <div className="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border border-amber-300 rounded-[2rem] p-6 shadow-xs animate-pulse">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 pb-3 border-b border-amber-200/50">
-            <div className="space-y-1">
-              <span className="text-[10px] bg-amber-600 text-white font-mono font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1">
-                <ShieldAlert size={12} className="text-amber-200" /> Action Required (অ্যাকশন প্রয়োজন)
+        <div className="bg-gradient-to-br from-amber-500/[0.02] via-slate-50/[0.02] to-transparent border border-amber-250 dark:border-amber-900/30 rounded-[2rem] p-6 sm:p-7 shadow-[0_12px_40px_rgba(245,158,11,0.03)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.15)] relative overflow-hidden transition-all duration-300">
+          <div className="absolute top-0 left-0 w-2 h-full bg-amber-500 pointer-events-none" />
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5 pb-4 border-b border-amber-100/50 dark:border-amber-900/20">
+            <div className="space-y-1.5">
+              <span className="text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-400 font-mono font-black px-3 py-1 rounded-full uppercase tracking-wider inline-flex items-center gap-2 border border-amber-200/50 dark:border-amber-900/30">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-450 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                </span>
+                Action Required (অ্যাকশন প্রয়োজন)
               </span>
-              <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5 mt-1">
+              <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-1.5 mt-1 font-mono">
                 পেন্ডিং বিল ও টপ-আপ পেমেন্ট অনুমোদন করুন (Direct Quick Invoice Approvals)
               </h3>
-              <p className="text-[11px] text-slate-605 font-sans">নিচের রিকোয়েস্টগুলো কাস্টমার কর্তৃক সাবমিট করা হয়েছে। দ্রুত বিবরণী যাচাই করে এক ক্লিকে অনুমোদন বা রিজেক্ট করুনঃ</p>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-sans">নিচের রিকোয়েস্টগুলো কাস্টমার কর্তৃক সাবমিট করা হয়েছে। দ্রুত বিবরণী যাচাই করে এক ক্লিকে অনুমোদন বা রিজেক্ট করুনঃ</p>
             </div>
-            <span className="text-xs bg-amber-500 text-white px-3 py-1 rounded-xl text-center font-black uppercase font-mono tracking-wider">
+            <span className="text-xs bg-amber-500 text-white px-3.5 py-1.5 rounded-xl text-center font-black uppercase font-mono tracking-wider shadow-sm shrink-0 self-start md:self-auto">
               {invoices.filter(inv => inv.status === 'pending').length} পেন্ডিং রিকোয়েস্ট
             </span>
           </div>
@@ -4164,14 +4155,14 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
       ) : null}
 
       {/* Dynamic Widget Settings Trigger Panel */}
-      {false && (
+      {isAdmin && (
       <div className="flex flex-col sm:flex-row justify-between sm:items-center bg-slate-50 border border-slate-200 rounded-[2rem] p-5.5 gap-4 shadow-xs/50 animate-fade-in">
         <div className="flex items-center gap-3.5">
           <div className="p-3 bg-indigo-50 text-indigo-650 rounded-2xl border border-indigo-100/50 shadow-sm shrink-0">
             <Sliders size={20} className="stroke-[2.5]" />
           </div>
           <div>
-            <h3 className="text-xs font-black text-slate-850 uppercase tracking-widest">কাস্টমাইজড উইজেট কন্ট্রোল (Custom Layout & Drag-and-Drop)</h3>
+            <h3 className="text-xs font-black text-slate-855 uppercase tracking-widest">কাস্টমাইজড উইজেট কন্ট্রোল (Custom Layout & Drag-and-Drop)</h3>
             <p className="text-[11px] text-slate-500 font-semibold font-sans mt-0.5">ড্যাশবোর্ড মেট্রিক কার্ডগুলো পিন/আনপিন করতে অথবা ড্র্যাগ করে পজিশন পরিবর্তন করতে এই কন্ট্রোল ব্যবহার করুন।</p>
           </div>
         </div>
@@ -4307,7 +4298,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
       </div>
 
       {/* Daily Revenue Trends & Advanced Graph System Section */}
-      {false && (
+      {isAdmin && (
       <div className="bg-white p-6 sm:p-8 border border-slate-200 rounded-[2rem] shadow-sm space-y-6">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-slate-100 pb-5">
           <div className="space-y-1">
@@ -4623,7 +4614,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
       {/* 📊 ADVANCED LEDGER PERFORMANCE INSIGHTS (অ্যাডভান্সড কোম্পানির খতিয়ান ও পারফরম্যান্স বিশ্লেষণ হাব) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* 1. Service Sales Contribution Breakdown (ক্যাটাগরি ভিত্তিক বিক্রয় বিশ্লেষণ) */}
-        <div className="col-span-12 lg:col-span-6 bg-white p-6 border border-slate-200 rounded-[2rem] shadow-xs flex flex-col justify-between">
+        <div className="col-span-12 lg:col-span-4 bg-white p-6 border border-slate-200 rounded-[2rem] shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div className="space-y-0.5">
@@ -4665,7 +4656,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
         </div>
 
         {/* 2. Audit Ledger & Financial Diagnostic Rating (ফাইন্যান্সিয়াল হেলথ স্কোর) */}
-        <div className="col-span-12 md:col-span-6 lg:col-span-6 bg-white p-6 border border-slate-200 rounded-[2rem] shadow-xs flex flex-col justify-between">
+        <div className="col-span-12 md:col-span-6 lg:col-span-4 bg-white p-6 border border-slate-200 rounded-[2rem] shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
               <div className="space-y-0.5">
@@ -4729,7 +4720,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
         </div>
 
         {/* 3. Actionable Admin Notes (লাইভ নোটপ্যাড যা ব্রাউজারে সংরক্ষিত থাকবে) */}
-        {false && (
+        {isAdmin && (
         <div className="col-span-12 md:col-span-6 lg:col-span-4 bg-white p-6 border border-slate-200 rounded-[2rem] shadow-xs flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
@@ -4990,7 +4981,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
       </div>
 
       {/* Admin Quick Action Bento Hub - Activated & Polished (Moved Below) */}
-      {false && (
+      {isAdmin && (
       <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm mt-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
           <div className="space-y-1">
@@ -5645,7 +5636,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
       </Modal>
 
       {/* Floating Quick Actions Button */}
-      {false && isAdmin && (
+      {isAdmin && (
         <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3 font-sans">
           {/* Backdrop Click Dismiss for Menu */}
           {isQuickActionsOpen && (
