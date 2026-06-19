@@ -1514,33 +1514,6 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
     return userInvoicesList.filter(inv => inv.status === 'rejected').length;
   }, [userInvoicesList]);
 
-  // Join date calculations (date, month, year)
-  const joinedDateFormatted = React.useMemo(() => {
-    const rawDate = currentUserData?.createdAt || user?.createdAt;
-    if (!rawDate) return 'N/A';
-    try {
-      const dObj = new Date(rawDate);
-      if (isNaN(dObj.getTime())) return rawDate;
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return `${dObj.getDate()} ${months[dObj.getMonth()]} ${dObj.getFullYear()}`;
-    } catch {
-      return rawDate;
-    }
-  }, [currentUserData?.createdAt, user?.createdAt]);
-
-  const joinedDateBengali = React.useMemo(() => {
-    const rawDate = currentUserData?.createdAt || user?.createdAt;
-    if (!rawDate) return 'N/A';
-    try {
-      const dObj = new Date(rawDate);
-      if (isNaN(dObj.getTime())) return rawDate;
-      const bmonths = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
-      return `${dObj.getDate()} ${bmonths[dObj.getMonth()]} ${dObj.getFullYear()}`;
-    } catch {
-      return rawDate;
-    }
-  }, [currentUserData?.createdAt, user?.createdAt]);
-
   // States for Selected Payment Account Channel Viewer
   const [selectedAccountTab, setSelectedAccountTab] = useState<'bKash' | 'Nagad' | 'Upay' | 'Rocket' | 'Mcash' | 'Bank' | 'Binance' | 'PayPal'>('bKash');
 
@@ -1583,9 +1556,35 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
       .reduce((sum, inv) => sum + (inv.amount || 0), 0);
   }, [userInvoicesList]);
 
+  // Join date calculations (date, month, year)
+  const joinedDateFormatted = React.useMemo(() => {
+    const rawDate = currentUserData?.createdAt || user?.createdAt;
+    if (!rawDate) return 'N/A';
+    try {
+      const dObj = new Date(rawDate);
+      if (isNaN(dObj.getTime())) return rawDate;
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${dObj.getDate()} ${months[dObj.getMonth()]} ${dObj.getFullYear()}`;
+    } catch {
+      return rawDate;
+    }
+  }, [currentUserData?.createdAt, user?.createdAt]);
+
+  const joinedDateBengali = React.useMemo(() => {
+    const rawDate = currentUserData?.createdAt || user?.createdAt;
+    if (!rawDate) return 'N/A';
+    try {
+      const dObj = new Date(rawDate);
+      if (isNaN(dObj.getTime())) return rawDate;
+      const bmonths = ['জানুয়ারি', 'ফেব্রুয়ারি', 'মার্চ', 'এপ্রিল', 'মে', 'জুন', 'জুলাই', 'আগস্ট', 'সেপ্টেম্বর', 'অক্টোবর', 'নভেম্বর', 'ডিসেম্বর'];
+      return `${dObj.getDate()} ${bmonths[dObj.getMonth()]} ${dObj.getFullYear()}`;
+    } catch {
+      return rawDate;
+    }
+  }, [currentUserData?.createdAt, user?.createdAt]);
+
   if (!isAdmin) {
     const totalFee = Number(currentUserData?.price) || 0;
-    // Show only approved invoice balance on the dashboard
     const paidFees = approvedInvoicesBalance;
     const dueFees = Math.max(0, totalFee - paidFees);
 
@@ -1599,60 +1598,61 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
 
     const nagadLogo = (
       <svg className="w-6 h-6 flex-shrink-0" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="40" height="40" rx="10" fill="#F47321" />
-        <path d="M11 26V14C11 14 15 19 18 21.5C21 24 23 22 23 20M23 14V26" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="29" cy="17" r="2" fill="#E11D48" />
+        <rect width="40" height="40" rx="10" fill="#F15A22" />
+        <circle cx="20" cy="20" r="8" stroke="white" strokeWidth="3" />
+        <circle cx="20" cy="20" r="3" fill="white" />
       </svg>
     );
 
     const upayLogo = (
       <svg className="w-6 h-6 flex-shrink-0" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="40" height="40" rx="10" fill="#013B63" />
-        <path d="M14 14V21C14 24.3137 16.6863 27 20 27C23.3137 27 26 24.3137 26 21V14" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="20" cy="27" r="2" fill="#EAB308" />
+        <rect width="40" height="40" rx="10" fill="#005CA9" />
+        <path d="M14 14H26V20H14V26H26" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
 
     const rocketLogo = (
       <svg className="w-6 h-6 flex-shrink-0" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="40" height="40" rx="10" fill="#8C2C84" />
-        <path d="M20 9L14 19H18V29L26 19H22V9Z" fill="white" stroke="white" strokeWidth="1.5" strokeLinejoin="round" />
+        <rect width="40" height="40" rx="10" fill="#8C3494" />
+        <path d="M15 15L20 10L25 15L25 28L15 28Z" fill="white" />
+        <circle cx="20" cy="19" r="2.5" fill="#8C3494" />
       </svg>
     );
 
     const mcashLogo = (
       <svg className="w-6 h-6 flex-shrink-0" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="40" height="40" rx="10" fill="#00843D" />
-        <text x="50%" y="65%" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold" fontFamily="sans-serif">M</text>
+        <rect width="40" height="40" rx="10" fill="#0F9D58" />
+        <path d="M14 18L18 22L26 14" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
 
     const bankLogo = (
       <svg className="w-6 h-6 flex-shrink-0" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect width="40" height="40" rx="10" fill="#1E3A8A" />
-        <path d="M9 27H31M12 17V23M17 17V23M23 17V23M28 17V23M9 14H31M20 10L9 14M20 10L31 14" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M12 28H28M15 18V24M20 18V24M25 18V24M12 18H28M20 12L11 18H29L20 12Z" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
 
     const binanceLogo = (
       <svg className="w-6 h-6 flex-shrink-0" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="40" height="40" rx="10" fill="#181A20" />
-        <path d="M20 11L14 17L20 23L26 17L20 11ZM20 29L14 23L20 17L26 23L20 29Z" fill="#F3BA2F" />
-        <path d="M30 17L26 21L30 25L34 21L30 17ZM10 17L6 21L10 25L14 21L10 17ZM20 17L17 20L20 23L23 20L20 17Z" fill="#F3BA2F" />
+        <rect width="40" height="40" rx="10" fill="#F0B90B" />
+        <path d="M20 12L25.5 17.5L28.5 14.5L20 6L11.5 14.5L14.5 17.5L20 12Z" fill="black" />
+        <path d="M20 28L14.5 22.5L11.5 25.5L20 34L28.5 25.5L25.5 22.5L20 28Z" fill="black" />
+        <path d="M28 20L20 12L12 20L20 28L28 20ZM16.5 20L20 16.5L23.5 20L20 23.5L16.5 20Z" fill="black" fillRule="evenodd" clipRule="evenodd" />
       </svg>
     );
 
     const paypalLogo = (
       <svg className="w-6 h-6 flex-shrink-0" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect width="40" height="40" rx="10" fill="#003087" />
-        <path d="M16 11H22.5C25 11 26.5 12 26 15C25.5 18 23.5 19.5 20.5 19.5H17.2L15.8 28H12.5L16 11Z" fill="#0079C1" />
-        <path d="M19 14H25.5C28 14 29.5 15 29 18C28.5 21 26.5 22.5 23.5 22.5H20.2L18.8 31H15.5L19 14Z" fill="#00457C" opacity="0.85" />
+        <path d="M16 12H21C23.5 12 25 13 25 15C25 17.5 23 19 20.5 19H17.5L16 28H13L16 12Z" fill="white" opacity="0.8" />
+        <path d="M19 15H24C26.5 15 28 16 28 18C28 20.5 26 22 23.5 22H20.5L19 31H16L19 15Z" fill="white" />
       </svg>
     );
 
     const allProviders = [
       { key: 'bKash', label: 'bKash (বিকাশ)', category: 'mfs', logo: bKashLogo, activeBg: 'from-pink-50/80 to-rose-100/90 border-rose-300 text-rose-700 shadow-md ring-4 ring-rose-500/10 scale-[1.03]', textAccent: 'text-rose-500', enabled: settings?.bkashEnabled !== false, feePercent: 1.85, notes: 'বিকাশ পার্সোনাল সেন্ড মানি' },
-      { key: 'Nagad', label: 'Nagad (নগদ)', category: 'mfs', logo: nagadLogo, activeBg: 'from-orange-50/80 to-amber-100/90 border-orange-300 text-orange-700 shadow-md ring-4 ring-orange-500/10 scale-[1.03]', textAccent: 'text-orange-505', enabled: settings?.nagadEnabled !== false, feePercent: 1.50, notes: 'নগদ পার্সোনাল সেন্ড মানি' },
+      { key: 'Nagad', label: 'Nagad (নগদ)', category: 'mfs', logo: nagadLogo, activeBg: 'from-orange-50/80 to-amber-100/90 border-orange-300 text-orange-700 shadow-md ring-4 ring-orange-500/10 scale-[1.03]', textAccent: 'text-orange-500', enabled: settings?.nagadEnabled !== false, feePercent: 1.50, notes: 'নগদ পার্সোনাল সেন্ড মানি' },
       { key: 'Upay', label: 'Upay (ইউপে)', category: 'mfs', logo: upayLogo, activeBg: 'from-blue-50/80 to-indigo-100/90 border-indigo-300 text-indigo-850 shadow-md ring-4 ring-indigo-500/10 scale-[1.03]', textAccent: 'text-indigo-500', enabled: settings?.upayEnabled !== false, feePercent: 1.40, notes: 'ইউপে পার্সোনাল সেন্ড মানি' },
       { key: 'Rocket', label: 'Rocket (রকেট)', category: 'mfs', logo: rocketLogo, activeBg: 'from-purple-50/80 to-fuchsia-100/90 border-purple-300 text-purple-700 shadow-md ring-4 ring-purple-500/10 scale-[1.03]', textAccent: 'text-purple-500', enabled: settings?.rocketEnabled !== false, feePercent: 1.80, notes: 'রকেট পার্সোনাল সেন্ড মানি' },
       { key: 'Mcash', label: 'Mcash (এমক্যাশ)', category: 'mfs', logo: mcashLogo, activeBg: 'from-green-50/80 to-emerald-100/90 border-green-300 text-green-700 shadow-md ring-4 ring-green-500/10 scale-[1.03]', textAccent: 'text-green-500', enabled: settings?.mcashEnabled !== false, feePercent: 1.50, notes: 'এমক্যাশ পার্সোনাল সেন্ড মানি' },
@@ -1679,146 +1679,30 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
 
     return (
       <div className="space-y-6 pb-12">
-        {/* Dynamic Greeting & Futuristic Welcome Banner Bento */}
-        {(() => {
-          const hr = new Date().getHours();
-          let greetTitle = 'শুভ সকাল';
-          let greetSub = 'একটি সুন্দর ও নতুন日の শুভকামনা! আপনার দিনটি চমৎকার কাটুক।';
-          let greetEmoji = '🌅';
-          let gradientStyle = 'from-slate-900 via-indigo-950 to-slate-900';
-          let borderGlow = 'rgba(99,102,241,0.25)';
-
-          if (hr >= 12 && hr < 16) {
-            greetTitle = 'শুভ দুপুর';
-            greetSub = 'ব্যস্ত সময়ে একটু বিরতি নিয়ে সুস্থ, সচল এবং হাইড্রেটেড থাকুন!';
-            greetEmoji = '☀️';
-          } else if (hr >= 16 && hr < 20) {
-            greetTitle = 'শুভ সন্ধ্যা';
-            greetSub = 'সারাদিনের ক্লান্তি মুছে দিতে সন্ধ্যার স্নিগ্ধতায় আপনাকে স্বাগত!';
-            greetEmoji = '🌇';
-          } else if (hr >= 20 || hr < 5) {
-            greetTitle = 'শুভ রাত্রি';
-            greetSub = 'সারাদিনের ব্যস্ততা শেষে একটি শান্তিময় ও আরামদায়ক ঘুমের প্রত্যাশায়!';
-            greetEmoji = '🌙';
-          }
-
-          return (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.45 }}
-              style={{ boxShadow: `0 10px 30px -5px ${borderGlow}` }}
-              className={`bg-gradient-to-r ${gradientStyle} p-6 sm:p-8 rounded-[2rem] text-white relative overflow-hidden border border-slate-800 shadow-xl`}
-            >
-              <div className="absolute right-0 bottom-0 w-80 h-80 bg-white/5 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute -left-20 -top-20 w-60 h-60 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
-              
-              <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div className="space-y-3 text-left">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="bg-white/15 backdrop-blur-lg text-[10px] uppercase font-black tracking-widest px-3 py-1 rounded-full border border-white/20 flex items-center gap-1.5 shadow-2xs">
-                      <Sparkles size={11} className="text-amber-300 animate-pulse" />
-                      <span>{greetTitle}</span>
-                    </span>
-                    <span className="bg-emerald-500 text-white text-[9px] uppercase font-black tracking-widest px-2.5 py-1 rounded-full leading-none font-mono flex items-center gap-1.5 shadow-2xs">
-                      <span className="h-1.5 w-1.5 rounded-full bg-white animate-ping" />
-                      <span>ACCOUNT: {currentUserData?.status || 'Active'}</span>
-                    </span>
-                  </div>
-                  
-                  <h1 className="text-2xl sm:text-4px font-black tracking-tight flex items-center gap-3.5 leading-tight select-none">
-                    <span>{greetEmoji}</span>
-                    <span className="Bengali-Heading bg-clip-text bg-gradient-to-r from-white via-slate-100 to-indigo-100 drop-shadow-sm text-2xl sm:text-3xl font-black">
-                      স্বাগতম, {currentUserData?.name || user?.name}!
-                    </span>
-                  </h1>
-                  
-                  <p className="text-indigo-100/90 text-xs sm:text-xs font-medium leading-relaxed max-w-xl Bengali-Heading drop-shadow-2xs">
-                    কোড বা সিস্টেম সম্পর্কিত যেকোনো তথ্যে কোম্পানির অফিশিয়াল পেমেন্ট পোর্টাল থেকে আপনার বকেয়া চেক করুন, লাইভ নোটিশ পড়ুন ও সহজে রিচার্জ স্লিপ পাঠান।
-                  </p>
-                </div>
-
-                {/* Cyber-Glow Clock Widget inside welcome card */}
-                <div className="bg-white/10 backdrop-blur-md border border-white/10 p-4.5 rounded-2xl flex flex-col items-center justify-center text-center shrink-0 min-w-[200px] shadow-lg relative group overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none" />
-                  <span className="text-[9px] font-black uppercase tracking-widest text-amber-300 font-mono mb-1 flex items-center gap-1">
-                    <Clock size={10} className="animate-spin-slow" />
-                    বাংলাদেশ সময় (Live)
-                  </span>
-                  <span className="text-lg font-black text-white font-mono tracking-wider text-shadow-sm select-all">
-                    {clientLocalTime || new Date().toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
-                  </span>
-                  <div className="mt-1.5 text-[8.5px] uppercase font-bold text-slate-200/85 tracking-wide font-sans">
-                    {new Date().toLocaleDateString('bn-BD', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                  </div>
-                  <div className="absolute bottom-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-amber-400 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
-                </div>
-              </div>
-            </motion.div>
-          );
-        })()}
+        {activeSubTab === 'dashboard' && (
+          <>
 
         {/* Elite Running Marquee Text Announcement Bar */}
-        <div className="bg-gradient-to-r from-indigo-50 to-indigo-100/30 dark:from-slate-900 dark:to-slate-900 border border-indigo-100 dark:border-slate-800 p-2 sm:p-3 rounded-2xl flex items-center md:gap-4 gap-2 shadow-xs relative overflow-hidden">
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-rose-500 to-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shrink-0 shadow-sm">
-            <Megaphone size={12} className="animate-pulse" />
+        <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2 rounded-xl flex items-center gap-3 shadow-3xs relative overflow-hidden">
+          <div className="flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-rose-500 to-indigo-650 text-white rounded-lg text-[9px] font-extrabold uppercase tracking-widest shrink-0 shadow-3xs leading-none">
+            <Megaphone size={11} className="animate-pulse" />
             <span>বিজ্ঞপ্তি (Notice)</span>
           </div>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden leading-none">
             <marquee 
               behavior="scroll" 
               direction="left" 
-              scrollamount="4"
+              scrollamount="3" 
               onMouseOver={(e: any) => e.currentTarget.stop()}
               onMouseOut={(e: any) => e.currentTarget.start()}
-              className="text-slate-755 dark:text-indigo-200 text-xs font-bold leading-none cursor-pointer select-none py-1 block"
+              className="text-slate-655 dark:text-slate-300 text-[11px] font-bold leading-none cursor-pointer select-none block"
             >
               {settings.runningNotice || 'প্রিয় গ্রাহক, আমাদের যেকোনো নতুন আপডেট বা অফার সম্পর্কিত তথ্য এখন থেকে আপনি সরাসরি এখানে লাইভ দেখতে পাবেন। পেমেন্ট করার পর ৫-১০ মিনিট ধৈর্য ধরুন, আমাদের টিম আপনার পেমেন্টটি ভেরিফাই করার কাজ করছে। ধন্যবাদ!'}
             </marquee>
           </div>
-          <div className="hidden md:flex items-center gap-1 text-[10px] bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg text-slate-400 dark:text-slate-500 shrink-0 font-medium tracking-wide">
-            <Bell size={10} className="text-amber-500 animate-swing" />
-            <span>লাইভ আপডেট (Live)</span>
-          </div>
         </div>
 
-        {/* 1. DASHBOARD OVERVIEW SUB-TAB */}
-        {activeSubTab === 'dashboard' && (
-          <div className="space-y-6 animate-fade-in">
-            {/* Status Counters Card (Invoice Live Counter) */}
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200/80 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.02)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.2)] relative overflow-hidden">
-              <div className="absolute top-0 left-0 w-2 h-full bg-indigo-600 dark:bg-indigo-400 pointer-events-none" />
-              <h3 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-widest mb-4 border-b border-slate-100 dark:border-slate-800 pb-3 flex items-center gap-2 font-mono">
-                <FileText size={15} className="text-indigo-600 dark:text-indigo-400" />
-                পেমেন্ট রিকোয়েস্ট লাইভ ট্র্যাকিং কাউন্টার (Invoice Live Ledger)
-              </h3>
-              <div className="grid grid-cols-3 gap-3 sm:gap-4 md:gap-5 animate-fade-in">
-                {/* Approved */}
-                <div className="bg-gradient-to-b from-emerald-50/30 to-emerald-500/[0.02] dark:from-emerald-950/20 dark:to-transparent border border-emerald-150 dark:border-emerald-900/30 p-5 rounded-2xl text-center shadow-3xs hover:scale-[1.02] hover:shadow-sm transition-all duration-300 relative group overflow-hidden">
-                  <div className="absolute inset-0 bg-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                  <div className="text-emerald-600 dark:text-emerald-400 font-extrabold text-xl sm:text-3xl font-mono leading-none">{approvedCount}</div>
-                  <div className="text-[9.5px] sm:text-xs text-emerald-800 dark:text-emerald-305 font-black uppercase mt-2.5 tracking-wider">অনুমোদিত (Approved)</div>
-                </div>
-                {/* Pending */}
-                <div className="bg-gradient-to-b from-amber-50/30 to-amber-500/[0.02] dark:from-amber-955/20 dark:to-transparent border border-amber-150 dark:border-amber-900/35 p-5 rounded-2xl text-center shadow-3xs hover:scale-[1.02] hover:shadow-sm transition-all duration-300 relative group overflow-hidden">
-                  <div className="absolute inset-0 bg-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                  <div className="text-amber-600 dark:text-amber-400 font-extrabold text-xl sm:text-3xl font-mono leading-none">{pendingCount}</div>
-                  <div className="text-[9.5px] sm:text-xs text-amber-800 dark:text-amber-305 font-black uppercase mt-2.5 tracking-wider font-sans">মূলতুবি (Pending Review)</div>
-                </div>
-                {/* Rejected */}
-                <div className="bg-gradient-to-b from-rose-50/25 to-rose-500/[0.01] dark:from-rose-955/10 dark:to-transparent border border-rose-150 dark:border-rose-900/30 p-5 rounded-2xl text-center shadow-3xs hover:scale-[1.02] hover:shadow-sm transition-all duration-300 relative group overflow-hidden">
-                  <div className="absolute inset-0 bg-rose-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
-                  <div className="text-rose-655 dark:text-rose-455 font-extrabold text-xl sm:text-3xl font-mono leading-none">{rejectedCount}</div>
-                  <div className="text-[9.5px] sm:text-xs text-rose-700 dark:text-rose-405 font-black uppercase mt-2.5 tracking-wider font-sans">প্রত্যাখ্যাত (Rejected)</div>
-                </div>
-              </div>
-              <div className="text-[10px] text-slate-400 dark:text-slate-500 mt-4 text-center border-t border-slate-100 dark:border-slate-800 pt-3.5 font-medium flex items-center justify-center gap-1.5">
-                <span className="inline-block w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
-                * এডমিন কর্তৃক রিভিউ সম্পন্ন হলে ব্যালেন্স ও স্ট্যাটাস স্বয়ংক্রিয়ভাবে আপডেট হয়।
-              </div>
-            </div>
-
-            {/* 🚨 REJECTED INVOICES HANDLER - RE-SUBMISSION PANEL */}
+        {/* 🚨 REJECTED INVOICES HANDLER - RE-SUBMISSION PANEL */}
             {myRejectedInvoices.length > 0 && (
               <div className="bg-rose-50/70 dark:bg-rose-950/10 border border-rose-200 dark:border-rose-900/40 p-5 rounded-3xl text-left shadow-2xs">
                 <div className="flex items-center gap-2.5 mb-3">
@@ -1829,7 +1713,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                     <h3 className="text-xs font-black text-rose-800 dark:text-rose-300 uppercase tracking-widest font-sans">
                       প্রত্যাখ্যাত পেমেন্ট রিকোয়েস্ট ({myRejectedInvoices.length}টি বাতিল)
                     </h3>
-                    <p className="text-[10px] text-rose-650 dark:text-rose-450 font-bold mt-0.5 font-sans leading-none">
+                    <p className="text-[10px] text-rose-650 dark:text-rose-455 font-bold mt-0.5 font-sans leading-none">
                       নিচের পেমেন্ট রিকোয়েস্টগুলো এডমিন বাতিল করেছেন। সঠিক তথ্য দিয়ে সংশোধন করে সাবমিট করুন।
                     </p>
                   </div>
@@ -1854,7 +1738,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                             <span className="text-xs font-black text-slate-800 dark:text-slate-205 font-mono bg-slate-50 dark:bg-slate-850 border border-slate-150 dark:border-slate-800 px-2 py-0.5 rounded-md">
                               #{inv.id.substring(0, 10).toUpperCase()}
                             </span>
-                            <span className="text-[9px] uppercase font-mono font-black tracking-wider px-2 py-0.5 rounded-md bg-rose-100 dark:bg-rose-950 text-rose-700 dark:text-rose-300">
+                            <span className="text-[9px] uppercase font-mono font-black tracking-wider px-2 py-0.5 rounded-md bg-rose-100 dark:bg-rose-955 text-rose-700 dark:text-rose-350">
                               {inv.paymentMethod || inv.method}
                             </span>
                             <span className="text-xs font-black text-rose-650 dark:text-rose-400 font-mono bg-rose-50 dark:bg-rose-955/20 border border-rose-100/30 px-2 py-0.5 rounded-md">
@@ -1862,7 +1746,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                             </span>
                           </div>
                           
-                          <p className="text-[11px] font-bold text-slate-655 dark:text-slate-305 leading-relaxed font-sans pt-1">
+                          <p className="text-[11px] font-bold text-slate-655 dark:text-slate-350 leading-relaxed font-sans pt-1">
                             <strong className="text-rose-705 dark:text-rose-450 font-black">বাতিলের কারণ:</strong> {extractedReason}
                           </p>
 
@@ -1890,74 +1774,74 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
 
             {/* 🔋 UNIQUE & UNCOMMON HIGH-GLOW FINANCIAL METRICS GRID */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-                {/* Stat 1: Total Subscription Price */}
-                <div className="bg-gradient-to-br from-indigo-50/70 via-white to-indigo-100/20 dark:from-slate-900/40 dark:via-slate-900 dark:to-indigo-955/20 border border-indigo-150 dark:border-slate-800 p-5 rounded-2xl shadow-3xs relative overflow-hidden group hover:shadow-xs hover:border-indigo-350 dark:hover:border-indigo-900 transition-all duration-300 text-left flex flex-col justify-between">
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="space-y-1">
-                      <span className="text-[9.5px] font-black uppercase text-indigo-500 tracking-widest block leading-none font-sans">মোট সার্ভিস চুক্তি বিল (Contract Price)</span>
-                      <h3 className="text-lg sm:text-xl md:text-2xl font-black text-slate-855 dark:text-slate-100 font-mono tracking-tight leading-none mt-1.5">৳{totalFee.toLocaleString()}</h3>
-                    </div>
-                    <span className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-650 dark:text-indigo-400 shrink-0 border border-indigo-100/30 dark:border-indigo-900/30">
-                      <Layers size={17} className="stroke-[2.5]" />
-                    </span>
+              {/* Stat 1: Total Service Contracts */}
+              <div className="bg-gradient-to-br from-indigo-50/70 via-white to-indigo-100/20 dark:from-slate-900/40 dark:via-slate-900 dark:to-indigo-955/20 border border-indigo-150 dark:border-slate-800 p-5 rounded-2xl shadow-3xs relative overflow-hidden group hover:shadow-xs hover:border-indigo-350 dark:hover:border-indigo-900 transition-all duration-300 text-left flex flex-col justify-between">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="space-y-1">
+                    <span className="text-[9.5px] font-black uppercase text-indigo-500 tracking-widest block leading-none font-sans">মোট সার্ভিস চুক্তি বিল (Contract Price)</span>
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-black text-slate-855 dark:text-slate-100 font-mono tracking-tight leading-none mt-1.5">৳{totalFee.toLocaleString()}</h3>
                   </div>
-                  <div className="mt-4 flex items-center gap-1.5 text-[9.5px] font-bold text-indigo-555 dark:text-slate-400 border-t border-slate-100/60 dark:border-slate-850 pt-2.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-indigo-550 animate-pulse" />
-                    <span>কোম্পানি নির্ধারিত চুক্তিবদ্ধ মোট সার্ভিস ফি।</span>
-                  </div>
+                  <span className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-650 dark:text-indigo-400 shrink-0 border border-indigo-100/30 dark:border-indigo-900/30">
+                    <Layers size={17} className="stroke-[2.5]" />
+                  </span>
                 </div>
-
-                {/* Stat 2: Total Approved / Paid Amount */}
-                <div className="bg-gradient-to-br from-emerald-50/70 via-white to-emerald-100/20 dark:from-slate-900/40 dark:via-slate-900 dark:to-emerald-955/20 border border-emerald-150 dark:border-slate-800 p-5 rounded-2xl shadow-3xs relative overflow-hidden group hover:shadow-xs hover:border-emerald-350 dark:hover:border-emerald-900 transition-all duration-300 text-left flex flex-col justify-between">
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="space-y-1">
-                      <span className="text-[9.5px] font-black uppercase text-emerald-600 tracking-widest block leading-none font-sans font-black">পরিশোধিত ব্যালেন্স (Credited Paid)</span>
-                      <h3 className="text-lg sm:text-xl md:text-2xl font-black text-emerald-900 dark:text-emerald-400 font-mono tracking-tight leading-none mt-1.5">৳{paidFees.toLocaleString()}</h3>
-                    </div>
-                    <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-450 shrink-0 border border-emerald-100/30 dark:border-emerald-900/30">
-                      <CheckCircle size={17} className="stroke-[2.5]" />
-                    </span>
-                  </div>
-                  <div className="mt-4 flex items-center gap-1.5 text-[9.5px] font-bold text-emerald-655 dark:text-slate-400 border-t border-slate-100/60 dark:border-slate-850 pt-2.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    <span>অনুমোদিত সফল পেমেন্টসমূহ ({approvedCount}টি রসিদ)</span>
-                  </div>
-                </div>
-
-                {/* Stat 3: Pending Balance Under Verification */}
-                <div className="bg-gradient-to-br from-amber-50/70 via-white to-amber-100/20 dark:from-slate-900/40 dark:via-slate-900 dark:to-amber-955/20 border border-amber-150 dark:border-slate-800 p-5 rounded-2xl shadow-3xs relative overflow-hidden group hover:shadow-xs hover:border-amber-350 dark:hover:border-amber-900 transition-all duration-300 text-left flex flex-col justify-between">
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="space-y-1">
-                      <span className="text-[9.5px] font-black uppercase text-amber-600 tracking-widest block leading-none font-sans font-black">যাচাইাধীন ব্যালেন্স (Pending Check)</span>
-                      <h3 className="text-lg sm:text-xl md:text-2xl font-black text-amber-900 dark:text-amber-400 font-mono tracking-tight leading-none mt-1.5">৳{pendingFees.toLocaleString()}</h3>
-                    </div>
-                    <span className="p-2 rounded-xl bg-amber-50 dark:bg-amber-955 text-amber-700 dark:text-amber-450 shrink-0 border border-amber-100/30 dark:border-amber-900/40">
-                      <Clock size={17} className="stroke-[2.5]" />
-                    </span>
-                  </div>
-                  <div className="mt-4 flex items-center gap-1.5 text-[9.5px] font-bold text-amber-655 dark:text-slate-400 border-t border-slate-100/60 dark:border-slate-850 pt-2.5">
-                    <span className={`h-1.5 w-1.5 rounded-full ${pendingFees > 0 ? 'bg-amber-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-700'}`} />
-                    <span>{pendingCount}টি পেমেন্ট রিভিউ অপেক্ষারত</span>
-                  </div>
-                </div>
-
-                {/* Stat 4: Remaining Due Payment */}
-                <div className="bg-gradient-to-br from-rose-50/70 via-white to-rose-100/20 dark:from-slate-900/40 dark:via-slate-900 dark:to-rose-955/20 border border-rose-150 dark:border-slate-805 p-5 rounded-2xl shadow-3xs relative overflow-hidden group hover:shadow-xs hover:border-rose-350 dark:hover:border-rose-900 transition-all duration-300 text-left flex flex-col justify-between">
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="space-y-1">
-                      <span className="text-[9.5px] font-black uppercase text-rose-600 tracking-widest block leading-none font-sans font-black">অবশিষ্ট বকেয়া (Remaining Due)</span>
-                      <h3 className="text-lg sm:text-xl md:text-2xl font-black text-rose-955 dark:text-rose-455 font-mono tracking-tight leading-none mt-1.5">৳{dueFees.toLocaleString()}</h3>
-                    </div>
-                    <span className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950 text-rose-650 dark:text-rose-400 shrink-0 border border-rose-100/30 dark:border-rose-900/40">
-                      <TrendingDown size={17} className="stroke-[2.5]" />
-                    </span>
-                  </div>
-                  <div className="mt-4 flex items-center gap-1.5 text-[9.5px] font-bold text-rose-655 dark:text-slate-400 border-t border-slate-100/60 dark:border-slate-850 pt-2.5">
-                    <span className={`h-1.5 w-1.5 rounded-full ${dueFees > 0 ? 'bg-rose-550 animate-ping' : 'bg-emerald-500'}`} />
-                    <span>{dueFees > 0 ? 'অনতিবிழமை বকেয়া পরিশোধ করুন।' : 'সার্ভিস ফি ক্লিয়ার, ধন্যবাদ!'}</span>
-                  </div>
+                <div className="mt-4 flex items-center gap-1.5 text-[9.5px] font-bold text-indigo-555 dark:text-slate-400 border-t border-slate-100/60 dark:border-slate-850 pt-2.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-indigo-550 animate-pulse" />
+                  <span>কোম্পানি নির্ধারিত চুক্তিবদ্ধ মোট সার্ভিস ফি।</span>
                 </div>
               </div>
+
+              {/* Stat 2: Total Approved / Paid Amount */}
+              <div className="bg-gradient-to-br from-emerald-50/70 via-white to-emerald-100/20 dark:from-slate-900/40 dark:via-slate-900 dark:to-emerald-955/20 border border-emerald-150 dark:border-slate-800 p-5 rounded-2xl shadow-3xs relative overflow-hidden group hover:shadow-xs hover:border-emerald-350 dark:hover:border-emerald-900 transition-all duration-300 text-left flex flex-col justify-between">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="space-y-1">
+                    <span className="text-[9.5px] font-black uppercase text-emerald-600 tracking-widest block leading-none font-sans font-black">পরিশোধিত ব্যালেন্স (Credited Paid)</span>
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-black text-emerald-905 dark:text-emerald-400 font-mono tracking-tight leading-none mt-1.5">৳{paidFees.toLocaleString()}</h3>
+                  </div>
+                  <span className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-450 shrink-0 border border-emerald-100/30 dark:border-emerald-900/30">
+                    <CheckCircle size={17} className="stroke-[2.5]" />
+                  </span>
+                </div>
+                <div className="mt-4 flex items-center gap-1.5 text-[9.5px] font-bold text-emerald-655 dark:text-slate-400 border-t border-slate-100/60 dark:border-slate-855 pt-2.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  <span>অনুমোদিত সফল পেমেন্টসমূহ ({approvedCount}টি রসিদ)</span>
+                </div>
+              </div>
+
+              {/* Stat 3: Pending Balance Under Verification */}
+              <div className="bg-gradient-to-br from-amber-50/70 via-white to-amber-100/20 dark:from-slate-900/40 dark:via-slate-900 dark:to-amber-955/20 border border-amber-150 dark:border-slate-800 p-5 rounded-2xl shadow-3xs relative overflow-hidden group hover:shadow-xs hover:border-amber-350 dark:hover:border-amber-900 transition-all duration-300 text-left flex flex-col justify-between">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="space-y-1">
+                    <span className="text-[9.5px] font-black uppercase text-amber-600 tracking-widest block leading-none font-sans font-black">যাচাইাধীন ব্যালেন্স (Pending Check)</span>
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-black text-amber-905 dark:text-amber-400 font-mono tracking-tight leading-none mt-1.5">৳{pendingFees.toLocaleString()}</h3>
+                  </div>
+                  <span className="p-2 rounded-xl bg-amber-50 dark:bg-amber-955 text-amber-700 dark:text-amber-450 shrink-0 border border-amber-100/30 dark:border-amber-900/40">
+                    <Clock size={17} className="stroke-[2.5]" />
+                  </span>
+                </div>
+                <div className="mt-4 flex items-center gap-1.5 text-[9.5px] font-bold text-amber-655 dark:text-slate-400 border-t border-slate-100/60 dark:border-slate-855 pt-2.5">
+                  <span className={`h-1.5 w-1.5 rounded-full ${pendingFees > 0 ? 'bg-amber-500 animate-pulse' : 'bg-slate-300 dark:bg-slate-700'}`} />
+                  <span>{pendingCount}টি পেমেন্ট রিভিউ অপেক্ষারত</span>
+                </div>
+              </div>
+
+              {/* Stat 4: Remaining Due Payment */}
+              <div className="bg-gradient-to-br from-rose-50/70 via-white to-rose-100/20 dark:from-slate-900/40 dark:via-slate-900 dark:to-rose-955/20 border border-rose-150 dark:border-slate-800 p-5 rounded-xl shadow-3xs relative overflow-hidden group hover:shadow-xs hover:border-rose-350 dark:hover:border-rose-900 transition-all duration-300 text-left flex flex-col justify-between">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="space-y-1">
+                    <span className="text-[9.5px] font-black uppercase text-rose-600 tracking-widest block leading-none font-sans font-black">অবशिष्ट বকেয়া (Remaining Due)</span>
+                    <h3 className="text-lg sm:text-xl md:text-2xl font-black text-rose-955 dark:text-rose-455 font-mono tracking-tight leading-none mt-1.5">৳{dueFees.toLocaleString()}</h3>
+                  </div>
+                  <span className="p-2 rounded-xl bg-rose-50 dark:bg-rose-950 text-rose-650 dark:text-rose-400 shrink-0 border border-rose-100/30 dark:border-rose-900/40">
+                    <TrendingDown size={17} className="stroke-[2.5]" />
+                  </span>
+                </div>
+                <div className="mt-4 flex items-center gap-1.5 text-[9.5px] font-bold text-rose-655 dark:text-slate-400 border-t border-slate-100/60 dark:border-slate-850 pt-2.5">
+                  <span className={`h-1.5 w-1.5 rounded-full ${dueFees > 0 ? 'bg-rose-550 animate-ping' : 'bg-emerald-500'}`} />
+                  <span>{dueFees > 0 ? 'অনতিবிழமை বকেয়া পরিশোধ করুন।' : 'সার্ভিস ফি ক্লিয়ার, ধন্যবাদ!'}</span>
+                </div>
+              </div>
+            </div>
 
             {/* 🔥 HIGH-END UNCOMMON LAUNCHPAD: GORGEOUS BENTO QUICK TRIGGER SHORTCUTS */}
             <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 rounded-3xl text-left shadow-[0_8px_30px_rgb(0,0,0,0.015)] space-y-4 relative overflow-hidden">
@@ -1974,7 +1858,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                 </div>
                 <div className="flex items-center gap-1.5 self-start sm:self-auto">
                   <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[9px] bg-indigo-500/10 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 font-mono font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-900/30">Active Deck</span>
+                  <span className="text-[9px] bg-indigo-500/10 dark:bg-indigo-950 text-indigo-650 dark:text-indigo-400 font-mono font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border border-indigo-100 dark:border-indigo-900/30">Active Deck</span>
                 </div>
               </div>
 
@@ -2323,7 +2207,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                         />
                       </svg>
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-xl font-black text-slate-850 dark:text-slate-100 font-mono leading-none tracking-tight">{paymentPercentage}%</span>
+                        <span className="text-xl font-black text-slate-855 dark:text-slate-100 font-mono leading-none tracking-tight">{paymentPercentage}%</span>
                         <span className="text-[8.5px] uppercase tracking-widest text-[#64748b] dark:text-slate-400 font-black mt-1 font-sans">পরিশোধিত</span>
                       </div>
                     </div>
@@ -2331,7 +2215,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                 })()}
               </div>
             </div>
-          </div>
+          </>
         )}
 
                 {/* 3. ACCOUNT OPTIONS SUB-TAB: SHOW BKASH, NAGAD, BANK ACCOUNT, BINANCE, PAYPAL DETAILS */}
