@@ -19,7 +19,17 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    const savedUser = localStorage.getItem('master_user');
+    if (savedUser) {
+      try {
+        return JSON.parse(savedUser);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
   const [isLoading, setIsLoading] = useState(() => {
     // Hydrate instantly from local storage cache if possible to skip loading flash entirely on refresh
     return !localStorage.getItem('master_user');
@@ -72,17 +82,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem('master_user', safeStringify(newUser));
         }
       } else {
-        // preserve 'admin' (mock) sessions
+        // preserve logged in user sessions
         const saved = localStorage.getItem('master_user');
         if (saved) {
           try {
             const parsed = JSON.parse(saved);
-            if (parsed.role === 'admin') {
-              setUser(parsed);
-            } else {
-              setUser(null);
-              localStorage.removeItem('master_user');
-            }
+            setUser(parsed);
           } catch (e) {
             setUser(null);
             localStorage.removeItem('master_user');
