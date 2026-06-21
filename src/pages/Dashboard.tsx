@@ -19,6 +19,7 @@ import {
   Legend
 } from 'recharts';
 import { Modal } from '../components/Modal';
+import { AdminPanel } from '../components/AdminPanel';
 import { CreateAppForm, CreateDecoderForm, CreatePanelForm, CreateUserForm } from '../components/CreateForms';
 import { Invoice, Investment, ActivityLog, User } from '../types';
 import { subscribeToInvoices, createDocument, subscribeToSettings, subscribeToCollection, updateInvoice, createInvoice } from '../lib/storage';
@@ -45,6 +46,10 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
   const { t } = useLanguage();
   const { user } = useAuth();
   const [activeModal, setActiveModal] = useState<ModalType>(null);
+  const [adminActiveTab, setAdminActiveTab] = useState<'overview' | 'approvals' | 'create_invoice' | 'records' | 'notes'>('overview');
+  const [adminLogSearch, setAdminLogSearch] = useState('');
+  const [adminInvoiceSearch, setAdminInvoiceSearch] = useState('');
+  const [activeInlineForm, setActiveInlineForm] = useState<'app' | 'decoder' | 'panel' | 'user' | 'create_invoice_direct'>('create_invoice_direct');
 
   // Client Dashboard Realtime Clock
   const [clientLocalTime, setClientLocalTime] = useState<string>('');
@@ -1517,6 +1522,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
 
   // States for Selected Payment Account Channel Viewer
   const [selectedAccountTab, setSelectedAccountTab] = useState<'bKash' | 'Nagad' | 'Upay' | 'Rocket' | 'Mcash' | 'Bank' | 'Binance' | 'PayPal'>('bKash');
+  const [gatewayViewStyle, setGatewayViewStyle] = useState<'mockup' | 'standard'>('mockup');
 
   const activeProviders = React.useMemo(() => {
     return [
@@ -2083,24 +2089,6 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                                     {panel.url || 'No URL Configured'}
                                   </a>
                                 </div>
-                                <span className={`px-2 py-0.5 rounded-full text-[8.5px] font-bold uppercase tracking-wider border ${
-                                  panel.status === 'active' 
-                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
-                                    : 'bg-slate-100 text-slate-500 border-slate-250'
-                                }`}>
-                                  {panel.status || 'Active'}
-                                </span>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-dashed border-slate-200/60 dark:border-slate-800 text-[10px] font-bold">
-                                <div>
-                                  <span className="text-slate-400 uppercase block text-[8px] font-black">Type</span>
-                                  <span className="text-slate-700 dark:text-slate-300 font-sans block truncate mt-0.5">{panel.panelType || 'New Connection'}</span>
-                                </div>
-                                <div>
-                                  <span className="text-slate-400 uppercase block text-[8px] font-black">Duration Limit</span>
-                                  <span className="text-indigo-600 dark:text-indigo-400 font-sans block truncate mt-0.5">{panel.duration || 'Unlimited'}</span>
-                                </div>
                               </div>
                             </div>
                           </div>
@@ -2109,8 +2097,8 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                     ) : (
                       <div className="py-8 text-center flex flex-col items-center justify-center border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
                         <AlertCircle size={28} className="text-slate-300 animate-pulse mb-2" />
-                        <p className="text-xs font-bold text-slate-400">কোন রিসেলিং প্যানেল ক্রয়ের স্লিপ পাওয়া যায়নি</p>
-                        <p className="text-[9.5px] text-slate-400 mt-1">রিসেলার প্যানেল প্যাক কিনতে পেমেন্ট রশিদ পাঠান।</p>
+                        <p className="text-xs font-bold text-slate-400">কোন রিসেলার প্যানেল পাওয়া যায়নি</p>
+                        <p className="text-[9.5px] text-slate-400 mt-1">পেমেন্ট রিকোয়েস্ট ফর্মে নতুন প্যানেল কেনার রিকোয়েস্ট পাঠান।</p>
                       </div>
                     )}
                   </div>
@@ -2126,28 +2114,8 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                             <div>
                               <div className="flex items-start justify-between">
                                 <div className="space-y-0.5">
-                                  <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight font-sans">Model: {dec.model || 'Decoder Code'}</h4>
-                                  <span className="text-[9.5px] font-mono text-slate-400 uppercase tracking-wider block mt-1 select-all">
-                                    Serial: {dec.serialNumber || 'N/A'}
-                                  </span>
-                                </div>
-                                <span className={`px-2 py-0.5 rounded-full text-[8.5px] font-bold uppercase tracking-wider border ${
-                                  dec.status === 'online' 
-                                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
-                                    : 'bg-slate-100 text-slate-500 border-slate-250'
-                                }`}>
-                                  {dec.status || 'Offline'}
-                                </span>
-                              </div>
-
-                              <div className="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-dashed border-slate-200/60 dark:border-slate-800 text-[10px] font-bold">
-                                <div>
-                                  <span className="text-slate-400 uppercase block text-[8px] font-black">Username</span>
-                                  <span className="text-indigo-600 dark:text-indigo-400 font-sans block truncate mt-0.5">{dec.username || 'Default'}</span>
-                                </div>
-                                <div>
-                                  <span className="text-slate-400 uppercase block text-[8px] font-black">Duration</span>
-                                  <span className="text-emerald-650 dark:text-emerald-400 font-sans block truncate mt-0.5">{dec.duration || 'N/A'}</span>
+                                  <h4 className="text-xs font-black text-slate-800 dark:text-slate-100 uppercase tracking-tight font-sans">{dec.name || 'License Key'}</h4>
+                                  <p className="text-[10px] font-mono text-emerald-650 dark:text-emerald-400 font-bold select-all">{dec.licenseKey || 'No key configured'}</p>
                                 </div>
                               </div>
                             </div>
@@ -2158,7 +2126,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                       <div className="py-8 text-center flex flex-col items-center justify-center border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
                         <AlertCircle size={28} className="text-slate-300 animate-pulse mb-2" />
                         <p className="text-xs font-bold text-slate-400">কোন ডিকোড লাইসেন্স পাওয়া যায়নি</p>
-                        <p className="text-[9.5px] text-slate-400 mt-1">ডিকোড লাইসেন্স কোড কিনতে পেমেন্ট ফরম সাবমিট করুন।</p>
+                        <p className="text-[9.5px] text-slate-400 mt-1">পেমেন্ট রিকোয়েস্ট ফর্মে নতুন ডিকোড লাইসেন্স কেনার রিকোয়েস্ট পাঠান।</p>
                       </div>
                     )}
                   </div>
@@ -2263,15 +2231,15 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                       <span>নির্বাচিত গেটওয়ে:</span>
                       <span className="font-sans font-black dark:text-slate-200 text-slate-800">{activeProviderDetails?.label || selectedAccountTab}</span>
                     </div>
-                    <div className="flex justify-between items-center text-slate-550 dark:text-slate-400 font-bold">
+                    <div className="flex justify-between items-center text-[#64748b] dark:text-slate-400 font-bold font-mono">
                       <span>নেট রিচার্জ অর্থ:</span>
                       <span className="font-black text-slate-800 dark:text-white">৳{parsedAmount.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between items-center text-slate-550 dark:text-slate-400 font-bold">
+                    <div className="flex justify-between items-center text-[#64748b] dark:text-slate-400 font-bold font-mono">
                       <span>প্রসেসিং ফি ({activeFeePercent}%):</span>
                       <span className="font-bold text-rose-605 dark:text-rose-455">+ ৳{computedCharge.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between items-center text-slate-855 dark:text-slate-100 font-black border-t border-dashed border-slate-200/80 dark:border-slate-700/60 pt-2 text-sm">
+                    <div className="flex justify-between items-center text-slate-855 dark:text-slate-100 font-black border-t border-dashed border-slate-200/80 dark:border-slate-700/60 pt-2 text-sm font-mono">
                       <span>মোট প্রয়োজনীয় পরিশোধ:</span>
                       <span className="text-indigo-650 dark:text-indigo-400">৳{computedTotal.toLocaleString()}</span>
                     </div>
@@ -2289,7 +2257,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                       <div className="h-7 w-7 rounded-lg bg-indigo-550/20 text-indigo-300 flex items-center justify-center border border-indigo-500/30">
                         <Sparkles size={14} className="stroke-[2.5]" />
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300 font-mono">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[#818cf8] font-mono">
                         পেমেন্ট ও রিচার্জ নির্দেশাবলী (Process Wizard)
                       </span>
                     </div>
@@ -2309,13 +2277,13 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                       </p>
                     </div>
 
-                    {/* Step 2 */}
+                    {/* Step-2 */}
                     <div className="relative">
                       <div className="absolute -left-[31px] top-0 h-4.5 w-4.5 rounded-full bg-slate-900 border-2 border-emerald-500 flex items-center justify-center shadow-md shadow-emerald-500/20">
                         <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                       </div>
-                      <span className="text-[9px] font-black uppercase tracking-widest text-emerald-400 font-mono">ধাপ ২ : সেন্ড মানি করুন</span>
-                      <p className="text-[11.5px] font-bold text-slate-200 leading-relaxed Bengali-Heading mt-0.5">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-emerald-450 font-mono">ধাপ ২ : সেন্ড মানি করুন</span>
+                      <p className="text-[11.5px] font-bold text-slate-205 leading-relaxed Bengali-Heading mt-0.5">
                         আপনার বিকাশ/নগদ/রকেট/বাইনান্স ওয়ালেট থেকে নির্দিষ্ট অর্থ সেন্ড মানি (মেক পেমেন্ট) সম্পন্ন করুন।
                       </p>
                     </div>
@@ -2859,6 +2827,9 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                 </div>
               </div>
             )}
+          </div>
+        );
+      })()}
 
               {/* Step 3: Top-Up Ticket details with live provider help card */}
               {activeSubTab === 'payment' && (
@@ -3159,12 +3130,12 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                               {copiedText === (settings.paypalEmail || 'masterbuild14@gmail.com') ? (
                                 <>
                                   <CheckCircle size={11} className="text-emerald-400" />
-                                   কপি হয়েছে
+                                  কপি হয়েছে
                                 </>
                               ) : (
                                 <>
                                   <Copy size={11} />
-                                   কপি করুন
+                                  কপি করুন
                                 </>
                               )}
                             </button>
@@ -3211,48 +3182,48 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                 </div>
               )}
 
-            {topUpSuccess && (
-              <div className="bg-emerald-50 text-emerald-700 text-xs font-bold p-4 rounded-xl border border-emerald-200/60 mb-6 animate-fade-in flex items-start gap-2 leading-relaxed text-left">
-                <CheckCircle size={18} className="shrink-0 text-emerald-500 mt-0.5" />
-                <span>{topUpSuccess}</span>
-              </div>
-            )}
-
-            {topUpError && (
-              <div className="bg-rose-50 text-rose-600 text-xs font-bold p-4 rounded-xl border border-rose-200/60 mb-6 animate-fade-in flex items-start gap-2 text-left">
-                <ShieldAlert size={18} className="shrink-0 text-rose-500 mt-0.5" />
-                <span>{topUpError}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleTopUpSubmit} className="space-y-5">
-              {/* Auto Billing Metadata Section */}
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1 font-sans">
-                    <FileText size={12} className="text-indigo-600" />
-                    ইনভয়েস নাম্বার (Invoice Number) *
-                  </label>
-                  <div className="relative flex items-center">
-                    <input 
-                      type="text" 
-                      value={clientInvoiceNumber} 
-                      readOnly 
-                      className="w-full bg-slate-100 border border-slate-250 rounded-xl py-2.5 pl-3.5 pr-10 text-xs font-mono font-black text-slate-700 outline-none select-all"
-                      placeholder="Generating..."
-                    />
-                    {!resubmittingInvoiceId && (
-                      <button 
-                        type="button" 
-                        onClick={generateNewInvoiceMeta}
-                        title="নতুন ইনভয়েস নাম্বার জেনারেট করুন"
-                        className="absolute right-2 p-1.5 bg-white text-indigo-600 hover:text-indigo-800 rounded-lg border border-slate-200/80 hover:bg-slate-50 transition-all font-sans active:scale-90"
-                      >
-                        <RefreshCw size={12} className="animate-spin-once" />
-                      </button>
-                    )}
-                  </div>
+              {topUpSuccess && (
+                <div className="bg-emerald-50 text-emerald-700 text-xs font-bold p-4 rounded-xl border border-emerald-200/60 mb-6 animate-fade-in flex items-start gap-2 leading-relaxed text-left">
+                  <CheckCircle size={18} className="shrink-0 text-emerald-500 mt-0.5" />
+                  <span>{topUpSuccess}</span>
                 </div>
+              )}
+
+              {topUpError && (
+                <div className="bg-rose-50 text-rose-600 text-xs font-bold p-4 rounded-xl border border-rose-200/60 mb-6 animate-fade-in flex items-start gap-2 text-left">
+                  <ShieldAlert size={18} className="shrink-0 text-rose-500 mt-0.5" />
+                  <span>{topUpError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleTopUpSubmit} className="space-y-5">
+                {/* Auto Billing Metadata Section */}
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1 font-sans">
+                      <FileText size={12} className="text-indigo-600" />
+                      ইনভয়েস নাম্বার (Invoice Number) *
+                    </label>
+                    <div className="relative flex items-center">
+                      <input 
+                        type="text" 
+                        value={clientInvoiceNumber} 
+                        readOnly 
+                        className="w-full bg-slate-100 border border-slate-250 rounded-xl py-2.5 pl-3.5 pr-10 text-xs font-mono font-black text-slate-700 outline-none select-all"
+                        placeholder="Generating..."
+                      />
+                      {!resubmittingInvoiceId && (
+                        <button 
+                          type="button" 
+                          onClick={generateNewInvoiceMeta}
+                          title="নতুন ইনভয়েস নাম্বার জেনারেট করুন"
+                          className="absolute right-2 p-1.5 bg-white text-indigo-600 hover:text-indigo-800 rounded-lg border border-slate-200/80 hover:bg-slate-50 transition-all font-sans active:scale-90"
+                        >
+                          <RefreshCw size={12} className="animate-spin-once" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
 
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 flex items-center gap-1 font-sans">
@@ -3353,24 +3324,20 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                               isSelected ? 'bg-indigo-50/20' : ''
                             }`}
                           >
-                            <div className="flex items-center gap-3.5">
-                              {/* Logo wrapper */}
+                            <div className="flex items-center gap-3.5 font-sans">
                               <div className="p-1 rounded-xl bg-slate-50 border border-slate-100 shadow-3xs shrink-0 flex items-center justify-center w-9 h-9">
                                 {provider.logo}
                               </div>
-
                               <div>
-                                <span className="font-black text-slate-800 text-[11px] block leading-snug tracking-tight">
+                                <span className="font-sans font-black text-slate-800 text-[11px] block leading-snug tracking-tight">
                                   {provider.label}
                                 </span>
-                                <span className="text-[8.5px] text-slate-400 font-extrabold block mt-0.5 uppercase tracking-wide">
+                                <span className="font-sans text-[8.5px] text-slate-400 font-extrabold block mt-0.5 uppercase tracking-wide">
                                   {provider.notes}
                                 </span>
                               </div>
                             </div>
-
-                            {/* Beautiful Circular Radio Indicator */}
-                            <div className="flex items-center">
+                            <div className="flex items-center font-sans">
                               {isSelected ? (
                                 <div className="w-5 h-5 rounded-full border-2 border-indigo-600 flex items-center justify-center transition-all scale-105 duration-300">
                                   <div className="w-2.5 h-2.5 rounded-full bg-indigo-600" />
@@ -3383,8 +3350,6 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                         );
                       })}
                     </div>
-
-                    {/* Cancel Footer Button */}
                     <div className="p-4 bg-slate-50 border-t border-slate-105 flex justify-end">
                       <button
                         type="button"
@@ -3398,136 +3363,6 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                 </div>
               )}
 
-              {/* TICKET DETAILS ROW GRID */}
-              <div className="bg-slate-50/70 border border-slate-200 rounded-2xl p-5 space-y-4 text-left shadow-3xs">
-                <div className="flex items-center gap-2 border-b border-slate-200/60 pb-3">
-                  <FileText size={16} className="text-indigo-600 dark:text-indigo-400" />
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-500 font-sans">
-                    {((settings.clientPaymentDetailsSectionLabel && settings.clientPaymentDetailsSectionLabel.trim()) ? settings.clientPaymentDetailsSectionLabel : 'পেমেন্ট ভেরিফিকেশন রশিদ তথ্য (Submit Ticket Details) *')}
-                  </h3>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
-                      {((settings.clientPaymentPurposeLabel && settings.clientPaymentPurposeLabel.trim()) ? settings.clientPaymentPurposeLabel : 'পেমেন্ট উদ্দেশ্য (Purpose / Product) *')}
-                    </label>
-                    <select 
-                      value={topUpPurpose} 
-                      onChange={(e) => {
-                        const purpose = e.target.value;
-                        setTopUpPurpose(purpose);
-                        if (!purpose) {
-                          setTopUpAmount('');
-                          setTicketDueAmount('');
-                        } else if (purpose === 'Reseller Panel Purchase') {
-                          const price = getPanelPrice(ticketPanelDuration);
-                          setTopUpAmount(price ? price.toString() : '');
-                          const paid = Number(ticketPaidAmount) || 0;
-                          setTicketDueAmount(price ? Math.max(0, price - paid).toString() : '');
-                        } else if (purpose === 'Decoder License Purchase') {
-                          const price = getDecoderPrice(ticketDecoderDuration);
-                          setTopUpAmount(price ? price.toString() : '');
-                          const paid = Number(ticketPaidAmount) || 0;
-                          setTicketDueAmount(price ? Math.max(0, price - paid).toString() : '');
-                        } else {
-                          setTopUpAmount('');
-                          setTicketDueAmount('');
-                        }
-                      }}
-                      className="w-full bg-white border border-slate-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-700 font-sans focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
-                      required
-                    >
-                      <option value="">-- উদ্দেশ্য নির্বাচন করুন (Select Purpose) * --</option>
-                      <option value="Android App Purchase">Android App Purchase (অ্যান্ড্রয়েড অ্যাপ ক্রয়)</option>
-                      <option value="Reseller Panel Purchase">Reseller Panel Pack (রিসেলার প্যানেল প্যাক)</option>
-                      <option value="Decoder License Purchase">Decoder License Purchase (ডিকোডার কোড ক্রয়)</option>
-                      <option value="Wallet Recharge">Wallet Recharge (ওয়ালেট রিচার্জ বা টপ-আপ)</option>
-                      <option value="Binance $ Purchase">Binance $ Purchase (বাইনেন্স ডলার ক্রয়)</option>
-                      <option value="Redotpay $ Purchase">Redotpay $ Purchase (রেডটপে ডলার ক্রয়)</option>
-                      <option value="Facebook Boost">Facebook Boost (ফেসবুক পেজ বুস্ট সার্ভিস)</option>
-                      <option value="Banner Making">Banner Making (প্রফেশনাল ব্যানার তৈরি)</option>
-                      <option value="Logo Making">Logo Making (ব্র্যান্ড লোগো ডিজাইন)</option>
-                      <option value="Others / Etc">Others / Etc (অন্যান্য সার্ভিস বা চুক্তি)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
-                      {((settings.clientPaymentTxnLabel && settings.clientPaymentTxnLabel.trim()) ? settings.clientPaymentTxnLabel : 'প্রেরক নাম্বার / লাস্ট ৫ ডিজিট *')}
-                    </label>
-                    <input 
-                      type="text" 
-                      value={topUpTxn} 
-                      onChange={(e) => setTopUpTxn(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl py-3 px-3.5 text-xs font-mono font-black text-slate-800 placeholder:text-slate-450 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
-                      placeholder="e.g. Bkash Last 5 Digit or TxID"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
-                      {((settings.clientPaymentAmountLabel && settings.clientPaymentAmountLabel.trim()) ? settings.clientPaymentAmountLabel : 'অনুরোধকৃত মোট জমার পরিমাণ *')}
-                    </label>
-                    <input 
-                      type="number" 
-                      value={topUpAmount} 
-                      onChange={(e) => {
-                        const amount = e.target.value;
-                        setTopUpAmount(amount);
-                        
-                        // Calculate paid / due balances for App / Panel / Decoder purchases
-                        if (topUpPurpose === 'Reseller Panel Purchase') {
-                          const price = getPanelPrice(ticketPanelDuration);
-                          setTicketDueAmount(price ? Math.max(0, price - (Number(amount) || 0)).toString() : '');
-                          setTicketPaidAmount(amount);
-                        } else if (topUpPurpose === 'Decoder License Purchase') {
-                          const price = getDecoderPrice(ticketDecoderDuration);
-                          setTicketDueAmount(price ? Math.max(0, price - (Number(amount) || 0)).toString() : '');
-                          setTicketPaidAmount(amount);
-                        }
-                      }}
-                      className="w-full bg-white border border-slate-200 rounded-xl py-3 px-3.5 text-xs font-mono font-black text-slate-800 placeholder:text-slate-450 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
-                      placeholder="e.g. 1500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
-                      {((settings.clientPaymentPaidLabel && settings.clientPaymentPaidLabel.trim()) ? settings.clientPaymentPaidLabel : 'টোটাল পেইড এমাউন্ট (Paid Amount)')}
-                    </label>
-                    <input 
-                      type="number" 
-                      value={ticketPaidAmount} 
-                      onChange={(e) => {
-                        const paid = e.target.value;
-                        setTicketPaidAmount(paid);
-                        const tot = Number(topUpAmount) || 0;
-                        setTicketDueAmount(Math.max(0, tot - (Number(paid) || 0)).toString());
-                      }}
-                      className="w-full bg-white border border-slate-200 rounded-xl py-3 px-3.5 text-xs font-mono font-black text-slate-800 placeholder:text-slate-450 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
-                      placeholder="e.g. 1500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">
-                      {((settings.clientPaymentDueLabel && settings.clientPaymentDueLabel.trim()) ? settings.clientPaymentDueLabel : 'টোটাল ডিউ এমাউন্ট (Due Amount)')}
-                    </label>
-                    <input 
-                      type="number" 
-                      value={ticketDueAmount} 
-                      onChange={(e) => setTicketDueAmount(e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl py-3 px-3.5 text-xs font-mono font-black text-slate-800 placeholder:text-slate-450 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
-                      placeholder="e.g. 0"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Dynamic Form extensions conditional blocks */}
               {topUpPurpose === 'Android App Purchase' && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl animate-fade-in text-left">
                   <div>
@@ -3548,33 +3383,29 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                       type="text" 
                       value={ticketAppPackageName}
                       onChange={(e) => setTicketAppPackageName(e.target.value)}
-                      className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-800 placeholder:text-slate-350 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
-                      placeholder="e.g. com.livetv.pro"
+                      className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-800 placeholder:text-slate-355 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none font-mono"
+                      placeholder="e.g. dev.masterbuild.tv"
                       required
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">প্রোটোকল (Protocol) *</label>
+                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">প্রোটোকল টাইপ (Protocol Type) *</label>
                     <select 
                       value={ticketAppProtocol} 
                       onChange={(e) => setTicketAppProtocol(e.target.value)}
                       className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-700 font-sans focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
                       required
                     >
-                      <option value="">-- সিলেক্ট প্রোটোকল * --</option>
-                      <option value="VJ Panel">VJ Panel</option>
-                      <option value="XCIPTV">XCIPTV</option>
-                      <option value="IBO Player">IBO Player</option>
-                      <option value="Next TV">Next TV</option>
-                      <option value="OTT Platinum">OTT Platinum</option>
-                      <option value="Smarters Pro">Smarters Pro</option>
-                      <option value="Other Protocol">Other Protocol</option>
+                      <option value="">-- প্রোটোকল সিলেক্ট * --</option>
+                      {Array.from({ length: 12 }, (_, i) => (
+                        <option key={i+1} value={`Protocol ${i+1}`}>Protocol {i+1}</option>
+                      ))}
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">কোয়ালিটি প্রোফাইল (Quality) *</label>
+                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">অ্যাপের কোয়ালিটি (App Quality) *</label>
                     <select 
                       value={ticketAppQuality} 
                       onChange={(e) => setTicketAppQuality(e.target.value)}
@@ -3582,8 +3413,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                       required
                     >
                       <option value="">-- কোয়ালিটি সিলেক্ট * --</option>
-                      <option value="SD Quality">SD Quality (বাজেট ফ্রেন্ডলি)</option>
-                      <option value="HD Quality">HD Quality (স্ট্যান্ডার্ড)</option>
+                      <option value="SD Quality">SD Quality (স্ট্যান্ডার্ড)</option>
                       <option value="FHD Quality">FHD Quality (প্রিমিয়াম)</option>
                       <option value="4K Quality">4K UHD Quality (আল্ট্রা প্রিমিয়াম)</option>
                     </select>
@@ -3598,9 +3428,9 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                       required
                     >
                       <option value="">-- অ্যাপ টাইপ সিলেক্ট * --</option>
-                      <option value="Single App">Single App (একক অ্যাপ)</option>
-                      <option value="Multi App">Multi App (মাল্টিপল সংযোগ)</option>
-                      <option value="Reseller App">Reseller App (রিসেলিং প্যানেল সমর্থিত)</option>
+                      {['Single App (একক অ্যাপ)', 'Multi App (মাল্টিপল সংযোগ)', 'Reseller App (রিসেলিং প্যানেল সমর্থিত)'].map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
                     </select>
                   </div>
 
@@ -3609,155 +3439,13 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                     <select 
                       value={ticketAppWorkType} 
                       onChange={(e) => setTicketAppWorkType(e.target.value)}
-                      className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-700 font-sans focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
+                      className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-705 font-sans focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
                       required
                     >
                       <option value="">-- কাজের ধরণ সিলেক্ট * --</option>
-                      <option value="New app compilation">New app compilation (নতুন অ্যাপ তৈরি)</option>
-                      <option value="App update config">App update config (অ্যাপ আপডেট)</option>
-                      <option value="App logo & name change">App logo & name change (রিব্র্যান্ডিং)</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-
-              {topUpPurpose === 'Reseller Panel Purchase' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl animate-fade-in text-left">
-                  <div>
-                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">প্যানেল ক্যাটাগরি (Panel Category) *</label>
-                    <select 
-                      value={ticketPanelName} 
-                      onChange={(e) => {
-                        const pName = e.target.value;
-                        setTicketPanelName(pName);
-                        const price = getPanelPrice(ticketPanelDuration);
-                        setTopUpAmount(price.toString());
-                        const paid = Number(ticketPaidAmount) || 0;
-                        setTicketDueAmount(Math.max(0, price - paid).toString());
-                      }}
-                      className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-700 font-sans focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
-                      required
-                    >
-                      <option value="">-- প্যানেল ক্যাটাগরি সিলেক্ট করুন * --</option>
-                      <option value="VJ Panel">VJ Panel</option>
-                      <option value="XC Panel">XC Panel</option>
-                      <option value="Stream Panel">Stream Panel</option>
-                      <option value="Other Reseller">Other Reseller Panel</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">প্যানেল ওয়েবলিংক (Panel Web Link) *</label>
-                    <input 
-                      type="url" 
-                      value={ticketPanelUrl}
-                      onChange={(e) => setTicketPanelUrl(e.target.value)}
-                      className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-800 placeholder:text-slate-350 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
-                      placeholder="e.g. http://mypanel.com:8080"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">মেয়াদ (Duration Limit) *</label>
-                    <select 
-                      value={ticketPanelDuration} 
-                      onChange={(e) => {
-                        const dur = e.target.value;
-                        setTicketPanelDuration(dur);
-                        const price = getPanelPrice(dur);
-                        setTopUpAmount(price.toString());
-                        const paid = Number(ticketPaidAmount) || 0;
-                        setTicketDueAmount(Math.max(0, price - paid).toString());
-                      }}
-                      className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-700 font-sans focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
-                      required
-                    >
-                      <option value="">-- মেয়াদ লিমিট সিলেক্ট * --</option>
-                      <option value="1 month">1 month (৳ {getPanelPrice('1 month')})</option>
-                      <option value="2 month">2 month (৳ {getPanelPrice('2 month')})</option>
-                      <option value="3 month">3 month (৳ {getPanelPrice('3 month')})</option>
-                      <option value="4 month">4 month (৳ {getPanelPrice('4 month')})</option>
-                      <option value="5 month">5 month (৳ {getPanelPrice('5 month')})</option>
-                      <option value="6 month">6 month (৳ {getPanelPrice('6 month')})</option>
-                      <option value="12 month">12 month (৳ {getPanelPrice('12 month')})</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">অর্ডার টাইপ (Subscription Type) *</label>
-                    <select 
-                      value={ticketPanelType} 
-                      onChange={(e) => setTicketPanelType(e.target.value)}
-                      className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-700 font-sans focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
-                      required
-                    >
-                      <option value="">-- অর্ডার টাইপ সিলেক্ট * --</option>
-                      <option value="New Connection">New Connection (নতুন সংযোগ)</option>
-                      <option value="Renew Connection">Renew Connection (রিনিউ সংযোগ)</option>
-                      <option value="App compilation addon">App compilation addon (অতিরিক্ত অ্যাডঅন)</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-
-              {topUpPurpose === 'Decoder License Purchase' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl animate-fade-in text-left">
-                  <div>
-                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">ইউজারনেম (Username) *</label>
-                    <input 
-                      type="text" 
-                      value={ticketDecoderUsername}
-                      onChange={(e) => setTicketDecoderUsername(e.target.value)}
-                      className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-800 placeholder:text-slate-350 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
-                      placeholder="e.g. janesmith"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">ইউজার টাইপ (User Type) *</label>
-                    <select 
-                      value={ticketDecoderUserType} 
-                      onChange={(e) => setTicketDecoderUserType(e.target.value)}
-                      className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-700 font-sans focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
-                      required
-                    >
-                      <option value="">-- ইউজার টাইপ সিলেক্ট করুন * --</option>
-                      <option value="New user">New user (নতুন ইউজার)</option>
-                      <option value="Old user">Old user (পুরানো ইউজার)</option>
-                      <option value="Renew">Renew (রিনিউ)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1.5 font-sans">মেয়াদ (Duration) *</label>
-                    <select 
-                      value={ticketDecoderDuration} 
-                      onChange={(e) => {
-                        const dur = e.target.value;
-                        setTicketDecoderDuration(dur);
-                        if (!dur) {
-                          setTopUpAmount('');
-                          setTicketDueAmount('');
-                          return;
-                        }
-                        const price = getDecoderPrice(dur);
-                        setTopUpAmount(price.toString());
-                        const paid = Number(ticketPaidAmount) || 0;
-                        setTicketDueAmount(Math.max(0, price - paid).toString());
-                      }}
-                      className="w-full bg-white border border-indigo-200 rounded-xl py-3 px-3.5 text-xs font-bold text-slate-700 font-sans focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 transition-all outline-none"
-                      required
-                    >
-                      <option value="">-- মেয়াদ সিলেক্ট করুন * --</option>
-                      <option value="1 month">1 month (৳ {getDecoderPrice('1 month')})</option>
-                      <option value="2 month">2 month (৳ {getDecoderPrice('2 month')})</option>
-                      <option value="3 month">3 month (৳ {getDecoderPrice('3 month')})</option>
-                      <option value="4 month">4 month (৳ {getDecoderPrice('4 month')})</option>
-                      <option value="5 month">5 month (৳ {getDecoderPrice('5 month')})</option>
-                      <option value="6 month">6 month (৳ {getDecoderPrice('6 month')})</option>
-                      <option value="12 month">12 month (৳ {getDecoderPrice('12 month')})</option>
+                      {['New app compilation', 'App update config', 'App logo & name change'].map(w => (
+                        <option key={w} value={w}>{w}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -3793,7 +3481,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                 </div>
               )}
 
-              <div className="pt-2">
+<div className="pt-2">
                 {!isFormValid && (
                   <p className="text-[9.5px] font-black text-amber-600 uppercase tracking-wider mb-2.5 bg-amber-50/50 border border-amber-100 p-2 rounded-lg text-center animate-pulse">
                     ⚠️ {settings.clientPaymentErrorMessage || 'ফর্মের সব অপশন ও তথ্য সঠিকভাবে নির্বাচন/পূরণ করুন।'}
@@ -3820,11 +3508,8 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
             </form>
           </>
         )}
-          </div>
-        );
-      })()}
 
-        {/* 1.5 CLIENT INVOICES SUB-TAB: SHOW ACTIVE INVOICES */}
+        				{/* 1.5 CLIENT INVOICES SUB-TAB: SHOW ACTIVE INVOICES */}
         {activeSubTab === 'invoices' && (
           <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-xs relative animate-fade-in space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
@@ -3962,28 +3647,24 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                                   </span>
                                 ) : (
                                   <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-rose-700 bg-rose-50 border border-rose-150 px-2 py-0.5 rounded-md">
-                                    ● Overdue
+                                    ● ${settings.clientPaymentOverdueStatusLabel || 'Overdue'}
                                   </span>
                                 )}
                               </td>
-                              <td className="p-4 whitespace-nowrap text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                  <button
-                                    onClick={() => handleUserPreviewInvoice(inv)}
-                                    className="p-1.5 text-indigo-150 text-indigo-650 hover:bg-indigo-50 border border-indigo-150 rounded-lg transition-all active:scale-95 flex items-center justify-center cursor-pointer"
-                                    title="রশিদ প্রিভিউ"
-                                  >
-                                    <Eye size={13} className="mr-1" />
-                                    রশিদ
-                                  </button>
-                                  <button
-                                    onClick={() => handleUserDownloadInvoice(inv)}
-                                    className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 rounded-lg transition-all active:scale-95 flex items-center justify-center cursor-pointer"
-                                    title="পিডিএফ ডাউনলোড"
-                                  >
-                                    <Download size={13} />
-                                  </button>
-                                </div>
+                              <td className="p-4 text-right whitespace-nowrap font-sans">
+                                {isPaid ? (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-black text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-lg">
+                                    সফলভাবে সম্পন্ন আছে।
+                                  </span>
+                                ) : isPending ? (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-black text-amber-600 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-lg">
+                                    অপেক্ষমান আছে
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-black text-rose-600 bg-rose-50 border border-rose-100 px-2 py-0.5 rounded-lg">
+                                    বকেয়া আছে
+                                  </span>
+                                )}
                               </td>
                             </tr>
                           );
@@ -3997,33 +3678,34 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
           </div>
         )}
 
-        {/* 1.6 REJECTED INVOICES SUB-TAB: SHOW REJECTED PAYMENT REQUESTS */}
+        {/* 1.6 REJECTED INVOICES HANDLER - SUB-TAB */}
         {activeSubTab === 'rejected_invoices' && (
-          <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-xs relative animate-fade-in space-y-5">
-            <div>
-              <h2 className="text-sm font-black text-rose-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                <ShieldAlert size={16} className="text-rose-600" />
-                বাতিলকৃত রিকোয়েস্ট আর্কাইভ (Rejected Requests Archive)
-              </h2>
-              <p className="text-xs text-rose-650 leading-relaxed font-sans mt-0.5">
-                নিচের পেমেন্ট রিকোয়েস্টগুলো এডমিন বাতিল করেছেন। আপনি ডাটা এডিট করে ভুল ট্রানজেকশন বা মোবাইল নম্বর সংশোধন করে পুনরায় পাঠাতে পারেন।
-              </p>
+          <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-xs relative animate-fade-in space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+              <div>
+                <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <ShieldAlert size={16} className="text-rose-600" />
+                  বাতিলকৃত পেমেন্ট রিকোয়েস্ট (Rejected Payment Requests)
+                </h2>
+                <p className="text-xs text-slate-500 leading-relaxed font-sans mt-0.5">
+                  আপনার বাতিলকৃত পেমেন্ট রিকোয়েস্টগুলো সঠিক তথ্য দিয়ে সংশোধন করে পুনরায় পাঠান।
+                </p>
+              </div>
             </div>
 
             {(() => {
               const rejectedList = userInvoicesList.filter(inv => inv.status === 'rejected');
-
               if (rejectedList.length === 0) {
                 return (
-                  <div className="p-12 text-center border-2 border-dashed border-slate-100 rounded-2xl bg-slate-50/20">
-                    <ShieldCheck size={42} className="mx-auto text-emerald-400 mb-3 block" />
-                    <span className="text-xs font-black text-slate-700 block mt-1">কোনো বাতিলকৃত রিকোয়েস্ট পাওয়া যায়নি!</span>
-                    <span className="text-[10px] text-slate-400 font-semibold mt-1 block">আপনার সকল পেমেন্ট ভেরিফিকেশন সফলভাবে সম্পন্ন আছে।</span>
+                  <div className="p-12 text-center border-2 border-dashed border-slate-100 rounded-2xl">
+                    <CheckCircle size={42} className="mx-auto text-emerald-400 mb-3 block" />
+                    <span className="text-xs font-black text-slate-700 block font-sans">কোনো বাতিলকৃত ইনভয়েস নেই</span>
+                    <span className="text-[10px] text-slate-400 font-semibold mt-1 block font-sans">আপনার সকল পেমেন্ট রিকোয়েস্ট সফলভাবে সম্পন্ন আছে।</span>
                   </div>
                 );
               }
 
-              return (
+            return (
                 <div className="space-y-4">
                   {rejectedList.map((inv) => {
                     let extractedReason = 'ভুল ট্রানজেকশন আইডি বা টাকা জমা হয়নি।';
@@ -4217,1731 +3899,67 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
   }
 
   return (
-    <div className="space-y-8 pb-12">
-{/* Premium Welcome & Control Tower Header */}
-      <div className="relative overflow-hidden bg-gradient-to-tr from-slate-950 via-slate-900 to-indigo-950 text-white rounded-[2rem] p-6 sm:p-8 shadow-xl border border-slate-800 animate-fade-in relative">
-        {/* Decorative Grid Mesh & Light Effects */}
-        <div className="absolute inset-0 bg-[radial-gradient(#312e81_1px,transparent_1px)] [background-size:16px_16px] opacity-10 pointer-events-none" />
-        <div className="absolute right-0 top-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
-        <div className="absolute left-1/3 bottom-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20"></div>
-        
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-2.5">
-            <div className="inline-flex items-center gap-2 bg-indigo-505/15 text-indigo-300 backdrop-blur-md px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-indigo-500/20 font-mono">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-              </span>
-              মাস্টার কন্ট্রোল ড্যাশবোর্ড (Live Admin Control Center)
-            </div>
-            <h1 className="text-2xl sm:text-3.5xl font-black tracking-tight leading-none bg-gradient-to-r from-white via-slate-100 to-indigo-200 bg-clip-text text-transparent animate-fade-in">
-              {currentUserData?.name || user?.name || 'Administrator'} 👋
-            </h1>
-            <p className="text-xs text-slate-400 leading-relaxed font-sans max-w-xl">
-              সিস্টেমের লেনদেন, বকেয়া রিপোর্টিং, কাস্টমার সার্ভিস ও অর্জিত মুনাফা রিয়েলটাইমে মনিটর করুন। নতুন সার্ভিস ও বিল রিসিট তৈরি করতে নিচের কুইক অ্যাকশন হাব ব্যবহার করুন।
-            </p>
-          </div>
-
-          {/* System Telemetry & Clock Widget */}
-          <div className="flex flex-wrap items-center gap-3 sm:gap-5 bg-white/[0.03] backdrop-blur-md p-5 rounded-2xl border border-white/10 shrink-0 shadow-lg">
-            <div className="space-y-1">
-              <span className="text-[9px] font-bold text-slate-400 uppercase block tracking-wider font-mono">চলতি সময় (Dhaka Local)</span>
-              <div className="flex items-center gap-2 font-sans">
-                <Clock size={14} className="text-emerald-400" />
-                <span className="text-xs font-black tracking-wider text-slate-100">
-                  {new Date().toLocaleDateString('bn-BD', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                </span>
-              </div>
-            </div>
-            <div className="h-8 w-[1px] bg-white/10 hidden sm:block"></div>
-            <div className="space-y-1">
-              <span className="text-[9px] font-bold text-slate-400 uppercase block tracking-wider font-mono">সার্ভার স্ট্যাটাস</span>
-              <div className="flex items-center gap-2 font-sans">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span className="text-[10px] font-black uppercase text-emerald-400 tracking-wider font-mono">99.9% Uptime Active</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ⚡ DIRECT ACTION: Pending Approval Requests Console (সরাসরি পেমেন্ট অনুমোদন প্যানেল) */}
-      {invoices.filter(inv => inv.status === 'pending').length > 0 ? (
-        <div className="bg-gradient-to-br from-amber-500/[0.02] via-slate-50/[0.02] to-transparent border border-amber-250 dark:border-amber-900/30 rounded-[2rem] p-6 sm:p-7 shadow-[0_12px_40px_rgba(245,158,11,0.03)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.15)] relative overflow-hidden transition-all duration-300">
-          <div className="absolute top-0 left-0 w-2 h-full bg-amber-500 pointer-events-none" />
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5 pb-4 border-b border-amber-100/50 dark:border-amber-900/20">
-            <div className="space-y-1.5">
-              <span className="text-[10px] bg-amber-500/10 text-amber-700 dark:text-amber-400 font-mono font-black px-3 py-1 rounded-full uppercase tracking-wider inline-flex items-center gap-2 border border-amber-200/50 dark:border-amber-900/30">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-450 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
-                </span>
-                Action Required (অ্যাকশন প্রয়োজন)
-              </span>
-              <h3 className="text-sm font-black text-slate-800 dark:text-slate-100 uppercase tracking-wider flex items-center gap-1.5 mt-1 font-mono">
-                পেন্ডিং বিল ও টপ-আপ পেমেন্ট অনুমোদন করুন (Direct Quick Invoice Approvals)
-              </h3>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-sans">নিচের রিকোয়েস্টগুলো কাস্টমার কর্তৃক সাবমিট করা হয়েছে। দ্রুত বিবরণী যাচাই করে এক ক্লিকে অনুমোদন বা রিজেক্ট করুনঃ</p>
-            </div>
-            <span className="text-xs bg-amber-500 text-white px-3.5 py-1.5 rounded-xl text-center font-black uppercase font-mono tracking-wider shadow-sm shrink-0 self-start md:self-auto">
-              {invoices.filter(inv => inv.status === 'pending').length} পেন্ডিং রিকোয়েস্ট
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {invoices.filter(inv => inv.status === 'pending').map((inv) => (
-              <div key={inv.id} className="bg-white border border-amber-250/75 rounded-2xl p-5 hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[10px] font-mono bg-amber-50 text-amber-700 font-black px-2 py-0.5 rounded-md uppercase border border-amber-200">
-                      #{inv.id?.substring(0, 8).toUpperCase()}
-                    </span>
-                    <span className="text-[9px] text-slate-400 font-semibold font-mono">{inv.date}</span>
-                  </div>
-
-                  <div className="space-y-2">
-                    <div className="text-xs">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">গ্রাহকের নাম</span>
-                      <strong className="text-slate-800 font-black">{inv.customerName}</strong>
-                      <span className="text-[10px] text-slate-500 font-mono ml-1">(@{inv.username})</span>
-                    </div>
-
-                    <div className="text-xs">
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">আবেদন বা ক্রয়ের উদ্দেশ্য</span>
-                      <strong className="text-indigo-600 font-extrabold">{inv.type || 'পেমেন্ট টপ-আপ (Wallet Top-Up)'}</strong>
-                      {inv.appName && <p className="text-[9px] text-slate-500 font-semibold italic mt-0.5">App: {inv.appName}</p>}
-                      {inv.panelName && <p className="text-[9px] text-slate-500 font-semibold italic mt-0.5">Panel: {inv.panelName}</p>}
-                      {inv.decoderUsername && <p className="text-[9px] text-slate-500 font-semibold italic mt-0.5">Decoder User: {inv.decoderUsername}</p>}
-                    </div>
-
-                    <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex justify-between items-center">
-                      <div>
-                        <span className="text-[9.5px] text-slate-405 font-black uppercase font-mono block tracking-wider">পেমেন্ট মেথড (TxID)</span>
-                        <span className="text-[11px] font-black text-slate-700 font-mono select-all block mt-0.5">{inv.paymentMethod || 'bKash/Nagad/Rocket'}</span>
-                        <span className="text-[10px] text-indigo-600 font-mono bg-indigo-55/60 px-1 py-0.2 rounded border border-indigo-150 select-all font-bold tracking-tight inline-block mt-1">{inv.transactionId || 'No TxID'}</span>
-                      </div>
-                      <div className="text-right flex flex-col items-end">
-                        <span className="text-[9.5px] text-rose-500 font-bold block uppercase tracking-wider">টাকার পরিমাণ</span>
-                        <span className="text-base font-black text-rose-600 font-mono">৳{(inv.amount || 0).toLocaleString()}</span>
-                        {inv.dueAmount && inv.dueAmount > 0 ? (
-                          <div className="text-[9px] font-black mt-1 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded text-amber-800 flex flex-col text-right">
-                            <span className="text-emerald-700 font-bold">পেইডঃ ৳{(inv.paidAmount || 0).toLocaleString()}</span>
-                            <span className="text-rose-605 font-bold">বাকিঃ ৳{(inv.dueAmount || 0).toLocaleString()}</span>
-                          </div>
-                        ) : (
-                          <span className="text-[8px] bg-emerald-100 text-emerald-800 font-black px-1.5 py-0.5 rounded uppercase tracking-wider block mt-1">FULL PAID</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex gap-2.5 mt-5 border-t border-slate-100 pt-3.5">
-                  <button
-                    disabled={isProcessingApproval !== null}
-                    onClick={() => handleRejectRequest(inv)}
-                    className="flex-1 py-2 rounded-xl text-[10px] font-black uppercase text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors disabled:opacity-50 cursor-pointer active:scale-95"
-                  >
-                    রিজেক্ট (Reject)
-                  </button>
-                  <button
-                    disabled={isProcessingApproval !== null}
-                    onClick={() => handleApproveRequest(inv)}
-                    className="flex-1 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-[10px] font-black uppercase shadow-xs select-none transition-all hover:shadow-md disabled:opacity-50 cursor-pointer flex items-center justify-center gap-1 active:scale-95"
-                  >
-                    {isProcessingApproval === inv.id ? (
-                      <>
-                        <RefreshCw size={11} className="animate-spin" />
-                        প্রসেস...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle size={11} />
-                        অনুমোদন দিন
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
-      {/* Dynamic Widget Settings Trigger Panel */}
-      {isAdmin && (
-      <div className="flex flex-col sm:flex-row justify-between sm:items-center bg-slate-50 border border-slate-200 rounded-[2rem] p-5.5 gap-4 shadow-xs/50 animate-fade-in">
-        <div className="flex items-center gap-3.5">
-          <div className="p-3 bg-indigo-50 text-indigo-650 rounded-2xl border border-indigo-100/50 shadow-sm shrink-0">
-            <Sliders size={20} className="stroke-[2.5]" />
-          </div>
-          <div>
-            <h3 className="text-xs font-black text-slate-855 uppercase tracking-widest">কাস্টমাইজড উইজেট কন্ট্রোল (Custom Layout & Drag-and-Drop)</h3>
-            <p className="text-[11px] text-slate-500 font-semibold font-sans mt-0.5">ড্যাশবোর্ড মেট্রিক কার্ডগুলো পিন/আনপিন করতে অথবা ড্র্যাগ করে পজিশন পরিবর্তন করতে এই কন্ট্রোল ব্যবহার করুন।</p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => setIsWidgetModalOpen(true)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-black uppercase tracking-wider py-2.5 px-4.5 rounded-xl flex items-center gap-2 shadow-md shadow-indigo-600/10 active:scale-95 transition-all outline-none"
-        >
-          <Sliders size={13} />
-          <span>উইজেট সাজান (Configure Panel)</span>
-        </button>
-      </div>
-      )}
-
-      {/* Bento Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-        {widgets.filter(w => w.isPinned).map((widget) => {
-          const helper = getWidgetValueAndInfo(widget.id);
-          const isDarkCard = widget.isDark;
-
-          return (
-            <motion.div 
-              key={widget.id}
-              layoutId={`widget-card-${widget.id}`}
-              draggable
-              onDragStart={(e) => {
-                e.dataTransfer.setData('text/plain', widget.id);
-              }}
-              onDragOver={(e) => {
-                e.preventDefault();
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                const sourceId = e.dataTransfer.getData('text/plain');
-                if (!sourceId || sourceId === widget.id) return;
-
-                const sourceIndex = widgets.findIndex(w => w.id === sourceId);
-                const targetIndex = widgets.findIndex(w => w.id === widget.id);
-                if (sourceIndex === -1 || targetIndex === -1) return;
-
-                const reordered = [...widgets];
-                const [removed] = reordered.splice(sourceIndex, 1);
-                reordered.splice(targetIndex, 0, removed);
-                
-                setWidgets(reordered);
-                localStorage.setItem('cached_dashboard_pinned_widgets', JSON.stringify(reordered));
-              }}
-              className={`cursor-grab active:cursor-grabbing p-6 rounded-[2rem] border shadow-xs relative overflow-hidden group hover:shadow-md hover:border-slate-350 transition-all h-full flex flex-col justify-between min-h-[170px] ${
-                isDarkCard 
-                  ? 'bg-slate-900 border-slate-800 text-white shadow-xl hover:bg-slate-950' 
-                  : 'bg-white border-slate-200 text-slate-800'
-              }`}
-            >
-              <div className="relative z-10">
-                <div className="flex justify-between items-start">
-                  <span className={`text-[10px] font-black uppercase tracking-widest ${isDarkCard ? 'text-indigo-300' : 'text-slate-400'}`}>
-                    {widget.id === 'totalRevenue' ? t('total_revenue') : widget.id === 'totalInvestment' ? t('total_investment') : widget.id === 'netProfit' ? t('net_profit') : widget.id === 'dueBalance' ? t('due_balance') : widget.label}
-                  </span>
-                  <div className={`p-2.5 rounded-xl group-hover:scale-110 transition-all ${
-                    isDarkCard 
-                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/10' 
-                      : widget.color
-                  }`}>
-                    {getWidgetIcon(widget.icon)}
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <span className={`text-[10px] font-bold block mb-0.5 font-sans ${isDarkCard ? 'text-rose-400' : 'text-slate-500'}`}>
-                    {widget.bangla}
-                  </span>
-                  <h3 className={`text-2xl sm:text-3xl font-black font-mono tracking-tight ${isDarkCard ? 'text-white' : 'text-slate-900'}`}>
-                    {helper.value}
-                  </h3>
-                </div>
-              </div>
-
-              <div className={`mt-4 pt-3 border-t flex items-center justify-between relative z-10 ${isDarkCard ? 'border-white/5' : 'border-slate-100'}`}>
-                {helper.sparkLine ? (
-                  <>
-                    <div className={`flex items-center gap-1 text-[9px] font-bold px-2.5 py-0.5 rounded-full ${helper.sparkDown ? 'text-rose-650 bg-rose-50' : 'text-emerald-700 bg-emerald-50'}`}>
-                      {!helper.sparkDown && <ArrowUpRight size={10} />}
-                      <span>{helper.bottomText}</span>
-                    </div>
-                    {/* SVG Sparkline Sparkle Graphic */}
-                    <svg className={`w-16 h-5 overflow-visible shrink-0 ${helper.sparkColor}`} viewBox="0 0 100 20" fill="none">
-                      <path 
-                        d={helper.sparkDown ? "M0,2 L20,14 L40,7 L60,18 L80,9 L100,15" : "M0,15 L20,8 L40,17 L60,4 L80,12 L100,2"} 
-                        stroke="currentColor" 
-                        strokeWidth="2.5" 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                      />
-                    </svg>
-                  </>
-                ) : helper.badge ? (
-                  <>
-                    <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded ${isDarkCard ? 'bg-white/5' : 'bg-slate-100'}`}>
-                      {helper.bottomText}
-                    </span>
-                    <span className={`text-[9px] font-black animate-pulse flex items-center gap-1 ${isDarkCard ? 'text-rose-400' : 'text-slate-600'}`}>
-                      {helper.badgeLabel || '● Active Tracking'}
-                    </span>
-                  </>
-                ) : helper.avatars ? (
-                  <>
-                    <span className="text-[9px] font-bold text-slate-400">{helper.bottomText}</span>
-                    <div className="flex -space-x-2.5 overflow-hidden filter saturate-110">
-                      <div className="w-5.5 h-5.5 rounded-full border-2 border-white bg-indigo-400 text-[8px] font-black flex items-center justify-center text-white">A</div>
-                      <div className="w-5.5 h-5.5 rounded-full border-2 border-white bg-emerald-400 text-[8px] font-black flex items-center justify-center text-white">S</div>
-                      <div className="w-5.5 h-5.5 rounded-full border-2 border-white bg-indigo-500 text-[8px] font-black flex items-center justify-center text-white">M</div>
-                    </div>
-                  </>
-                ) : helper.iconAlert ? (
-                  <div className="flex items-center gap-1 text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-100/40 px-2.5 py-0.5 rounded-md animate-pulse">
-                    <span>⚠️ {helper.bottomText}</span>
-                  </div>
-                ) : (
-                  <>
-                    <span className="text-[9.5px] font-bold italic text-slate-400">
-                      {helper.bottomText}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <div className={`w-2 h-2 rounded-full ${helper.indicator || 'bg-indigo-500'} animate-pulse shadow-md`} />
-                    </div>
-                  </>
-                )}
-              </div>
-              <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-slate-500/10 rounded-full blur-2xl group-hover:bg-slate-500/20 transition-all"></div>
-            </motion.div>
-          );
-        })}
-      </div>
-
-      {/* Daily Revenue Trends & Advanced Graph System Section */}
-      {isAdmin && (
-      <div className="bg-white p-6 sm:p-8 border border-slate-200 rounded-[2rem] shadow-sm space-y-6">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-slate-100 pb-5">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
-                <BarChart3 size={18} className="animate-pulse" />
-              </span>
-              <div>
-                <h2 className="text-base font-bold text-slate-900 tracking-tight">ইন্টারেক্টিভ রেভিনিউ ও প্রফিট অ্যানালিটিক্স (Interactive Revenue System)</h2>
-                <p className="text-xs text-slate-500 font-sans">
-                  {dailyRevenueData.monthNameBng} {dailyRevenueData.year} সালের রিয়েলটাইম পরিশোধিত ও অনুমোদিত পেমেন্টের মাল্টি-চার্ট বিশ্লেষণ
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          {/* Interactive Controls Panel */}
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-4">
-            {/* Metric Mode Select */}
-            <div className="bg-slate-50 p-1 rounded-2xl border border-slate-150 flex items-center gap-1 w-full sm:w-auto">
-              <button
-                type="button"
-                onClick={() => setChartMetricMode('daily')}
-                className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  chartMetricMode === 'daily'
-                    ? 'bg-white text-indigo-600 shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                দৈনিক আয়
-              </button>
-              <button
-                type="button"
-                onClick={() => setChartMetricMode('cumulative')}
-                className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  chartMetricMode === 'cumulative'
-                    ? 'bg-white text-indigo-600 shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                ক্রমবর্ধমান গ্রোথ
-              </button>
-              <button
-                type="button"
-                onClick={() => setChartMetricMode('profit')}
-                className={`flex-1 sm:flex-initial px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  chartMetricMode === 'profit'
-                    ? 'bg-white text-emerald-600 shadow-xs'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                ৮৫% নেট প্রফিট
-              </button>
-            </div>
-
-            {/* Visual Type Select */}
-            <div className="bg-slate-50 p-1 rounded-2xl border border-slate-150 flex items-center gap-1 w-full sm:w-auto">
-              <button
-                type="button"
-                onClick={() => setChartVisualType('bar')}
-                className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  chartVisualType === 'bar'
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-                title="Bar Chart"
-              >
-                বার চার্ট
-              </button>
-              <button
-                type="button"
-                onClick={() => setChartVisualType('area')}
-                className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  chartVisualType === 'area'
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-                title="Area Chart"
-              >
-                এরিয়া
-              </button>
-              <button
-                type="button"
-                onClick={() => setChartVisualType('line')}
-                className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                  chartVisualType === 'line'
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'text-slate-500 hover:text-slate-800'
-                }`}
-                title="Line Chart"
-              >
-                লাইন
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Dynamic Graphic Container */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-          {/* Chart column */}
-          <div className="lg:col-span-8 flex flex-col justify-between">
-            <div className="h-[320px] w-full pt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                {chartVisualType === 'bar' ? (
-                  <BarChart data={dailyRevenueData.data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis 
-                      dataKey="day" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700, fontFamily: 'monospace' }} 
-                      dy={8} 
-                    />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fill: '#64748b', fontSize: 10, fontWeight: 650, fontFamily: 'monospace' }} 
-                      dx={-4}
-                    />
-                    <Tooltip 
-                      cursor={{ fill: '#f8fafc', radius: 4 }}
-                      contentStyle={{ 
-                        borderRadius: '16px', 
-                        backgroundColor: '#0f172a', 
-                        color: '#ffffff',
-                        border: 'none', 
-                        boxShadow: '0 8px 16px -2px rgb(0 0 0 / 0.15)',
-                        padding: '12px 14px'
-                      }}
-                      labelStyle={{ fontWeight: 'black', marginBottom: '4px', fontSize: '11px', color: '#94a3b8' }}
-                      itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                      formatter={(value: any) => [`৳${Number(value).toLocaleString()}`, chartMetricMode === 'daily' ? 'দৈনিক রেভিনিউ' : chartMetricMode === 'cumulative' ? 'ক্রমবর্ধমান সংগ্রহ' : 'আনুমানিক লাভ']}
-                      labelFormatter={(label) => `${dailyRevenueData.monthName} ${label} তারিখ`}
-                    />
-                    <Bar 
-                      dataKey={chartMetricMode === 'daily' ? 'revenue' : chartMetricMode === 'cumulative' ? 'cumulative' : 'profit'} 
-                      fill={chartMetricMode === 'profit' ? '#10b981' : '#4f46e5'} 
-                      radius={[6, 6, 0, 0]} 
-                      maxBarSize={32}
-                    >
-                      {dailyRevenueData.data.map((entry, index) => {
-                        const val = chartMetricMode === 'daily' ? entry.revenue : chartMetricMode === 'cumulative' ? entry.cumulative : entry.profit;
-                        return (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={val > 0 ? (chartMetricMode === 'profit' ? '#10b981' : '#4f46e5') : '#e2e8f0'} 
-                          />
-                        );
-                      })}
-                    </Bar>
-                  </BarChart>
-                ) : chartVisualType === 'area' ? (
-                  <AreaChart data={dailyRevenueData.data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={chartMetricMode === 'profit' ? '#10b981' : '#4f46e5'} stopOpacity={0.35}/>
-                        <stop offset="95%" stopColor={chartMetricMode === 'profit' ? '#10b981' : '#4f46e5'} stopOpacity={0.0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis 
-                      dataKey="day" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700, fontFamily: 'monospace' }} 
-                      dy={8} 
-                    />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fill: '#64748b', fontSize: 10, fontWeight: 650, fontFamily: 'monospace' }} 
-                      dx={-4}
-                    />
-                    <Tooltip 
-                      contentStyle={{ 
-                        borderRadius: '16px', 
-                        backgroundColor: '#0f172a', 
-                        color: '#ffffff',
-                        border: 'none', 
-                        boxShadow: '0 8px 16px -2px rgb(0 0 0 / 0.15)',
-                        padding: '12px 14px'
-                      }}
-                      labelStyle={{ fontWeight: 'black', marginBottom: '4px', fontSize: '11px', color: '#94a3b8' }}
-                      itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                      formatter={(value: any) => [`৳${Number(value).toLocaleString()}`, chartMetricMode === 'daily' ? 'দৈনিক রেভিনিউ' : chartMetricMode === 'cumulative' ? 'ক্রমবর্ধমান সংগ্রহ' : 'আনুমানিক লাভ']}
-                      labelFormatter={(label) => `${dailyRevenueData.monthName} ${label} তারিখ`}
-                    />
-                    <Area 
-                      type="monotone"
-                      dataKey={chartMetricMode === 'daily' ? 'revenue' : chartMetricMode === 'cumulative' ? 'cumulative' : 'profit'} 
-                      stroke={chartMetricMode === 'profit' ? '#10b981' : '#4f46e5'} 
-                      strokeWidth={3}
-                      fillOpacity={1} 
-                      fill="url(#colorMetric)" 
-                    />
-                  </AreaChart>
-                ) : (
-                  <LineChart data={dailyRevenueData.data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                    <XAxis 
-                      dataKey="day" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700, fontFamily: 'monospace' }} 
-                      dy={8} 
-                    />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fill: '#64748b', fontSize: 10, fontWeight: 650, fontFamily: 'monospace' }} 
-                      dx={-4}
-                    />
-                    <Tooltip 
-                      contentStyle={{ 
-                        borderRadius: '16px', 
-                        backgroundColor: '#0f172a', 
-                        color: '#ffffff',
-                        border: 'none', 
-                        boxShadow: '0 8px 16px -2px rgb(0 0 0 / 0.15)',
-                        padding: '12px 14px'
-                      }}
-                      labelStyle={{ fontWeight: 'black', marginBottom: '4px', fontSize: '11px', color: '#94a3b8' }}
-                      itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                      formatter={(value: any) => [`৳${Number(value).toLocaleString()}`, chartMetricMode === 'daily' ? 'দৈনিক রেভিনিউ' : chartMetricMode === 'cumulative' ? 'ক্রমবর্ধমান সংগ্রহ' : 'আনুমানিক লাভ']}
-                      labelFormatter={(label) => `${dailyRevenueData.monthName} ${label} তারিখ`}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey={chartMetricMode === 'daily' ? 'revenue' : chartMetricMode === 'cumulative' ? 'cumulative' : 'profit'} 
-                      stroke={chartMetricMode === 'profit' ? '#10b981' : '#4f46e5'} 
-                      strokeWidth={3.5}
-                      dot={{ r: 3, strokeWidth: 1 }}
-                      activeDot={{ r: 6, strokeWidth: 0 }}
-                    />
-                  </LineChart>
-                )}
-              </ResponsiveContainer>
-            </div>
-            
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400 font-bold mt-4 font-sans">
-              <span>* রিয়েলটাইম ব্যাংক, গেটওয়ে এবং ক্যাশ ট্রানজেকশন ডেটা সিঙ্ক্রোনাইজড</span>
-              <span>সর্বশেষ আপডেট: {new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}</span>
-            </div>
-          </div>
-
-          {/* Interactive Intelligence Insights Sidebar Panel */}
-          <div className="lg:col-span-4 bg-slate-50 border border-slate-150 p-6 rounded-3xl flex flex-col justify-between space-y-5">
-            <div>
-              <span className="text-[10px] font-black tracking-widest text-indigo-500 uppercase block mb-1">Advanced Performance Insights</span>
-              <h3 className="text-sm font-bold text-slate-800">অ্যানালিটিক্স ওভারভিউ ({dailyRevenueData.monthNameBng})</h3>
-              <p className="text-[11px] text-slate-500 mt-1">চলতি মাসের পারফরম্যান্স খতিয়ানের অটোমেটেড ইন্টেলিজেন্স সারসংক্ষেপ</p>
-            </div>
-
-            <div className="space-y-4">
-              {/* Daily Average card */}
-              <div className="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-3">
-                <div className="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
-                  <TrendingUp size={16} />
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 font-black tracking-wider uppercase block">সার্বিক দৈনিক গড় আয়</span>
-                  <span className="text-sm font-black text-slate-800 font-mono">৳{dailyRevenueData.overallDailyAverage.toLocaleString()} <span className="text-[10px] text-slate-400 font-bold font-sans">/ দিন</span></span>
-                </div>
-              </div>
-
-              {/* Peak Revenue surge */}
-              <div className="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-3">
-                <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
-                  <Sparkles size={16} />
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 font-black tracking-wider uppercase block">সর্বোচ্চ পেমেন্ট জোয়ার (Peak Day)</span>
-                  <span className="text-sm font-black text-emerald-600 font-mono">
-                    ৳{dailyRevenueData.peakDayAmount.toLocaleString()} 
-                    {dailyRevenueData.peakDay > 0 && <span className="text-[10px] text-slate-500 font-bold font-sans"> (Day {dailyRevenueData.peakDay})</span>}
-                  </span>
-                </div>
-              </div>
-
-              {/* Successful Active Days */}
-              <div className="bg-white p-3.5 rounded-2xl border border-slate-100 shadow-xs flex items-center gap-3">
-                <div className="p-2.5 bg-violet-50 text-violet-600 rounded-xl">
-                  <Activity size={16} />
-                </div>
-                <div>
-                  <span className="text-[10px] text-slate-400 font-black tracking-wider uppercase block">পেমেন্ট একটিভ দিন সংখ্যা</span>
-                  <span className="text-sm font-black text-slate-800 font-mono">{dailyRevenueData.activeDaysCount} দিন <span className="text-[10px] font-sans text-slate-400 font-bold">({Math.round((dailyRevenueData.activeDaysCount / dailyRevenueData.data.length) * 100)}% active)</span></span>
-                </div>
-              </div>
-            </div>
-
-            {/* Monthly Budget goal milestone slider gauge */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-xs space-y-2">
-              <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-400">
-                <span>মাসিক টার্গেট গোল (৳250k)</span>
-                <span className="font-mono text-indigo-600 font-black">{Math.round((dailyRevenueData.total / 250000) * 100)}% অর্জিত</span>
-              </div>
-              <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-                <div 
-                  className="bg-indigo-600 h-full rounded-full transition-all duration-1000 shadow-[0_0_12px_rgba(79,70,229,0.4)]"
-                  style={{ width: `${Math.min(100, Math.round((dailyRevenueData.total / 250000) * 100))}%` }}
-                />
-              </div>
-              <span className="text-[9px] text-slate-400 font-bold block leading-relaxed italic">
-                * লক্ষ্যমাত্রা অর্জনে আরও ৳{Math.max(0, 250000 - dailyRevenueData.total).toLocaleString()} প্রয়োজন।
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-      )}
-
-      {/* 📊 ADVANCED LEDGER PERFORMANCE INSIGHTS (অ্যাডভান্সড কোম্পানির খতিয়ান ও পারফরম্যান্স বিশ্লেষণ হাব) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* 1. Service Sales Contribution Breakdown (ক্যাটাগরি ভিত্তিক বিক্রয় বিশ্লেষণ) */}
-        <div className="col-span-12 lg:col-span-4 bg-white p-6 border border-slate-200 rounded-[2rem] shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-              <div className="space-y-0.5">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Business Segments</span>
-                <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                  সার্ভিস ভিত্তিক বিক্রয় শেয়ার (Breakdown)
-                </h3>
-              </div>
-              <span className="text-[9px] font-bold text-indigo-650 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">Real-Time</span>
-            </div>
-
-            <div className="space-y-4">
-              {salesBreakdown.map((item, index) => (
-                <div key={index} className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-700 flex items-center gap-1.5">
-                      <span className={`w-2.5 h-2.5 rounded-full ${item.color}`}></span>
-                      {item.bangla}
-                    </span>
-                    <span className="font-mono font-black text-slate-900">
-                      ৳{item.value.toLocaleString()} ({item.percentage}%)
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                    <div 
-                      className={`h-full rounded-full transition-all duration-1000 ${item.color}`} 
-                      style={{ width: `${item.percentage}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="pt-3 border-t border-slate-100 mt-5 text-[10px] text-slate-400 font-semibold italic flex items-center justify-between">
-            <span>* শুধুমাত্র সফল বিল পরিশোধ গণনা করা হয়েছে</span>
-            <span>মোট 4 ক্যাটাগরি</span>
-          </div>
-        </div>
-
-        {/* 2. Audit Ledger & Financial Diagnostic Rating (ফাইন্যান্সিয়াল হেলথ স্কোর) */}
-        <div className="col-span-12 md:col-span-6 lg:col-span-4 bg-white p-6 border border-slate-200 rounded-[2rem] shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-              <div className="space-y-0.5">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Audit Security Indices</span>
-                <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                  ফাইন্যান্সিয়াল হেলথ রেশিও (Health Rating)
-                </h3>
-              </div>
-              <Activity size={14} className="text-emerald-500 animate-pulse" />
-            </div>
-
-            <div className="space-y-5">
-              <div className="flex items-center gap-4">
-                {/* Visual Circle Gauge Percentage using elegant standard HTML */}
-                <div className="relative w-24 h-24 shrink-0 flex items-center justify-center">
-                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="40" stroke="#f1f5f9" strokeWidth="8" fill="transparent" />
-                    <circle 
-                      cx="50" cy="50" r="40" 
-                      stroke={healthScore >= 80 ? "#10b981" : healthScore >= 50 ? "#f59e0b" : "#ef4444"} 
-                      strokeWidth="8" fill="transparent" 
-                      strokeDasharray={`${2 * Math.PI * 40}`}
-                      strokeDashoffset={`${2 * Math.PI * 40 * (1 - healthScore / 100)}`}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <span className="absolute font-mono font-black text-sm text-slate-900">{healthScore}%</span>
-                </div>
-
-                <div className="space-y-1">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Audit Score Interpretation</span>
-                  <span className={`text-xs font-black uppercase px-2 py-0.5 rounded-md inline-block ${
-                    healthScore >= 80 ? 'bg-emerald-50 text-emerald-700 border border-emerald-150' : 
-                    healthScore >= 50 ? 'bg-amber-50 text-amber-700 border border-amber-150' : 'bg-rose-50 text-rose-700 border border-rose-150'
-                  }`}>
-                    {healthScore >= 80 ? 'এক্সিলেন্ট হেলথ (Excellent)' : healthScore >= 50 ? 'মাঝারি ঝুঁকি (Moderate Risk)' : 'উচ্চ ঝুঁকি বকেয়া বকেয়া (Dangerous)'}
-                  </span>
-                  <p className="text-[10.5px] text-slate-500 font-semibold font-sans leading-relaxed">
-                    আদায়কৃত রেভিনিউ বনাম অনাদায়ী বকেয়া বিলের রেশিও অনুপাত বিশ্লেষণ করে রেটিং হিসাব করা হয়েছে।
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3 bg-slate-50/70 border border-slate-100 rounded-2xl space-y-1">
-                <span className="text-[9.5px] text-slate-400 font-bold block uppercase tracking-widest">Diagnostic Recommendation</span>
-                <p className="text-[10px] text-slate-650 leading-relaxed font-sans font-medium">
-                  {healthScore >= 80 
-                    ? 'চমৎকার! কোম্পানির ক্যাশফ্লো চমৎকার অবস্থায় রয়েছে।' 
-                    : healthScore >= 50 
-                    ? 'সতর্কীকরণঃ বকেয়া টাকার পরিমাণ বাড়ছে। দ্রুত পেন্ডিং ইনভয়েস কাস্টমারদের মনে করিয়ে দিন।'
-                    : 'ঝুঁকিঃ বকেয়ার পরিমাণ আশঙ্কাজনক। বকেয়া আদায় নিশ্চিত করুন।'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-3 border-t border-slate-100 mt-5 text-[10px] text-slate-400/80 font-mono font-black uppercase tracking-wider flex items-center justify-between">
-            <span>Verified System Index</span>
-            <span className="text-emerald-500">Live Secured</span>
-          </div>
-        </div>
-
-        {/* 3. Actionable Admin Notes (লাইভ নোটপ্যাড যা ব্রাউজারে সংরক্ষিত থাকবে) */}
-        {isAdmin && (
-        <div className="col-span-12 md:col-span-6 lg:col-span-4 bg-white p-6 border border-slate-200 rounded-[2rem] shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
-              <div className="space-y-0.5">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Admin Private Memo</span>
-                <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-                  নিরাপদ এডমিন কুইক নোটস / মেমো
-                </h3>
-              </div>
-              <div className="flex items-center gap-1">
-                {notesSaveSuccess && (
-                  <span className="text-[9px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md animate-fade-in">সেভ করা হয়েছে!</span>
-                )}
-                <FileText size={14} className="text-indigo-600" />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <textarea
-                value={adminNotes}
-                onChange={(e) => {
-                  setAdminNotes(e.target.value);
-                  localStorage.setItem('admin_desktop_sticky_notes', e.target.value);
-                  setNotesSaveSuccess(true);
-                  setTimeout(() => setNotesSaveSuccess(false), 1500);
-                }}
-                placeholder="এখানে জরুরী বিল আইডি, কাস্টমার ফোন নম্বর অথবা প্রসেসিং নোটস লিখে রাখতে পারেন যা সম্পূর্ণ স্বয়ংক্রিয়ভাবে ব্রাউজারে সংরক্ষিত থাকবে..."
-                className="w-full h-[125px] p-3 text-[11px] font-medium leading-relaxed text-slate-700 bg-amber-50/15 border border-amber-200/55 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-400/20 focus:bg-amber-50/20 resize-none font-sans"
-              />
-            </div>
-          </div>
-
-          <div className="pt-2 border-t border-slate-100 mt-4 flex items-center justify-between">
-            <button 
-              onClick={() => {
-                if (window.confirm('আপনি কি নোটপ্যাডের সব লেখা মুছে দিতে চান?')) {
-                  setAdminNotes('');
-                  localStorage.removeItem('admin_desktop_sticky_notes');
-                }
-              }}
-              className="text-[9.5px] font-black text-rose-500 uppercase hover:bg-rose-50 px-2 py-1 rounded-md transition-colors"
-            >
-              সব মুছুন
-            </button>
-            <span className="text-[9.5px] font-mono text-slate-400 font-semibold italic">● অটো-সেভ ইনডেক্স একটিভ</span>
-          </div>
-        </div>
-        )}
-      </div>
-
-      {/* Main Row: Double Panels */}
-      <div className="grid grid-cols-12 gap-6">
-        {/* Left Column: Financial Graph Area Flow */}
-        {false && (
-        <div className="col-span-12 lg:col-span-8">
-          <div className="bg-white p-6 sm:p-8 border border-slate-200 rounded-[2rem] shadow-sm flex flex-col justify-between h-full">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              <div className="space-y-1">
-                <div className="flex items-center gap-1.5">
-                  <BarChart3 size={16} className="text-indigo-600" />
-                  <h2 className="text-sm font-black text-slate-900 uppercase tracking-wider">{t('revenue_stream')}</h2>
-                </div>
-                <p className="text-[11px] text-slate-500 font-sans">কোম্পানির রেভিনিউ প্রবাহ এবং প্রাপ্ত পেমেন্টের গতিশীল গ্রাফ চার্ট প্রবাহ:</p>
-              </div>
-
-              {/* Graphical Filters Mock pills for aesthetic decoration */}
-              <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl w-fit shrink-0 border border-slate-200/50">
-                <button className="text-[9.5px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg bg-white text-slate-800 shadow-sm">সাপ্তাহিক</button>
-                <button className="text-[9.5px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg text-slate-500 hover:bg-white/50">মাসিক</button>
-                <button className="text-[9.5px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg text-slate-500 hover:bg-white/50">বাৎসরিক</button>
-              </div>
-            </div>
-
-            <div className="h-[320px] w-full pt-4 pr-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={defaultChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="premiumColorIncome" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.25}/>
-                      <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  
-                  <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#f1f5f9" />
-                  
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700, fontFamily: 'monospace' }} 
-                    dy={12} 
-                  />
-                  
-                  <YAxis 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 650, fontFamily: 'monospace' }} 
-                    dx={-4}
-                  />
-                  
-                  <Tooltip 
-                    contentStyle={{ 
-                      borderRadius: '16px', 
-                      backgroundColor: '#0f172a', 
-                      color: '#ffffff',
-                      border: 'none', 
-                      boxShadow: '0 8px 16px -2px rgb(0 0 0 / 0.15)',
-                      padding: '12px 14px'
-                    }}
-                    labelStyle={{ fontWeight: 'black', marginBottom: '4px', fontSize: '11px', color: '#94a3b8' }}
-                    itemStyle={{ fontSize: '12px', fontWeight: 'bold' }}
-                    formatter={(value: any) => [`৳${Number(value).toLocaleString()}`, 'রেভিনিউ']}
-                  />
-                  
-                  <Area 
-                    type="monotone" 
-                    dataKey="income" 
-                    stroke="#4f46e5" 
-                    fillOpacity={1} 
-                    fill="url(#premiumColorIncome)" 
-                    strokeWidth={3} 
-                    activeDot={{ r: 6, strokeWidth: 0, fill: '#4f46e5' }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 mt-6 pt-5 border-t border-slate-100">
-              <div className="flex gap-2 items-start">
-                <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 mt-1"></span>
-                <div className="space-y-0.5">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">কম্পিউটেড রেভিনিউ</span>
-                  <p className="text-xs font-bold text-slate-800">৳{stats.totalRevenue.toLocaleString()}</p>
-                </div>
-              </div>
-
-              <div className="flex gap-2 items-start">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 mt-1"></span>
-                <div className="space-y-0.5">
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">সার্ভার নেট পারফরম্যান্স</span>
-                  <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest font-mono">Verified Ledger</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        )}
-
-        {/* Right Column: Activities and Recent Invoices Split Container */}
-        <div className="col-span-12 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-          {/* Recent Activity Log Lists */}
-          <div className="bg-white border border-slate-200 rounded-[2rem] flex flex-col overflow-hidden h-fit">
-            <div className="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <div className="flex items-center gap-2">
-                <Clock size={15} className="text-indigo-600" />
-                <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">{t('recent_activities')}</h2>
-              </div>
-              <span className="text-[9px] font-mono bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">রিসেন্ট লগ</span>
-            </div>
-
-            <div className="p-4 space-y-3.5 max-h-[350px] overflow-y-auto divide-y divide-slate-100/60 leading-relaxed font-sans font-medium">
-              {activities.length > 0 ? (
-                activities.slice(0, 10).map((log, idx) => {
-                  const rawUser = log.user || 'admin@master';
-                  const cleanUser = rawUser.split('@')[0];
-                  const colorGradients = [
-                    'bg-gradient-to-br from-indigo-400 to-indigo-600',
-                    'bg-gradient-to-br from-violet-400 to-violet-600',
-                    'bg-gradient-to-br from-emerald-400 to-emerald-600',
-                    'bg-gradient-to-br from-amber-400 to-amber-600',
-                    'bg-gradient-to-br from-rose-400 to-rose-600'
-                  ];
-                  const idxGlow = cleanUser.charCodeAt(0) % colorGradients.length;
-                  const activeGrad = colorGradients[idxGlow];
-
-                  return (
-                    <div key={log.id} className="flex items-start gap-3.5 pt-3.5 first:pt-0 group border-none">
-                      <div className={`w-8 h-8 rounded-xl ${activeGrad} shadow-sm text-white text-[11px] font-black uppercase flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}>
-                        {cleanUser.substring(0, 2).toUpperCase()}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-bold text-slate-800 group-hover:text-indigo-600 transition-colors tracking-tight line-clamp-2 uppercase">
-                          {log.message}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[9px] text-slate-450 font-black tracking-wider uppercase bg-slate-100 px-1.5 py-0.5 rounded">
-                            {cleanUser}
-                          </span>
-                          <span className="text-[8px] text-slate-300">•</span>
-                          <span className="text-[9px] text-slate-400 font-semibold font-mono tracking-wider">
-                            {new Date(log.timestamp).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="py-12 text-center">
-                  <p className="text-xs text-slate-400 italic leading-relaxed">{t('no_recent_activities')}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Recent Invoices list */}
-          <div className="bg-white border border-slate-200 rounded-[2rem] flex flex-col overflow-hidden h-fit">
-            <div className="px-6 py-4.5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-              <div className="flex items-center gap-2">
-                <FileText size={15} className="text-indigo-600" />
-                <h2 className="text-xs font-black text-slate-800 uppercase tracking-wider">{t('recent_invoices')}</h2>
-              </div>
-              <span className="text-[9px] font-mono bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">রিসেন্ট বিল</span>
-            </div>
-
-            <div className="p-4 space-y-3 max-h-[350px] overflow-y-auto divide-y divide-slate-100/60 leading-relaxed font-sans">
-              {invoices.length > 0 ? (
-                invoices.slice(0, 8).map((inv, i) => (
-                  <div key={inv.id} className="flex items-start justify-between gap-3 pt-3 first:pt-0 group border-none hover:bg-slate-50/20 rounded-xl p-1.5 transition-colors">
-                    <div className="flex items-start gap-2.5 min-w-0">
-                      <div className={`w-2 h-2 mt-1.5 rounded-full shrink-0 ${
-                        inv.status === 'paid' ? 'bg-emerald-500 shadow-md shadow-emerald-200' : 
-                        inv.status === 'pending' ? 'bg-amber-500 shadow-md shadow-amber-200' : 'bg-rose-500'
-                      }`}></div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-black text-slate-800 truncate uppercase group-hover:text-indigo-600 transition-colors">
-                          {inv.customerName}
-                        </p>
-                        <p className="text-[9px] text-slate-400 font-semibold font-mono tracking-wider mt-0.5">
-                          #{inv.id.substring(0, 8)} • ৳{(inv.amount || 0).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-
-                    <span className={`text-[8.5px] font-black uppercase font-mono px-2 py-0.5 rounded-md self-center ${
-                      inv.status === 'paid' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' :
-                      inv.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
-                    }`}>
-                      {t(inv.status)}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <div className="py-12 text-center text-slate-400 text-xs italic leading-relaxed">
-                  {t('no_invoices')}
-                </div>
-              )}
-            </div>
-
-            <div className="p-4.5 border-t border-slate-100 bg-slate-50/40 text-center">
-              <span className="text-[10px] text-indigo-600 hover:text-indigo-700 font-black uppercase tracking-widest cursor-pointer inline-flex items-center gap-1">
-                {t('view_full_history')} <ChevronRight size={11} />
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Admin Quick Action Bento Hub - Activated & Polished (Moved Below) */}
-      {isAdmin && (
-      <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm mt-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
-          <div className="space-y-1">
-            <h3 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
-              <Sparkles size={15} className="text-indigo-600 animate-pulse" />
-              সিস্টেম এডমিন কুইক অ্যাকশন হাব (Quick Action Hub)
-            </h3>
-            <p className="text-[11px] text-slate-500 font-sans">কাস্টমারের জন্য পেমেন্ট বিল বা ইনভয়েস ক্যাটাগরি অনুযায়ী তাৎক্ষণিক রিয়েলটাইমে তৈরি করুন:</p>
-          </div>
-          <span className="text-[9px] font-mono bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full border border-indigo-100/50 font-black uppercase tracking-wider block w-fit">4 Modules Ready</span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { 
-              modalKey: 'app', 
-              label: settings.appLabel || 'Android App Link', 
-              bangla: 'অ্যান্ড্রয়েড অ্যাপ লাইসেন্স', 
-              color: 'from-blue-500 hover:from-blue-600', 
-              bgGlow: 'bg-blue-50 hover:border-blue-300', 
-              textColor: 'text-blue-700',
-              desc: 'রিমোট কন্ট্রোল অ্যাপ ডিকোড লিংক ও ইনভয়েস বিল'
-            },
-            { 
-              modalKey: 'decoder', 
-              label: settings.decoderLabel || 'Decoder System', 
-              bangla: 'ডিকোডার লাইসেন্স', 
-              color: 'from-emerald-500 hover:from-emerald-600', 
-              bgGlow: 'bg-emerald-50 hover:border-emerald-300', 
-              textColor: 'text-emerald-700',
-              desc: 'ডিকোডার প্যানেল এক্সেস লাইসেন্স ও চার্জ' 
-            },
-            { 
-              modalKey: 'panel', 
-              label: settings.panelLabel || 'Reseller Panel', 
-              bangla: 'রিসেলার প্যানেল প্যাক', 
-              color: 'from-violet-500 hover:from-violet-600', 
-              bgGlow: 'bg-violet-50 hover:border-violet-300', 
-              textColor: 'text-violet-700',
-              desc: 'রিসেলার রেন্ট বা সোর্স কোড ভাড়া চালান' 
-            },
-            { 
-              modalKey: 'user', 
-              label: settings.userLabel || 'Customer Account', 
-              bangla: 'নতুন ইউজার অ্যাকাউন্ট', 
-              color: 'from-indigo-500 hover:from-indigo-600', 
-              bgGlow: 'bg-indigo-50 hover:border-indigo-300', 
-              textColor: 'text-indigo-700',
-              desc: 'সরাসরি নতুন কাস্টমার প্রোফাইল সেটিংস তৈরি' 
-            }
-          ].map((action, idx) => (
-            <button
-              key={idx}
-              onClick={() => setActiveModal(action.modalKey as any)}
-              className="text-left p-5 rounded-2xl border border-slate-250 bg-white hover:bg-slate-50/55 transition-all cursor-pointer group hover:shadow-md hover:scale-[1.01] flex flex-col justify-between h-full min-h-[140px] relative overflow-hidden"
-            >
-              <div className="space-y-2 relative z-10">
-                <span className={`inline-block text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${action.bgGlow} ${action.textColor} border border-transparent group-hover:border-slate-300/30`}>
-                  {action.bangla}
-                </span>
-                <h4 className="text-sm font-black text-slate-900 group-hover:text-indigo-600 transition-colors uppercase">
-                  {action.label}
-                </h4>
-                <p className="text-[10px] text-slate-500 leading-relaxed font-sans font-medium line-clamp-2">
-                  {action.desc}
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between pt-3 relative z-10 border-t border-slate-100">
-                <span className="text-[10px] text-slate-500 group-hover:text-indigo-600 font-black tracking-wider uppercase flex items-center gap-0.5">
-                  তৈরি করুন <ChevronRight size={10} className="group-hover:translate-x-0.5 transition-transform" />
-                </span>
-                <div className={`p-1.5 rounded-lg bg-gradient-to-br ${action.color} text-white shadow-xs group-hover:rotate-6 transition-transform`}>
-                  <Plus size={13} />
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-      )}
-
-      {/* Modals */}
-      <Modal 
-        isOpen={activeModal === 'app'} 
-        onClose={() => setActiveModal(null)} 
-        title={`${t('create_new_invoice')} - ${settings.appLabel || t('apps')}`}
-      >
-        <CreateAppForm onSuccess={handleCreateSuccess} onCancel={() => setActiveModal(null)} />
-      </Modal>
-
-      <Modal 
-        isOpen={activeModal === 'decoder'} 
-        onClose={() => setActiveModal(null)} 
-        title={`${t('create_new_invoice')} - ${settings.decoderLabel || t('decoders')}`}
-      >
-        <CreateDecoderForm onSuccess={handleCreateSuccess} onCancel={() => setActiveModal(null)} />
-      </Modal>
-
-      <Modal 
-        isOpen={activeModal === 'panel'} 
-        onClose={() => setActiveModal(null)} 
-        title={`${t('create_new_invoice')} - ${settings.panelLabel || t('panels')}`}
-      >
-        <CreatePanelForm onSuccess={handleCreateSuccess} onCancel={() => setActiveModal(null)} />
-      </Modal>
-
-      <Modal 
-        isOpen={activeModal === 'user'} 
-        onClose={() => setActiveModal(null)} 
-        title={`${t('create_new_invoice')} - ${settings.userLabel || t('users')}`}
-      >
-        <CreateUserForm onSuccess={handleCreateSuccess} onCancel={() => setActiveModal(null)} />
-      </Modal>
-      
-      <Modal 
-        isOpen={activeModal === 'invoice'} 
-        onClose={() => setActiveModal(null)} 
-        title={t('preview_invoice')}
-      >
-        <div className="text-center py-8">
-          <p className="text-sm text-slate-500 mb-4">{t('invoice_gen_desc')}</p>
-          <button onClick={() => setActiveModal(null)} className="px-6 py-2 bg-indigo-600 text-white font-bold rounded-lg pointer-events-auto">{t('understood')}</button>
-        </div>
-      </Modal>
-
-      {/* Dynamic Widget Configuration Controller Modal */}
-      <Modal
-        isOpen={isWidgetModalOpen}
-        onClose={() => setIsWidgetModalOpen(false)}
-        title="⚙️ ড্যাশবোর্ড উইজেট সেটিংস (Configure Metrics Layout)"
-      >
-        <div className="space-y-6 max-h-[80vh] overflow-y-auto pr-1">
-          <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-4.5 flex gap-3">
-            <span className="text-xl shrink-0">💡</span>
-            <div>
-              <p className="text-[11px] font-black uppercase text-indigo-700 tracking-wider">উইজেট সর্টিং ও পিন পরামর্শ:</p>
-              <p className="text-[11.5px] text-indigo-900 leading-relaxed font-sans font-medium mt-1">
-                আপনার ড্যাশবোর্ডে কোন কোন মেট্রিক প্রদর্শন করতে চান তা নির্বাচন করুন। আপনি মোবাইল বা টাচ ডিভাইসে ড্যাশবোর্ড সাজাতে ২ পাশের <b>Chevron Arrow</b> বাটনগুলো ব্যবহার করে উপরে/নিচে করতে পারেন অথবা ডাবল-ক্লিক ড্র্যাগ করে ড্রপ করতে পারেন।
-              </p>
-            </div>
-          </div>
-
-          <div 
-            className="space-y-2.5 font-sans"
-            onDragOver={handleDragOver}
-          >
-            {widgets.map((widget, index) => {
-              const helper = getWidgetValueAndInfo(widget.id);
-              const isFirst = index === 0;
-              const isLast = index === widgets.length - 1;
-
-              return (
-                <div
-                  key={widget.id}
-                  draggable
-                  onDragStart={() => handleDragStart(index)}
-                  onDrop={() => handleDrop(index)}
-                  className={`flex items-center justify-between p-3.5 border rounded-2xl transition-all cursor-move group select-none ${
-                    widget.isPinned 
-                      ? 'bg-slate-50 border-slate-300 shadow-xs' 
-                      : 'bg-white border-slate-150 opacity-65 hover:opacity-100'
-                  }`}
-                >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="flex flex-col gap-0.5 pointer-events-none text-slate-300 group-hover:text-slate-450 shrink-0">
-                      <div className="w-1.5 h-1.5 rounded-full bg-current" />
-                      <div className="w-1.5 h-1.5 rounded-full bg-current" />
-                      <div className="w-1.5 h-1.5 rounded-full bg-current" />
-                    </div>
-
-                    <div className={`p-2 rounded-xl shrink-0 ${widget.isDark ? 'bg-slate-900 text-rose-300' : widget.color}`}>
-                      {getWidgetIcon(widget.icon)}
-                    </div>
-
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-[12px] font-black text-slate-800 uppercase tracking-tight truncate">
-                          {widget.label}
-                        </h4>
-                        {widget.isPinned && (
-                          <span className="bg-indigo-100 text-indigo-700 text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                            <Pin size={8} /> Pinned
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[10px] text-slate-500 font-bold truncate mt-0.5">
-                        {widget.bangla} • <span className="font-mono">{helper.value}</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2.5 shrink-0">
-                    {/* Touch device order switchers */}
-                    <div className="flex items-center bg-slate-150/40 rounded-xl border border-slate-200/50 overflow-hidden divide-x divide-slate-200/55">
-                      <button
-                        type="button"
-                        onClick={() => moveWidget(index, 'up')}
-                        disabled={isFirst}
-                        className={`p-2 transition-colors ${isFirst ? 'text-slate-250 cursor-not-allowed' : 'text-slate-500 hover:bg-slate-200/80'}`}
-                      >
-                        <ChevronUp size={14} />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => moveWidget(index, 'down')}
-                        disabled={isLast}
-                        className={`p-2 transition-colors ${isLast ? 'text-slate-250 cursor-not-allowed' : 'text-slate-500 hover:bg-slate-200/80'}`}
-                      >
-                        <ChevronDown size={14} />
-                      </button>
-                    </div>
-
-                    {/* Pin/Unpin trigger button */}
-                    <button
-                      type="button"
-                      onClick={() => toggleWidgetPin(widget.id)}
-                      className={`flex items-center gap-1.5 text-[9.5px] font-black uppercase tracking-wider px-3 py-2 rounded-xl transition-all ${
-                        widget.isPinned 
-                          ? 'bg-indigo-650 hover:bg-indigo-750 text-white shadow-xs' 
-                          : 'bg-slate-100 hover:bg-slate-200 text-slate-650'
-                      }`}
-                    >
-                      {widget.isPinned ? <PinOff size={11} /> : <Pin size={11} />}
-                      <span>{widget.isPinned ? 'Unpin' : 'Pin'}</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div className="pt-3 border-t border-slate-150 flex justify-end gap-3.5">
-            <button
-              onClick={() => {
-                const defaults = [
-                  { id: 'totalRevenue', label: 'Total Revenue', bangla: 'সর্বমোট রেভিনিউ', icon: 'Banknote', color: 'bg-indigo-50 text-indigo-600 border-indigo-150/40', isPinned: true },
-                  { id: 'totalInvestment', label: 'Total Investment', bangla: 'সর্বমোট ইনভেস্টমেন্ট', icon: 'TrendingDown', color: 'bg-rose-50 text-rose-600 border-rose-150/40', isPinned: true },
-                  { id: 'netProfit', label: 'Net Profit', bangla: 'প্রকৃত প্রফিট', icon: 'TrendingUp', color: 'bg-emerald-50 text-emerald-700 border-emerald-150/40', isPinned: true },
-                  { id: 'dueBalance', label: 'Due Balance', bangla: 'গ্রাহক বকেয়া ঋণ', icon: 'Activity', color: 'bg-slate-900 text-rose-300 border-slate-800', isPinned: true, isDark: true },
-                  { id: 'totalUsers', label: 'Registered Customers', bangla: 'রেজিস্টার্ড গ্রাহক', icon: 'Users', color: 'bg-violet-50 text-violet-600 border-violet-150/40', isPinned: true },
-                  { id: 'todayPending', label: 'Today\'s Pending Payments', bangla: 'আজকের পেন্ডিং পেমেন্ট', icon: 'Clock', color: 'bg-amber-50 text-amber-600 border-amber-150/40', isPinned: false },
-                  { id: 'todayRevenue', label: 'Today\'s Revenue', bangla: 'আজকের মোট কালেকশন', icon: 'Wallet', color: 'bg-teal-50 text-teal-600 border-teal-150/40', isPinned: false },
-                  { id: 'activeDecoders', label: 'Total Active Decoders', bangla: 'মোট সক্রিয় ডিকোডার', icon: 'Cpu', color: 'bg-sky-50 text-sky-600 border-sky-150/40', isPinned: false },
-                  { id: 'activePanels', label: 'Total Active Panels', bangla: 'মোট সক্রিয় প্যানেল', icon: 'Layers', color: 'bg-fuchsia-50 text-fuchsia-600 border-fuchsia-150/40', isPinned: false },
-                  { id: 'activeApps', label: 'Total Created Apps', bangla: 'তৈরিকৃত মোট অ্যাপস', icon: 'Play', color: 'bg-red-50 text-red-650 border-red-150/40', isPinned: false },
-                ];
-                setWidgets(defaults);
-                try {
-                  localStorage.setItem('cached_dashboard_pinned_widgets', JSON.stringify(defaults));
-                } catch (e) {
-                  console.error(e);
-                }
-              }}
-              className="px-4 py-2 border border-slate-200 text-slate-500 hover:text-slate-800 text-[10.5px] font-black uppercase tracking-wider rounded-xl hover:bg-slate-50 transition-colors"
-            >
-              রিসেট (Reset Layout)
-            </button>
-            <button
-              onClick={() => setIsWidgetModalOpen(false)}
-              className="px-5 py-2.5 bg-slate-900 hover:bg-slate-950 text-white text-[10.5px] font-black uppercase tracking-wider rounded-xl transition-all shadow-xs"
-            >
-              সম্পূর্ণ (Close)
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Direct Create Invoice Modal */}
-      <Modal
-        isOpen={activeModal === 'create_invoice_direct'}
-        onClose={() => setActiveModal(null)}
-        title="📝 নতুন ইনভয়েস তৈরি করুন (Create General Invoice)"
-      >
-        <form onSubmit={handleCreateDirectInvoiceSubmit} className="space-y-4 font-sans text-left">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Invoice Number</label>
-              <input
-                type="text"
-                required
-                value={directInvoiceNum}
-                onChange={(e) => setDirectInvoiceNum(e.target.value)}
-                className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-bold"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Service / Invoice Type</label>
-              <select
-                value={directInvoiceType}
-                onChange={(e) => setDirectInvoiceType(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-bold cursor-pointer"
-              >
-                <option value="Apps">Android Apps</option>
-                <option value="Decoder">Decoder Package</option>
-                <option value="Panel">Reseller Panel</option>
-                <option value="User">User Account</option>
-                <option value="Finance">General Service</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Customer Name (গ্রাহকের নাম)</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Abdur Rahman"
-              value={directInvoiceCustomerName}
-              onChange={(e) => setDirectInvoiceCustomerName(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-semibold"
-            />
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-1">
-              <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Country</label>
-              <select
-                value={directInvoiceCountryCode}
-                onChange={(e) => setDirectInvoiceCountryCode(e.target.value)}
-                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-black cursor-pointer"
-              >
-                {localCountryCodes.map((c) => (
-                  <option key={c.code} value={c.code}>{c.label} {c.code}</option>
-                ))}
-              </select>
-            </div>
-            <div className="col-span-2">
-              <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Phone Number</label>
-              <input
-                type="tel"
-                required
-                placeholder="17XXXXXXXX"
-                value={directInvoicePhone}
-                onChange={(e) => setDirectInvoicePhone(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-semibold font-mono"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Payment Method</label>
-              <select
-                value={directInvoicePaymentMethod}
-                onChange={(e) => setDirectInvoicePaymentMethod(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-semibold cursor-pointer"
-              >
-                <option value="bKash">bKash</option>
-                <option value="Nagad">Nagad</option>
-                <option value="Rocket">Rocket</option>
-                <option value="Upay">Upay</option>
-                <option value="CellFin">CellFin</option>
-                <option value="Bank">Bank Transfer</option>
-                <option value="Binance">Binance (USDT)</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Transaction ID</label>
-              <input
-                type="text"
-                placeholder="TXN-XXXXXX"
-                value={directInvoiceTxnId}
-                onChange={(e) => setDirectInvoiceTxnId(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-semibold font-mono"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Total Fee (টাকা)</label>
-              <input
-                type="number"
-                required
-                min="0"
-                placeholder="0"
-                value={directInvoiceAmount}
-                onChange={(e) => handleDirectInvoiceAmountChange(e.target.value, 'amount')}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-bold font-mono"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Paid Amount (পরিশোধ)</label>
-              <input
-                type="number"
-                required
-                min="0"
-                placeholder="0"
-                value={directInvoicePaid}
-                onChange={(e) => handleDirectInvoiceAmountChange(e.target.value, 'paid')}
-                className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-bold font-mono"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Due Amount (বকেয়া)</label>
-              <input
-                type="text"
-                readOnly
-                value={`৳${directInvoiceDue}`}
-                className="w-full px-4 py-2.5 bg-slate-100 border border-slate-150 rounded-xl text-slate-650 cursor-not-allowed outline-none text-xs font-black font-mono"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-black text-slate-400 uppercase tracking-wider mb-1">Note / Description (মন্তব্য)</label>
-            <textarea
-              placeholder="e.g. Initial customer setup fee"
-              value={directInvoiceNote}
-              onChange={(e) => setDirectInvoiceNote(e.target.value)}
-              rows={2}
-              className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-xs font-medium resize-none"
-            />
-          </div>
-
-          <div className="pt-4 border-t border-slate-150 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setActiveModal(null)}
-              className="px-5 py-2 border border-slate-200 text-slate-500 hover:text-slate-800 text-[11px] font-black uppercase tracking-wider rounded-xl hover:bg-slate-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isDirectInvoiceSaving}
-              className="px-5 py-2.5 bg-indigo-650 hover:bg-indigo-750 text-white text-[11px] font-black uppercase tracking-wider rounded-xl transition-all shadow-xs flex items-center gap-1.5 active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
-            >
-              {isDirectInvoiceSaving ? 'তৈরি হচ্ছে...' : 'ইনভয়েস তৈরি করুন (Generate)'}
-            </button>
-          </div>
-        </form>
-      </Modal>
-
-      {/* User Invoice Preview Modal */}
-      {selectedUserInvoice && showInvoicePreviewModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-[850px] w-full max-h-[90vh] flex flex-col my-8">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-bold text-slate-900">ইনভয়েস বা বিল রশিদ (Invoice Statement)</h2>
-                <p className="text-xs text-slate-500">অনুমোদিত বিল বা পরিশোধিত ওয়ালেট টপ-আপ রশিদ বিবরণী:</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <button 
-                  onClick={() => handleUserDownloadInvoice(selectedUserInvoice)}
-                  className="flex items-center gap-1 px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold text-xs hover:bg-indigo-700 active:scale-95 transition-all shadow-md shadow-indigo-100"
-                >
-                  <FileText size={13} />
-                  ডাউনলোড করুন (PDF)
-                </button>
-                <button 
-                  onClick={() => {
-                    setShowInvoicePreviewModal(false);
-                    setSelectedUserInvoice(null);
-                  }}
-                  className="p-2 text-slate-400 hover:text-slate-900 bg-slate-100 rounded-xl transition-colors"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            </div>
-            
-            <div className="flex-1 overflow-auto p-4 md:p-6 bg-slate-50">
-              <div id={`user-invoice-preview-${selectedUserInvoice.id}`} className="bg-white shadow-xl rounded-sm mx-auto p-2" style={{ width: '100%', maxWidth: '750px' }}>
-                <InvoiceTemplate 
-                  id={`invoice-${selectedUserInvoice.id}`}
-                  invoice={selectedUserInvoice} 
-                  settings={settings as CompanySettings} 
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* User PDF Generation loading cover */}
-      {isUserGeneratingPdf && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-          <div className="bg-white p-7 rounded-2xl shadow-xl flex flex-col items-center">
-            <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mb-3"></div>
-            <p className="text-xs font-bold text-slate-900">PDF তৈরি হচ্ছে...</p>
-            <p className="text-[10px] text-slate-400 mt-1">অনুগ্রহ করে একটু অপেক্ষা করুন</p>
-          </div>
-        </div>
-      )}
-
-      {/* Dynamic Payment Approval Success Notification Modal */}
-      <Modal
-        isOpen={approvedNotificationModal.isOpen}
-        onClose={() => setApprovedNotificationModal(prev => ({ ...prev, isOpen: false }))}
-        title="🎉 পেমেন্ট সফলভাবে অনুমোদিত হয়েছে! (Payment Approved)"
-      >
-        {approvedNotificationModal.invoice && (() => {
-          const inv = approvedNotificationModal.invoice;
-          const u = approvedNotificationModal.user;
-          
-          const defaultWa = 'আসসালামু আলাইকুম {name}!\n\nআপনার BDT {paid} মূল্যের পেমেন্ট আবেদনটি আমাদের সিস্টেমে সফলভাবে অনুমোদিত (Approved) হয়েছে। 🎉\n\n📌 বিবরণ:\n- পেমেন্ট উদ্দেশ্য: {purpose}\n- পেমেন্ট মাধ্যম: {method}\n- ট্রানজেকশন ID: {txn}\n- চলতি বকেয়া: ৳{due}\n\nআমাদের সেবা ব্যবহারের জন্য আপনাকে ধন্যবাদ!\n- {company}';
-          const defaultSubject = '🎉 Payment Approved & Receipt Confirmed - {id}';
-          const defaultBody = 'আসসালামু আলাইকুম {name}!\n\nআমরা আনন্দের সাথে জানাচ্ছি যে আপনার পেমেন্ট রিকোয়েস্টটি সফলভাবে অনুমোদিত হয়েছে এবং আপনার অ্যাকাউন্ট ব্যালেন্স সচল করা হয়েছে।\n\n📌 বিবরণ:\n- পেমেন্ট উদ্দেশ্য: {purpose}\n- পেমেন্ট মাধ্যম: {method}\n- ট্রানজেকশন ID: {txn}\n- পরিশোধকৃত মোট অ্যামাউন্ট: ৳{paid}\n- চলতি বকেয়া (Due Amount): ৳{due}\n- ইনভয়েস আইডি: INV-{id}\n\nযেকোনো সমস্যায় লাইভ চ্যাট অথবা কাস্টমার কেয়ারে যোগাযোগ করুন।\n\nধন্যবাদ,\n{company} টিম';
-
-          const waTemplate = settings.paymentApproveWaTemplate || defaultWa;
-          const subjectTemplate = settings.paymentApproveEmailSubjectTemplate || defaultSubject;
-          const bodyTemplate = settings.paymentApproveEmailBodyTemplate || defaultBody;
-
-          const shortId = inv.id ? inv.id.substring(0, 8).toUpperCase() : 'N/A';
-          const currentDue = u ? (u.dueAmount ?? 0) : (inv.dueAmount ?? 0);
-          const purpose = inv.type || 'Wallet Top-Up';
-          const method = inv.paymentMethod || 'Bkash/Nagad';
-          const txn = inv.transactionId || 'N/A';
-          const companyName = settings.companyName || settings.sidebarTitle || 'Master Service';
-          const customerName = inv.customerName || u?.name || 'গ্রাহক';
-
-          const resolveFields = (text: string) => {
-            return text
-              .replace(/{name}/g, customerName)
-              .replace(/{paid}/g, (inv.amount || 0).toLocaleString())
-              .replace(/{due}/g, currentDue.toLocaleString())
-              .replace(/{purpose}/g, purpose)
-              .replace(/{id}/g, shortId)
-              .replace(/{method}/g, method)
-              .replace(/{txn}/g, txn)
-              .replace(/{company}/g, companyName);
-          };
-
-          const finalWaMsg = resolveFields(waTemplate);
-          const finalSubj = resolveFields(subjectTemplate);
-          const finalBody = resolveFields(bodyTemplate);
-
-          const cleanPhone = (phone: string) => {
-            let cleaned = phone.replace(/[^\d]/g, '');
-            if (cleaned.startsWith('880880')) {
-              cleaned = cleaned.slice(3);
-            } else if (cleaned.startsWith('8800')) {
-              cleaned = '880' + cleaned.slice(4);
-            }
-            if (cleaned.startsWith('0') && cleaned.length === 11) {
-              cleaned = '88' + cleaned;
-            } else if (cleaned.length === 10 && /^[13456789]/.test(cleaned)) {
-              cleaned = '880' + cleaned;
-            }
-            return cleaned;
-          };
-
-          const recipientNumber = inv.customerNumber || (inv as any).phone || u?.phone || '';
-          const phoneForWa = cleanPhone(recipientNumber);
-          const emailAddress = inv.customerEmail || (inv as any).email || u?.email || '';
-
-          const waUrl = `https://api.whatsapp.com/send?phone=${phoneForWa}&text=${encodeURIComponent(finalWaMsg)}`;
-          const waUrlBus = `https://wa.me/${phoneForWa}?text=${encodeURIComponent(finalWaMsg)}`;
-          const mailtoUrl = `mailto:${emailAddress}?subject=${encodeURIComponent(finalSubj)}&body=${encodeURIComponent(finalBody)}`;
-
-          return (
-            <div className="space-y-5 text-left py-2">
-              <div className="bg-emerald-50/50 border border-emerald-100 p-4 rounded-2xl flex items-center gap-3">
-                <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center text-white font-bold text-lg">
-                  ✓
-                </div>
-                <div>
-                  <h4 className="text-sm font-black text-emerald-800">পেমেন্ট সফলভাবে ভেরিফাই ও এপ্রুভ হয়েছে!</h4>
-                  <p className="text-xs text-emerald-600 font-bold">ইনভয়েস: INV-{shortId} | অ্যামাউন্ট: ৳{(inv.amount || 0).toLocaleString()}</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="border border-slate-150 rounded-xl overflow-hidden shadow-xs">
-                  <div className="bg-slate-50 px-4 py-2 border-b border-slate-150 flex justify-between items-center">
-                    <span className="text-xs font-black text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                      <MessageSquare size={13} className="text-emerald-500" />
-                      Option A: WhatsApp Notification
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400">📞 {phoneForWa || 'No number'}</span>
-                  </div>
-                  <div className="p-4 bg-white space-y-3">
-                    <div className="bg-slate-50 p-3 rounded-lg text-xs font-medium text-slate-700 whitespace-pre-line border border-slate-100 max-h-36 overflow-y-auto">
-                      {finalWaMsg}
-                    </div>
-                    {phoneForWa ? (
-                      <div className="grid grid-cols-2 gap-2">
-                        <a 
-                          href={waUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => setApprovedNotificationModal(prev => ({ ...prev, isOpen: false }))}
-                          className="flex items-center justify-center gap-1.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 text-center cursor-pointer font-sans"
-                        >
-                          Send WhatsApp
-                        </a>
-                        <a 
-                          href={waUrlBus}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={() => setApprovedNotificationModal(prev => ({ ...prev, isOpen: false }))}
-                          className="flex items-center justify-center gap-1.5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 text-center cursor-pointer font-sans"
-                        >
-                          WA Business
-                        </a>
-                      </div>
-                    ) : (
-                      <p className="text-[10px] text-rose-500 font-bold bg-rose-50 p-2 rounded-lg text-center">⚠️ কোনো মোবাইল নম্বর না থাকায় হোয়াটসঅ্যাপ করা যাচ্ছে না।</p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="border border-slate-150 rounded-xl overflow-hidden shadow-xs">
-                  <div className="bg-slate-50 px-4 py-2 border-b border-slate-150 flex justify-between items-center">
-                    <span className="text-xs font-black text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                      <Mail size={13} className="text-indigo-500" />
-                      Option B: Email Notification
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-400">✉️ {emailAddress || 'No email'}</span>
-                  </div>
-                  <div className="p-4 bg-white space-y-3">
-                    <div className="space-y-2 text-xs">
-                      <div>
-                        <span className="font-bold text-slate-400 uppercase text-[9px] tracking-widest block">Subject Preview</span>
-                        <div className="bg-slate-50 p-2 rounded border border-slate-100 text-slate-700 font-bold">{finalSubj}</div>
-                      </div>
-                      <div>
-                        <span className="font-bold text-slate-400 uppercase text-[9px] tracking-widest block">Message Preview</span>
-                        <div className="bg-slate-50 p-3 rounded border border-slate-100 text-slate-700 whitespace-pre-line max-h-36 overflow-y-auto">{finalBody}</div>
-                      </div>
-                    </div>
-                    {emailAddress ? (
-                      <a 
-                        href={mailtoUrl}
-                        onClick={() => setApprovedNotificationModal(prev => ({ ...prev, isOpen: false }))}
-                        className="flex items-center justify-center gap-1.5 w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm active:scale-95 text-center cursor-pointer font-sans"
-                      >
-                        Send Confirmation Email
-                      </a>
-                    ) : (
-                      <p className="text-[10px] text-amber-600 font-bold bg-amber-50 p-2 rounded-lg text-center">💡 এই গ্রাহকের ইমেইল এড্রেস প্রোফাইলে সেট করা নেই।</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t border-slate-100 pt-3 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setApprovedNotificationModal(prev => ({ ...prev, isOpen: false }))}
-                  className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer font-sans"
-                >
-                  Close (শেষ করুন)
-                </button>
-              </div>
-            </div>
-          );
-        })()}
-      </Modal>
-
-      {/* Floating Quick Actions Button */}
-      {isAdmin && (
-        <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3 font-sans">
-          {/* Backdrop Click Dismiss for Menu */}
-          {isQuickActionsOpen && (
-            <div 
-              className="fixed inset-0 z-10 bg-transparent" 
-              onClick={() => setIsQuickActionsOpen(false)}
-            />
-          )}
-
-          {/* Expanded Menu Actions */}
-          {isQuickActionsOpen && (
-            <div className="relative z-20 flex flex-col gap-2 bg-slate-900 border border-slate-800 text-white shadow-2xl rounded-2xl p-3 min-w-[210px] animate-fade-in">
-              <div className="px-2 py-1 border-b border-white/10 mb-1 flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Quick Actions</span>
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span>
-              </div>
-
-              {/* Action: Create Invoice */}
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveModal('create_invoice_direct');
-                  setIsQuickActionsOpen(false);
-                }}
-                className="flex items-center gap-3 w-full p-2 hover:bg-white/10 rounded-xl transition-all text-left group cursor-pointer"
-              >
-                <div className="p-2 rounded-lg bg-indigo-500/20 text-indigo-300 group-hover:scale-105 transition-transform shrink-0">
-                  <FileText size={14} />
-                </div>
-                <div>
-                  <p className="text-[11px] font-black uppercase tracking-tight text-white group-hover:text-indigo-300 transition-colors">Create Invoice</p>
-                  <p className="text-[9.5px] text-slate-400 font-semibold truncate mt-0.5">নতুন ইনভয়েস তৈরি</p>
-                </div>
-              </button>
-
-              {/* Action: Add User */}
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveModal('user');
-                  setIsQuickActionsOpen(false);
-                }}
-                className="flex items-center gap-3 w-full p-2 hover:bg-white/10 rounded-xl transition-all text-left group cursor-pointer"
-              >
-                <div className="p-2 rounded-lg bg-violet-500/20 text-violet-300 group-hover:scale-105 transition-transform shrink-0">
-                  <Users size={14} />
-                </div>
-                <div>
-                  <p className="text-[11px] font-black uppercase tracking-tight text-white group-hover:text-violet-300 transition-colors">Add User</p>
-                  <p className="text-[9.5px] text-slate-400 font-semibold truncate mt-0.5">নতুন কাস্টমার অ্যাকাউন্ট</p>
-                </div>
-              </button>
-
-              {/* Action: Register Decoder */}
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveModal('decoder');
-                  setIsQuickActionsOpen(false);
-                }}
-                className="flex items-center gap-3 w-full p-2 hover:bg-white/10 rounded-xl transition-all text-left group cursor-pointer"
-              >
-                <div className="p-2 rounded-lg bg-emerald-500/20 text-emerald-300 group-hover:scale-105 transition-transform shrink-0">
-                  <Cpu size={14} />
-                </div>
-                <div>
-                  <p className="text-[11px] font-black uppercase tracking-tight text-white group-hover:text-emerald-300 transition-colors">Register Decoder</p>
-                  <p className="text-[9.5px] text-slate-400 font-semibold truncate mt-0.5">ডিকোডার লাইসেন্স যুক্ত করুন</p>
-                </div>
-              </button>
-            </div>
-          )}
-
-          {/* Primary Trigger Button */}
-          <button
-            type="button"
-            onClick={() => setIsQuickActionsOpen(!isQuickActionsOpen)}
-            className="relative z-20 flex items-center gap-2 px-4.5 py-3.5 bg-indigo-650 hover:bg-indigo-750 text-white rounded-full shadow-lg shadow-indigo-600/30 font-bold transition-all hover:scale-105 active:scale-95 group focus:outline-none cursor-pointer"
-          >
-            {/* Beautiful Custom Rotating Plus Icon */}
-            <div className={`transition-transform duration-300 ${isQuickActionsOpen ? 'rotate-45' : ''}`}>
-              <Plus size={18} className="stroke-[2.5]" />
-            </div>
-            
-            <span className="text-xs font-black uppercase tracking-wider">Quick Actions</span>
-          </button>
-        </div>
-      )}
-    </div>
+    <AdminPanel
+      user={user}
+      currentUserData={currentUserData}
+      settings={settings}
+      invoices={invoices}
+      investments={investments}
+      activities={activities}
+      totalUsersCount={totalUsersCount}
+      stats={stats}
+      salesBreakdown={salesBreakdown}
+      healthScore={healthScore}
+      dailyRevenueData={dailyRevenueData}
+      chartMetricMode={chartMetricMode}
+      setChartMetricMode={setChartMetricMode}
+      chartVisualType={chartVisualType}
+      setChartVisualType={setChartVisualType}
+      isProcessingApproval={isProcessingApproval}
+      handleRejectRequest={handleRejectRequest}
+      handleApproveRequest={handleApproveRequest}
+      localCountryCodes={localCountryCodes}
+      directInvoiceNum={directInvoiceNum}
+      setDirectInvoiceNum={setDirectInvoiceNum}
+      directInvoiceType={directInvoiceType}
+      setDirectInvoiceType={setDirectInvoiceType}
+      directInvoiceCustomerName={directInvoiceCustomerName}
+      setDirectInvoiceCustomerName={setDirectInvoiceCustomerName}
+      directInvoiceCountryCode={directInvoiceCountryCode}
+      setDirectInvoiceCountryCode={setDirectInvoiceCountryCode}
+      directInvoicePhone={directInvoicePhone}
+      setDirectInvoicePhone={setDirectInvoicePhone}
+      directInvoicePaymentMethod={directInvoicePaymentMethod}
+      setDirectInvoicePaymentMethod={setDirectInvoicePaymentMethod}
+      directInvoiceTxnId={directInvoiceTxnId}
+      setDirectInvoiceTxnId={setDirectInvoiceTxnId}
+      directInvoiceAmount={directInvoiceAmount}
+      setDirectInvoiceAmount={setDirectInvoiceAmount}
+      directInvoicePaid={directInvoicePaid}
+      setDirectInvoicePaid={setDirectInvoicePaid}
+      directInvoiceDue={directInvoiceDue}
+      setDirectInvoiceDue={setDirectInvoiceDue}
+      directInvoiceNote={directInvoiceNote}
+      setDirectInvoiceNote={setDirectInvoiceNote}
+      isDirectInvoiceSaving={isDirectInvoiceSaving}
+      handleCreateDirectInvoiceSubmit={handleCreateDirectInvoiceSubmit}
+      handleDirectInvoiceAmountChange={handleDirectInvoiceAmountChange}
+      selectedUserInvoice={selectedUserInvoice}
+      setSelectedUserInvoice={setSelectedUserInvoice}
+      showInvoicePreviewModal={showInvoicePreviewModal}
+      setShowInvoicePreviewModal={setShowInvoicePreviewModal}
+      handleUserDownloadInvoice={handleUserDownloadInvoice}
+      isUserGeneratingPdf={isUserGeneratingPdf}
+      approvedNotificationModal={approvedNotificationModal}
+      setApprovedNotificationModal={setApprovedNotificationModal}
+      adminNotes={adminNotes}
+      setAdminNotes={setAdminNotes}
+      notesSaveSuccess={notesSaveSuccess}
+      setNotesSaveSuccess={setNotesSaveSuccess}
+      handleCreateSuccess={() => {}}
+      activeModal={activeModal}
+      setActiveModal={setActiveModal}
+      t={t}
+    />
   );
 }

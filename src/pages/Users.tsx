@@ -83,7 +83,8 @@ export function Users({ initialFilter = 'all' }: UsersProps) {
       type: 'success',
       title: '🎉 Account Approved successfully!',
       message: `${user.name}-এর অ্যাকাউন্ট অনুমোদিত হয়েছে।`,
-      duration: 3500
+      duration: 3500,
+      recipient: user.username
     });
 
     // Automatically trigger selection of WhatsApp or WhatsApp Business

@@ -71,7 +71,7 @@ export function Layout({ children, activeTab, onMenuToggle, onLogoutRequest }: L
       } else {
         // Clients view notifications targeted specifically to their username or 'all'
         const filtered = items.filter(
-          (n) => n.recipient === user.username || n.recipient === 'all' || n.recipient === 'all_admins'
+          (n) => n.recipient === user.username || n.recipient === 'all'
         );
         setNotifications(filtered);
       }

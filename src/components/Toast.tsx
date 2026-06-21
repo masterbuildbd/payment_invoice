@@ -12,6 +12,8 @@ export interface Toast {
   duration?: number;
   actionLabel?: string;
   onAction?: () => void;
+  recipient?: string;
+  persist?: boolean;
 }
 
 interface ToastContextType {
@@ -85,18 +87,20 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     playNotificationChime();
 
     // Persist as a recent system notification back-end record
-    const recipient = user 
-      ? (user.role === 'admin' ? 'all_admins' : user.username) 
-      : 'all_admins';
+    if (toast.persist !== false) {
+      const recipient = toast.recipient || (user 
+        ? (user.role === 'admin' ? 'all_admins' : user.username) 
+        : 'all_admins');
 
-    createSystemNotification({
-      type: toast.type || 'info',
-      title: toast.title,
-      message: toast.message,
-      recipient
-    }).catch((err) => {
-      console.warn('Auto-persisting notification failed:', err);
-    });
+      createSystemNotification({
+        type: toast.type || 'info',
+        title: toast.title,
+        message: toast.message,
+        recipient
+      }).catch((err) => {
+        console.warn('Auto-persisting notification failed:', err);
+      });
+    }
   }, [user]);
 
   const removeToast = useCallback((id: string) => {
