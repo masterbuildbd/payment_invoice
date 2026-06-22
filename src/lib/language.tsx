@@ -104,7 +104,8 @@ const translations: Record<Language, Record<string, string>> = {
     client_sms: 'SMS Inbox',
     client_settings: 'User Settings',
     payment_requests: 'Payment Requests',
-    sms: 'SMS Portal'
+    sms: 'SMS Portal',
+    admin_control_desk: 'Admin Control Desk'
   },
   BN: {
     dashboard: 'ড্যাশবোর্ড ওভারভিউ',
@@ -198,7 +199,8 @@ const translations: Record<Language, Record<string, string>> = {
     client_sms: 'এসএমএস ইনবক্স',
     client_settings: 'ইউজার সেটিংস',
     payment_requests: 'পেমেন্ট রিকোয়েস্ট',
-    sms: 'এসএমএস পোর্টাল'
+    sms: 'এসএমএস পোর্টাল',
+    admin_control_desk: 'এডমিন কন্ট্রোল ডেস্ক'
   },
   UR: {
     dashboard: 'ڈیش بورڈ جائزہ',
@@ -259,7 +261,8 @@ const translations: Record<Language, Record<string, string>> = {
     client_sms: 'ایس ایم ایس ان باکس',
     client_settings: 'صارف کی ترتیبات',
     payment_requests: 'ادائیگی کی درخواستیں',
-    sms: 'ایس ایم ایس پورٹل'
+    sms: 'ایس ایم ایس پورٹل',
+    admin_control_desk: 'ایڈمن کنٹرول ڈیسک'
   },
   HI: {
     dashboard: 'डैशबोर्ड अवलोकन',
@@ -320,7 +323,8 @@ const translations: Record<Language, Record<string, string>> = {
     client_sms: 'एसएमएस इनबॉक्स',
     client_settings: 'उपयोगकर्ता सेटिंग्स',
     payment_requests: 'भुगतान अनुरोध',
-    sms: 'एसएमएस पोर्टल'
+    sms: 'एसएमएस पोर्टल',
+    admin_control_desk: 'एडमिन कंट्रोल डेस्क'
   },
   AR: {
     dashboard: 'نظرة عامة على لوحة القيادة',
@@ -416,7 +420,8 @@ const translations: Record<Language, Record<string, string>> = {
     client_sms: 'صندوق رسائل قصيرة',
     client_settings: 'إعدادات المستخدم',
     payment_requests: 'طلبات الدفع',
-    sms: 'بوابة الرسائل القصيرة'
+    sms: 'بوابة الرسائل القصيرة',
+    admin_control_desk: 'لوحة التحكم الإدارية'
   }
 };
 

@@ -22,6 +22,7 @@ import {
   MessageSquare,
   ChevronDown,
   ChevronUp,
+  ChevronRight,
   Pin
 } from 'lucide-react';
 import { 
@@ -182,63 +183,40 @@ export function AdminPanel({
 
   // Breathtaking Futuristic Slate & Deep Indigo Premium Theme
   return (
-    <div className="space-y-7 pb-16 font-sans text-slate-800 dark:text-slate-100 animate-fade-in">
+    <div className="space-y-7 pb-16 font-sans text-slate-800 dark:text-slate-100 animate-fade-in text-left">
       
-      {/* 🌟 Ultra-Premium Glowing Cosmic Banner Header */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-905 border border-slate-800 rounded-3xl p-6 sm:p-8 md:p-10 shadow-2xl text-left">
-        {/* Glow Effects */}
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-        
-        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-2 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 px-3.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-              <span className="w-2 h-2 rounded-full bg-indigo-400 animate-ping" />
-              <span className="w-2 h-2 rounded-full bg-indigo-500 absolute" />
-              {t('admin_control_desk') || 'System Management Suite'} • লাইভ কন্ট্রোল
-            </div>
-            
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight text-white flex items-center gap-2.5">
-              <span>{currentUserData?.name || user?.name || 'Master Admin'}</span>
-              <span className="text-xl sm:text-2xl animate-bounce">👋</span>
-            </h1>
-            
-            <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
-              কোম্পানির আর্থিক লেনদেন, চালান অনুমোদন, অ্যাপ সাবস্ক্রিপশন ও কাস্টমার ডিকোডার লাইসেন্স পোর্টাল রিয়েল-টাইমে পরিচালনা ও মনিটর করুন।
-            </p>
-          </div>
-
-          {/* Clean minimal date & system status badges */}
-          <div className="flex flex-col sm:flex-row md:flex-col lg:flex-row items-stretch sm:items-center gap-3 shrink-0">
-            <div className="flex items-center gap-3 bg-white/5 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/10 text-left">
-              <div className="p-2.5 bg-indigo-500/20 text-indigo-300 rounded-xl">
-                <Clock size={18} className="animate-pulse" />
-              </div>
-              <div>
-                <span className="text-[9px] font-extrabold text-indigo-300/80 uppercase tracking-widest block">আজকের তারিখ (Date)</span>
-                <span className="text-xs font-bold text-white leading-tight">
-                  {new Date().toLocaleDateString('bn-BD', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2.5 bg-emerald-500/10 px-4 py-3.5 rounded-2xl border border-emerald-500/25 text-xs text-emerald-400 font-semibold">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-              <span className="font-mono text-[10px] tracking-wider uppercase">Uptime: 99.9% (সচল)</span>
-            </div>
+      {/* 🌟 Simple and Elegant Dashboard Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/60 dark:border-slate-800/80">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+            <span>{currentUserData?.name || user?.name || 'এডমিন ড্যাশবোর্ড'}</span>
+            <span className="text-lg sm:text-xl">👋</span>
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">
+            কোম্পানির লেনদেন, চালান অনুমোদন এবং গ্রাহক লাইসেন্স পরিচালনা ও পর্যবেক্ষণ করুন।
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Active Status Badge */}
+          <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 dark:bg-slate-900 text-slate-650 dark:text-slate-400 text-xs font-bold rounded-full border border-slate-200 dark:border-slate-800">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+            </span>
+            <span>সিস্টেম অনলাইন (System Active)</span>
           </div>
         </div>
       </div>
 
-      {/* 🚀 SEGMENTED TAB LIST (High-End Swiss Style) */}
-      <div className="bg-slate-100/80 dark:bg-slate-900/45 p-1.5 rounded-2xl border border-slate-200/80 dark:border-slate-800/85 flex flex-col lg:flex-row gap-2 items-stretch lg:items-center justify-between shadow-xs">
-        <div className="flex flex-wrap items-center gap-1.5 w-full lg:w-auto">
+      {/* 🚀 Sleek Swiss Capsule Navigation Bar */}
+      <div className="bg-slate-50/65 dark:bg-slate-900/40 p-3 sm:p-4 rounded-3xl border border-slate-200/50 dark:border-slate-800/55 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.03)] mb-4 flex flex-col md:flex-row gap-2 items-stretch md:items-center justify-between">
+        <div className="flex flex-wrap items-center gap-3 w-full">
           {[
-            { id: 'overview', label: 'Overview', bng: 'সংक्षिप्त বিবরণী', icon: BarChart3 },
-            { id: 'approvals', label: 'Approvals', bng: 'লেনদেন অনুমোদন', icon: CheckCircle, badge: invoices.filter(inv => inv.status === 'pending').length },
-            { id: 'create_invoice', label: 'Invoice Creator', bng: 'ইনভয়েস ফ্যাক্টরি', icon: Plus },
-            { id: 'records', label: 'Ledgers & Logs', bng: 'খতিয়ান ও লগ', icon: FileText },
-            { id: 'notes', label: 'Memo Notepad', bng: 'ব্যক্তিগত নোট', icon: Layers },
+            { id: 'overview', label: 'OVERVIEW', bng: 'সংक्षिप्त বিবরণী', icon: BarChart3 },
+            { id: 'approvals', label: 'APPROVALS', bng: 'লেনদেন অনুমোদন', icon: CheckCircle, badge: invoices.filter(inv => inv.status === 'pending').length },
+            { id: 'create_invoice', label: 'INVOICE CREATOR', bng: 'ইনভয়েস ফ্যাক্টরি', icon: Plus },
+            { id: 'records', label: 'LEDGERS & LOGS', bng: 'খতিয়ান ও লগ', icon: FileText },
+            { id: 'notes', label: 'MEMO NOTEPAD', bng: 'ব্যক্তিগত নোট', icon: Layers },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = adminActiveTab === tab.id;
@@ -247,30 +225,27 @@ export function AdminPanel({
                 key={tab.id}
                 type="button"
                 onClick={() => setAdminActiveTab(tab.id as any)}
-                className={`flex-1 sm:flex-initial flex items-center justify-center sm:justify-start gap-2.5 px-4.5 py-2 rounded-xl text-xs font-black transition-all duration-200 cursor-pointer text-left border ${
+                className={`flex-1 sm:flex-initial flex items-center gap-3.5 px-5 py-4 rounded-2xl transition-all duration-200 cursor-pointer text-left border ${
                   isActive 
-                    ? 'bg-white dark:bg-slate-800 text-slate-950 dark:text-white shadow-md border-slate-200 dark:border-slate-700/80 scale-102 font-black' 
-                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-white/40 dark:hover:bg-slate-850/40 border-transparent'
+                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-[0_4px_16px_-3px_rgba(99,102,241,0.08)] border-slate-200 dark:border-slate-700/85 scale-[1.03]' 
+                    : 'text-slate-450 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white/40 dark:hover:bg-slate-900/35 border-transparent'
                 }`}
               >
-                <Icon size={15} className={`shrink-0 ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`} />
-                <div className="flex flex-col leading-none text-left">
-                  <span className="text-[11px] uppercase tracking-wide">{tab.label}</span>
-                  <span className="text-[9px] font-normal text-slate-400 mt-0.5">{tab.bng}</span>
+                <div className={`p-2 rounded-xl shrink-0 ${isActive ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400' : 'bg-slate-100/50 dark:bg-slate-900/20 text-slate-400 dark:text-slate-505'}`}>
+                  <Icon size={16} />
+                </div>
+                <div className="flex flex-col leading-tight text-left min-w-0">
+                  <span className={`text-[10.5px] uppercase tracking-wider block font-black ${isActive ? 'text-slate-900 dark:text-white font-black' : 'text-slate-500 dark:text-slate-400 font-bold'}`}>{tab.label}</span>
+                  <span className="text-[8.5px] font-semibold text-slate-400 dark:text-slate-500 mt-1 block truncate">{tab.bng}</span>
                 </div>
                 {tab.badge && tab.badge > 0 ? (
-                  <span className="bg-rose-500 text-white font-extrabold px-2 py-0.5 rounded-full text-[10px] font-mono leading-none animate-bounce shrink-0 shadow-sm ml-1">
+                  <span className="bg-rose-500 text-white font-extrabold px-1.5 py-0.5 rounded-full text-[9px] font-mono leading-none animate-bounce shrink-0 shadow-xs ml-2">
                     {tab.badge}
                   </span>
                 ) : null}
               </button>
             );
           })}
-        </div>
-        
-        <div className="hidden lg:flex items-center gap-2 px-4.5 py-2.5 font-mono text-[10px] font-bold uppercase text-slate-500 dark:text-slate-405 tracking-wider shrink-0 bg-white/40 dark:bg-slate-900/30 rounded-xl border border-slate-200/40 dark:border-slate-800/20">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-          <span>Security Level: Master Core</span>
         </div>
       </div>
 
@@ -281,224 +256,413 @@ export function AdminPanel({
           {/* Quick Metrics Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4.5">
             {[
-              { id: 'totalRevenue', val: `৳${stats.totalRevenue.toLocaleString()}`, label: 'Total Revenue', bng: 'মোট সংগ্রহ', icon: Banknote, color: 'text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20 shadow-emerald-500/5', progressColor: 'bg-emerald-500' },
-              { id: 'totalInvestment', val: `৳${stats.totalInvestment.toLocaleString()}`, label: 'total expenses', bng: 'মোট খরচ/ইনভেস্ট', icon: TrendingDown, color: 'text-rose-500 dark:text-rose-400 bg-rose-500/10 border-rose-500/20 shadow-rose-500/5', progressColor: 'bg-rose-500' },
-              { id: 'netProfit', val: `৳${stats.netProfit.toLocaleString()}`, label: 'Net Profit (85%)', bng: 'প্রকৃত লাভ হিসেব', icon: TrendingUp, color: 'text-indigo-500 dark:text-indigo-400 bg-indigo-500/10 border-indigo-500/20 shadow-indigo-500/5', progressColor: 'bg-indigo-500' },
-              { id: 'dueBalance', val: `৳${stats.dueBalance.toLocaleString()}`, label: 'Due Balance', bng: 'বকেয়া পাওনা', icon: Activity, color: 'text-amber-500 dark:text-amber-400 bg-amber-500/10 border-amber-500/20 shadow-amber-500/5', progressColor: 'bg-amber-500' },
-              { id: 'totalUsers', val: `${totalUsersCount} জন`, label: 'Total Customers', bng: 'নিবন্ধিত গ্রাহক', icon: Users, color: 'text-sky-500 dark:text-sky-450 bg-sky-500/10 border-sky-500/20 shadow-sky-500/5', progressColor: 'bg-sky-500' }
+              { 
+                id: 'totalRevenue', 
+                val: `৳${stats.totalRevenue.toLocaleString()}`, 
+                label: 'Total Revenue', 
+                bng: 'মোট সংগ্রহ (Credited Paid)', 
+                icon: Banknote, 
+                bgClass: 'bg-gradient-to-br from-emerald-50/70 via-white to-emerald-100/20 dark:from-slate-900/40 dark:via-slate-900 dark:to-emerald-955/20',
+                borderClass: 'border-emerald-150 dark:border-slate-800',
+                hoverClass: 'hover:border-emerald-350 dark:hover:border-emerald-900',
+                iconBgClass: 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-450 border border-emerald-100/30 dark:border-emerald-900/30',
+                desc: 'মোট অর্জিত ও সফল পেমেন্ট সংগ্রহ ভলিউম।',
+                pulseClass: 'bg-emerald-500'
+              },
+              { 
+                id: 'totalInvestment', 
+                val: `৳${stats.totalInvestment.toLocaleString()}`, 
+                label: 'total expenses', 
+                bng: 'মোট খরচ/ইনভেস্ট (Expenses Paid)', 
+                icon: TrendingDown, 
+                bgClass: 'bg-gradient-to-br from-rose-50/70 via-white to-rose-100/20 dark:from-slate-900/40 dark:via-slate-900 dark:to-rose-955/20',
+                borderClass: 'border-rose-150 dark:border-slate-800',
+                hoverClass: 'hover:border-rose-350 dark:hover:border-rose-905',
+                iconBgClass: 'bg-rose-50 dark:bg-rose-950 text-rose-650 dark:text-rose-450 border border-rose-100/30 dark:border-rose-900/40',
+                desc: 'হার্ডওয়্যার, এপিআই, সার্ভার ও লস ইনভেস্ট।',
+                pulseClass: 'bg-rose-500'
+              },
+              { 
+                id: 'netProfit', 
+                val: `৳${stats.netProfit.toLocaleString()}`, 
+                label: 'Net Profit (85%)', 
+                bng: 'প্রকৃত লাভ হিসেব (Net Revenue)', 
+                icon: TrendingUp, 
+                bgClass: 'bg-gradient-to-br from-indigo-50/70 via-white to-indigo-100/20 dark:from-slate-900/40 dark:via-slate-900 dark:to-indigo-955/20',
+                borderClass: 'border-indigo-150 dark:border-slate-800',
+                hoverClass: 'hover:border-indigo-350 dark:hover:border-indigo-900',
+                iconBgClass: 'bg-indigo-50 dark:bg-indigo-950 text-indigo-650 dark:text-indigo-400 border border-indigo-100/30 dark:border-indigo-900/30',
+                desc: '৮৫% ওনারশিপ প্রফিট শেয়ারিং পুল ফান্ড।',
+                pulseClass: 'bg-indigo-550 animate-pulse'
+              },
+              { 
+                id: 'dueBalance', 
+                val: `৳${stats.dueBalance.toLocaleString()}`, 
+                label: 'Due Balance', 
+                bng: 'বকেয়া পাওনা বিল (Remaining Due)', 
+                icon: Activity, 
+                bgClass: 'bg-gradient-to-br from-amber-50/70 via-white to-amber-100/20 dark:from-slate-900/40 dark:via-slate-900 dark:to-amber-955/20',
+                borderClass: 'border-amber-150 dark:border-slate-800',
+                hoverClass: 'hover:border-amber-350 dark:hover:border-amber-900',
+                iconBgClass: 'bg-amber-50 dark:bg-amber-955 text-amber-750 dark:text-amber-450 border border-amber-100/30 dark:border-amber-900/40',
+                desc: 'গ্রাহকদের নিকট কোম্পানির মোট বকেয়া পাওনা।',
+                pulseClass: 'bg-amber-500 animate-pulse'
+              },
+              { 
+                id: 'totalUsers', 
+                val: `${totalUsersCount} জন`, 
+                label: 'Total Customers', 
+                bng: 'নিবন্ধিত গ্রাহক (Registered Clients)', 
+                icon: Users, 
+                bgClass: 'bg-gradient-to-br from-sky-50/70 via-white to-sky-100/20 dark:from-slate-900/40 dark:via-slate-900 dark:to-sky-955/20',
+                borderClass: 'border-sky-150 dark:border-slate-800',
+                hoverClass: 'hover:border-sky-350 dark:hover:border-sky-900',
+                iconBgClass: 'bg-sky-50 dark:bg-sky-955 text-sky-700 dark:text-sky-450 border border-sky-100/30 dark:border-sky-900/40',
+                desc: 'সিস্টেমে মোট সক্রিয় ও ভেরিফাইড গ্রাহক।',
+                pulseClass: 'bg-sky-500'
+              }
             ].map((stat) => {
               const Icon = stat.icon;
               return (
-                <div key={stat.id} className="relative group overflow-hidden bg-white dark:bg-slate-900 border border-slate-205 dark:border-slate-800/80 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 hover:scale-102 text-left flex flex-col justify-between min-h-[145px]">
-                  {/* Subtle Colored Top Accent Bar */}
-                  <div className={`absolute top-0 left-0 right-0 h-1 ${stat.progressColor}`} />
-                  
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="space-y-0.5">
-                      <span className="text-[9.5px] font-extrabold uppercase text-slate-400 dark:text-slate-500 tracking-wider block leading-none">
+                <div 
+                  key={stat.id} 
+                  className={`relative overflow-hidden ${stat.bgClass} border ${stat.borderClass} p-5 rounded-2xl shadow-3xs hover:shadow-xs transition-all duration-300 hover:scale-[1.015] ${stat.hoverClass} text-left flex flex-col justify-between min-h-[160px]`}
+                >
+                  <div className="flex justify-between items-start gap-3">
+                    <div className="space-y-1">
+                      <span className="text-[9.5px] font-black uppercase text-indigo-500/80 dark:text-indigo-400 tracking-widest block leading-none font-sans">
                         {stat.label}
                       </span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-405 font-bold block">{stat.bng}</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold block">{stat.bng}</span>
                     </div>
-                    <div className={`p-2.5 rounded-xl ${stat.color} shrink-0 border border-current/10 shadow-xs`}>
-                      <Icon size={16} />
-                    </div>
+                    <span className={`p-2 rounded-xl shrink-0 ${stat.iconBgClass}`}>
+                      <Icon size={17} className="stroke-[2.5]" />
+                    </span>
                   </div>
                   
-                  <div className="mt-4 pt-2">
-                    <h3 className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tight leading-none">
+                  <div className="mt-4">
+                    <h3 className="text-xl sm:text-2xl font-black text-slate-855 dark:text-white font-mono tracking-tight leading-none">
                       {stat.val}
                     </h3>
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-1.5 text-[9.5px] font-bold text-slate-500 dark:text-slate-400 border-t border-slate-100/60 dark:border-slate-850 pt-2.5">
+                    <span className={`h-1.5 w-1.5 rounded-full ${stat.pulseClass}`} />
+                    <span>{stat.desc}</span>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          {/* Interactive Graph Box */}
-          <div className="bg-white dark:bg-slate-900 p-6 sm:p-7 border border-slate-205 dark:border-slate-800/80 rounded-3xl shadow-sm">
-            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-5 border-b border-slate-100 dark:border-slate-850 pb-5 mb-5 text-left">
-              <div className="flex items-center gap-3">
-                <span className="p-2.5 bg-indigo-500/10 text-indigo-500 rounded-xl border border-indigo-500/10 shadow-xs shrink-0">
-                  <BarChart3 size={18} />
-                </span>
-                <div>
-                  <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-white uppercase tracking-tight">আয় ও প্রফিট রিপোর্ট গ্রাফ (Revenue & profit analytics)</h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">পরিশোধিত পেমেন্ট এবং অর্জিত লাভের লাইভ তুলনামূলক ইন্টারেক্টিভ লিনিয়ার গ্রাফঃ</p>
-                </div>
-              </div>
-
-              {/* Advanced premium graph controls */}
-              <div className="flex flex-wrap items-center gap-3">
-                {/* Metric Mode pills */}
-                <div className="bg-slate-50 dark:bg-slate-950 p-1 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 flex items-center gap-1">
-                  {[
-                    { id: 'daily', label: 'দৈনিক আয়' },
-                    { id: 'cumulative', label: 'ক্রমবর্ধমান' },
-                    { id: 'profit', label: 'প্রফিট (৮৫%)' }
-                  ].map(btn => (
-                    <button
-                      key={btn.id}
-                      type="button"
-                      onClick={() => setChartMetricMode(btn.id as any)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                        chartMetricMode === btn.id
-                          ? 'bg-white dark:bg-slate-800 text-slate-950 dark:text-white shadow-xs border border-slate-100 dark:border-slate-700/50 scale-102'
-                          : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-250'
-                      }`}
-                    >
-                      {btn.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Graph styling modes */}
-                <div className="bg-slate-50 dark:bg-slate-950 p-1 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 flex items-center gap-1">
-                  {[
-                    { id: 'bar', label: 'বার' },
-                    { id: 'area', label: 'এরিয়া' },
-                    { id: 'line', label: 'লাইন' }
-                  ].map(btn => (
-                    <button
-                      key={btn.id}
-                      type="button"
-                      onClick={() => setChartVisualType(btn.id as any)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-                        chartVisualType === btn.id
-                          ? 'bg-indigo-650 hover:bg-indigo-755 text-white shadow-md'
-                          : 'text-slate-505 hover:text-slate-800 dark:hover:text-slate-250'
-                      }`}
-                    >
-                      {btn.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div className="h-[290px] w-full pt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                {chartVisualType === 'bar' ? (
-                  <BarChart data={dailyRevenueData.data} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1f2937" />
-                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} dy={8} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 750 }} dx={-4} />
-                    <Tooltip 
-                      cursor={{ fill: 'rgba(99, 102, 241, 0.04)', radius: 4 }}
-                      contentStyle={{ borderRadius: '14px', backgroundColor: '#0f172a', color: '#ffffff', border: 'none', padding: '12px 14px', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.5)' }}
-                      formatter={(value: any) => [`৳${Number(value).toLocaleString()}`, chartMetricMode === 'daily' ? 'দৈনিক রেভিনিউ' : chartMetricMode === 'cumulative' ? 'ক্রমবর্ধমান' : 'লাভ']}
-                    />
-                    <Bar dataKey={chartMetricMode === 'daily' ? 'revenue' : chartMetricMode === 'cumulative' ? 'cumulative' : 'profit'} fill="#4f46e5" radius={[6, 6, 0, 0]} maxBarSize={28}>
-                      {dailyRevenueData.data.map((entry, index) => {
-                        const val = chartMetricMode === 'daily' ? entry.revenue : chartMetricMode === 'cumulative' ? entry.cumulative : entry.profit;
-                        return <Cell key={`cell-${index}`} fill={val > 0 ? (chartMetricMode === 'profit' ? '#10b981' : '#4f46e5') : '#e2e8f0'} />;
-                      })}
-                    </Bar>
-                  </BarChart>
-                ) : chartVisualType === 'area' ? (
-                  <AreaChart data={dailyRevenueData.data} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={chartMetricMode === 'profit' ? '#10b981' : '#6366f1'} stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor={chartMetricMode === 'profit' ? '#10b981' : '#6366f1'} stopOpacity={0.0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1f2937" />
-                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} dy={8} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10 }} dx={-4} />
-                    <Tooltip contentStyle={{ borderRadius: '14px', backgroundColor: '#0f172a', color: '#ffffff', border: 'none', padding: '12px 14px' }} />
-                    <Area type="monotone" dataKey={chartMetricMode === 'daily' ? 'revenue' : chartMetricMode === 'cumulative' ? 'cumulative' : 'profit'} stroke={chartMetricMode === 'profit' ? '#10b981' : '#6366f1'} strokeWidth={3} fillOpacity={1} fill="url(#colorMetric)" />
-                  </AreaChart>
-                ) : (
-                  <LineChart data={dailyRevenueData.data} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1f2937" />
-                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10 }} dy={8} />
-                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10 }} dx={-4} />
-                    <Tooltip contentStyle={{ borderRadius: '14px', backgroundColor: '#0f172a', color: '#ffffff', border: 'none', padding: '12px 14px' }} />
-                    <Line type="monotone" dataKey={chartMetricMode === 'daily' ? 'revenue' : chartMetricMode === 'cumulative' ? 'cumulative' : 'profit'} stroke={chartMetricMode === 'profit' ? '#10b981' : '#6366f1'} strokeWidth={3.5} dot={{ r: 3, fill: '#6366f1', strokeWidth: 2 }} />
-                  </LineChart>
-                )}
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Business Segments and Health Scores */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* 📊 Interactive Analytical Intelligence Deck */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-2">
             
-            {/* Sales Shares progress list */}
-            <div className="bg-white dark:bg-slate-905 p-6 sm:p-7 border border-slate-205 dark:border-slate-800/80 rounded-3xl shadow-sm text-left">
-              <div className="pb-4 border-b border-slate-100 dark:border-slate-850 mb-5 flex items-center justify-between">
-                <div>
-                  <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block leading-none mb-1">Service Shares breakdown</span>
-                  <h4 className="text-xs sm:text-sm font-black text-slate-850 dark:text-white uppercase">সেবা ভিত্তিক বিক্রয় হিসেব ও শেয়ার (Product shares)</h4>
-                </div>
-                <span className="text-[10px] font-black text-indigo-700 dark:text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full border border-indigo-500/20">রিয়েল-টাইম সিঙ্ক</span>
-              </div>
-
-              <div className="space-y-4 pt-1">
-                {salesBreakdown.map((item, index) => (
-                  <div key={index} className="space-y-1.5">
-                    <div className="flex items-center justify-between text-xs font-semibold">
-                      <span className="font-bold text-slate-650 dark:text-slate-300 flex items-center gap-2">
-                        <span className={`w-3 h-3 rounded-full shrink-0 ${item.color}`} />
-                        {item.bangla}
-                      </span>
-                      <span className="font-mono font-black text-slate-900 dark:text-white">
-                        ৳{item.value.toLocaleString()} <span className="text-slate-400 font-normal">({item.percentage}%)</span>
-                      </span>
+            {/* Left Deck: Dynamic Analytics Chart (takes 2 columns) */}
+            <div className="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-6 shadow-3xs flex flex-col justify-between text-left">
+              <div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 gap-4 mb-5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-xl border border-indigo-100/40 dark:border-indigo-900/30">
+                      <BarChart3 size={17} />
                     </div>
-                    <div className="w-full bg-slate-100 dark:bg-slate-850 h-2 rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full transition-all duration-500 ${item.color}`} style={{ width: `${item.percentage}%` }} />
+                    <div>
+                      <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">আয় ও লাভ বিশ্লেষণ গ্রাফ (Revenue Analytics)</h3>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">কোম্পানির মোট আয় এবং লাভ লেন্সের তুলনামূলক চিত্রঃ</p>
                     </div>
                   </div>
-                ))}
+
+                  {/* High-End Swiss Style Visual Controls */}
+                  <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    {/* Metric Selectors */}
+                    <div className="bg-slate-55 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/50 dark:border-slate-800/60 flex items-center gap-0.5">
+                      {[
+                        { id: 'daily', label: 'দৈনিক আয়' },
+                        { id: 'cumulative', label: 'ক্রমবর্ধমান' },
+                        { id: 'profit', label: 'লাভ (৮৫%)' }
+                      ].map(btn => (
+                        <button
+                          key={btn.id}
+                          type="button"
+                          onClick={() => setChartMetricMode(btn.id as any)}
+                          className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black transition-all cursor-pointer ${
+                            chartMetricMode === btn.id
+                              ? 'bg-white dark:bg-slate-800 text-slate-950 dark:text-white shadow-xs border border-slate-100/80 dark:border-slate-700/50 scale-[1.02] font-black'
+                              : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-250 font-bold'
+                          }`}
+                        >
+                          {btn.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Chart Style Switchers */}
+                    <div className="bg-slate-55 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/50 dark:border-slate-800/60 flex items-center gap-0.5">
+                      {[
+                        { id: 'area', label: 'এরিয়া' },
+                        { id: 'bar', label: 'বার' },
+                        { id: 'line', label: 'লাইন' }
+                      ].map(btn => (
+                        <button
+                          key={btn.id}
+                          type="button"
+                          onClick={() => setChartVisualType(btn.id as any)}
+                          className={`px-2.5 py-1.5 rounded-lg text-[9px] font-black transition-all cursor-pointer ${
+                            chartVisualType === btn.id
+                              ? 'bg-indigo-600 dark:bg-indigo-500 text-white shadow-xs font-black'
+                              : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-250 font-bold'
+                          }`}
+                        >
+                          {btn.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Graph Area */}
+                <div className="h-[250px] w-full pt-1">
+                  <ResponsiveContainer width="100%" height="100%">
+                    {chartVisualType === 'bar' ? (
+                      <BarChart data={dailyRevenueData.data} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1f2937" opacity={0.08} />
+                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} dy={8} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10 }} dx={-4} />
+                        <Tooltip 
+                          cursor={{ fill: 'rgba(99, 102, 241, 0.03)', radius: 4 }}
+                          contentStyle={{ borderRadius: '12px', backgroundColor: '#0f172a', color: '#ffffff', border: 'none', padding: '10px 12px', fontSize: '11px', fontWeight: 'bold' }}
+                        />
+                        <Bar dataKey={chartMetricMode === 'daily' ? 'revenue' : chartMetricMode === 'cumulative' ? 'cumulative' : 'profit'} fill="#4f46e5" radius={[4, 4, 0, 0]} maxBarSize={20}>
+                          {dailyRevenueData.data.map((entry: any, index: number) => {
+                            const val = chartMetricMode === 'daily' ? entry.revenue : chartMetricMode === 'cumulative' ? entry.cumulative : entry.profit;
+                            return <Cell key={`cell-${index}`} fill={val > 0 ? (chartMetricMode === 'profit' ? '#10b981' : '#4f46e5') : '#e2e8f0'} />;
+                          })}
+                        </Bar>
+                      </BarChart>
+                    ) : chartVisualType === 'area' ? (
+                      <AreaChart data={dailyRevenueData.data} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="colorMetric" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor={chartMetricMode === 'profit' ? '#10b981' : '#6366f1'} stopOpacity={0.2}/>
+                            <stop offset="95%" stopColor={chartMetricMode === 'profit' ? '#10b981' : '#6366f1'} stopOpacity={0.0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1f2937" opacity={0.08} />
+                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} dy={8} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10 }} dx={-4} />
+                        <Tooltip contentStyle={{ borderRadius: '12px', backgroundColor: '#0f172a', color: '#ffffff', border: 'none', padding: '10px 12px', fontSize: '11px', fontWeight: 'bold' }} />
+                        <Area type="monotone" dataKey={chartMetricMode === 'daily' ? 'revenue' : chartMetricMode === 'cumulative' ? 'cumulative' : 'profit'} stroke={chartMetricMode === 'profit' ? '#10b981' : '#6366f1'} strokeWidth={2.5} fillOpacity={1} fill="url(#colorMetric)" />
+                      </AreaChart>
+                    ) : (
+                      <LineChart data={dailyRevenueData.data} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1f2937" opacity={0.08} />
+                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10 }} dy={8} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10 }} dx={-4} />
+                        <Tooltip contentStyle={{ borderRadius: '12px', backgroundColor: '#0f172a', color: '#ffffff', border: 'none', padding: '10px 12px', fontSize: '11px', fontWeight: 'bold' }} />
+                        <Line type="monotone" dataKey={chartMetricMode === 'daily' ? 'revenue' : chartMetricMode === 'cumulative' ? 'cumulative' : 'profit'} stroke={chartMetricMode === 'profit' ? '#10b981' : '#6366f1'} strokeWidth={3} dot={{ r: 2.5, fill: '#6366f1', strokeWidth: 1.5 }} />
+                      </LineChart>
+                    )}
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
 
-            {/* Financial Health Score Circle Box */}
-            <div className="bg-white dark:bg-slate-905 p-6 sm:p-7 border border-slate-205 dark:border-slate-800/80 rounded-3xl shadow-sm text-left flex flex-col justify-between">
+            {/* Right Deck: Circular Health Index & Revenue Contribution Shares */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-6 shadow-3xs flex flex-col justify-between text-left">
               <div>
-                <div className="pb-4 border-b border-slate-100 dark:border-slate-850 mb-5 flex items-center justify-between">
-                  <div>
-                    <span className="text-[9px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block leading-none mb-1">Audit Risk Tracker</span>
-                    <h4 className="text-xs sm:text-sm font-black text-slate-805 dark:text-white uppercase font-sans">কোম্পানির ফাইন্যান্সিয়াল হেলথ স্কোর (Health meter)</h4>
+                <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100 dark:border-slate-800 mb-5">
+                  <div className="p-2.5 bg-amber-50 dark:bg-amber-955/20 text-amber-600 dark:text-amber-450 rounded-xl border border-amber-100/40 dark:border-amber-900/30">
+                    <Activity size={16} />
                   </div>
-                  <Activity size={16} className="text-emerald-500 animate-pulse" />
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider">কোম্পানি হেলথ ও সার্ভিস শেয়ার</h3>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">আর্থিক প্রবাহ নিরাপত্তা সূচক ও প্রোডাক্ট কন্ট্রিবিউশনঃ</p>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-6 py-2">
-                  <div className="relative w-20 h-20 shrink-0 flex items-center justify-center bg-slate-50 dark:bg-slate-950/40 rounded-full border border-slate-100 dark:border-slate-800/30">
-                    <svg className="w-full h-full transform -rotate-90 scale-90" viewBox="0 0 100 100">
-                      <circle cx="50" cy="50" r="40" stroke="#f1f5f9" strokeWidth="8" fill="transparent" className="dark:stroke-slate-800" />
+                {/* Animated SVG Circle Progress Gauge */}
+                <div className="flex items-center gap-4.5 p-3.5 bg-slate-50/60 dark:bg-slate-950/20 border border-slate-100 dark:border-slate-850/50 rounded-2xl mb-5">
+                  <div className="relative shrink-0 flex items-center justify-center">
+                    <svg className="w-14 h-14 transform -rotate-90">
+                      <circle cx="28" cy="28" r="23" className="stroke-slate-250 dark:stroke-slate-800" strokeWidth="4.5" fill="transparent" />
                       <circle 
-                        cx="50" cy="50" r="40" 
-                        stroke={healthScore >= 80 ? "#10b981" : healthScore >= 50 ? "#f59e0b" : "#ef4444"} 
-                        strokeWidth="8" fill="transparent" 
-                        strokeDasharray={`${2 * Math.PI * 40}`}
-                        strokeDashoffset={`${2 * Math.PI * 40 * (1 - healthScore / 100)}`}
+                        cx="28" 
+                        cy="28" 
+                        r="23" 
+                        className={`transition-all duration-700 ease-out ${
+                          healthScore >= 80 
+                            ? 'stroke-emerald-500' 
+                            : healthScore >= 55 
+                              ? 'stroke-amber-500' 
+                              : 'stroke-rose-500'
+                        }`} 
+                        strokeWidth="4.5" 
+                        fill="transparent" 
+                        strokeDasharray={2 * Math.PI * 23} 
+                        strokeDashoffset={2 * Math.PI * 23 * (1 - healthScore / 100)} 
                         strokeLinecap="round"
-                        className="transition-all duration-700"
                       />
                     </svg>
-                    <span className="absolute font-mono font-black text-base text-slate-900 dark:text-white">{healthScore}%</span>
+                    <span className="absolute text-[11px] font-black text-slate-800 dark:text-white font-mono">{healthScore}%</span>
                   </div>
-
-                  <div className="space-y-1.5 text-left">
-                    <span className={`text-[9.5px] font-black uppercase px-2.5 py-1 rounded-lg ${
-                      healthScore >= 80 ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 
-                      healthScore >= 55 ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                  <div className="flex-1 text-left min-w-0">
+                    <span className={`inline-block text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full mb-1 border ${
+                      healthScore >= 80 
+                        ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border-emerald-500/10' 
+                        : healthScore >= 55 
+                          ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border-amber-500/10' 
+                          : 'bg-rose-50 dark:bg-rose-950/40 text-rose-650 dark:text-rose-400 border-rose-500/15'
                     }`}>
-                      {healthScore >= 80 ? 'Excellent Safety' : healthScore >= 55 ? 'Moderate Risk' : 'High Risk Alert'}
+                      {healthScore >= 80 ? 'Excellent Status' : healthScore >= 55 ? 'Moderate Flow' : 'Risk Attention'}
                     </span>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal max-w-xs font-semibold">
-                      ব্যালেন্স শিট, পেন্ডিং বকেয়া এবং ইউজার রিকভারি বিবেচনা করে এই হেলথ স্কোর তৈরি করা হয়েছে।
+                    <p className="text-[9.5px] text-slate-500 dark:text-slate-400 leading-normal font-semibold">
+                      মোট সংগ্রহ বনাম বকেয়া অনুপাতে লাইভ হেলথ সূচক।
                     </p>
                   </div>
                 </div>
+
+                {/* Progress Contribution Share List */}
+                <div className="space-y-3.5">
+                  {salesBreakdown && salesBreakdown.length > 0 ? (
+                    salesBreakdown.map((item) => (
+                      <div key={item.name} className="space-y-1 text-left">
+                        <div className="flex justify-between items-center text-[10.5px]">
+                          <span className="font-bold text-slate-700 dark:text-slate-300">{item.bangla}</span>
+                          <div className="font-mono font-bold text-slate-500 dark:text-slate-400">
+                            <span className="text-[10px] text-slate-800 dark:text-white font-extrabold">৳{item.value.toLocaleString()}</span>
+                            <span className="text-[8.5px] ml-1 opacity-75">({item.percentage}%)</span>
+                          </div>
+                        </div>
+                        <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-950 rounded-full overflow-hidden">
+                          <div className={`h-full ${item.color} rounded-full transition-all duration-500`} style={{ width: `${item.percentage}%` }} />
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-[10px] text-slate-400 text-center py-2">কোনো ব্রেকডাউন ডাটা নেই।</div>
+                  )}
+                </div>
               </div>
 
-              <div className="mt-4 p-3.5 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-100 dark:border-slate-800/40 text-[11px] text-slate-600 dark:text-slate-400 font-semibold leading-relaxed">
-                <strong>পরামর্শঃ</strong> {healthScore >= 80 ? 'ট্রানজেকশন ব্যালেন্স চমৎকার ও নিরাপদ।' : 'বকেয়া বিল আদায়ে পেন্ডিং কাস্টমার রিকভারি তাগিদ দিন।'}
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 mt-5 text-[9px] text-slate-500 dark:text-slate-400 font-bold leading-normal text-left">
+                💡 {healthScore >= 80 ? 'অর্থপ্রবাহ চমৎকার ও নিরাপদ। বকেয়া আদায় সন্তোষজনক।' : 'বকেয়া বিল আদায়ে পেন্ডিং কাস্টমার রিকভারি তাগিদ দিন।'}
+              </div>
+            </div>
+
+          </div>
+
+          {/* Side-by-Side Decks: Overview & Activity Logs */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+            
+            {/* Left Deck: Recent Paid Bills */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-6 shadow-3xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 mb-5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-indigo-50/70 dark:bg-indigo-950/20 text-indigo-600 dark:text-indigo-400 rounded-xl border border-indigo-100/40 dark:border-indigo-900/30">
+                      <FileText size={16} />
+                    </div>
+                    <div>
+                      <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-tight">সাম্প্রতিক সফল লেনদেন (Recent Paid Bills)</h3>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">সর্বশেষ ৫টি পরিশোধিত চালানের তালিকাঃ</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {invoices.filter(i => i.status === 'approved').slice(0, 5).length > 0 ? (
+                    invoices.filter(i => i.status === 'approved').slice(0, 5).map((inv) => (
+                      <div key={inv.id} className="flex items-center justify-between p-3 bg-slate-5/50 dark:bg-slate-950/20 border border-slate-100/60 dark:border-slate-850/50 rounded-xl hover:border-slate-200 dark:hover:border-slate-800 transition-colors">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-9 h-9 rounded-xl bg-indigo-100/50 dark:bg-indigo-950/20 text-indigo-650 dark:text-indigo-400 font-bold text-xs uppercase flex items-center justify-center shrink-0 border border-indigo-100/10">
+                            {inv.customerName?.substring(0, 2).toUpperCase() || 'CU'}
+                          </div>
+                          <div className="min-w-0 text-left">
+                            <h4 className="text-[11.5px] font-bold text-slate-800 dark:text-slate-200 truncate leading-tight">{inv.customerName}</h4>
+                            <p className="text-[9px] text-slate-405 font-mono mt-0.5 uppercase truncate tracking-wider">#{inv.id?.substring(0, 8) || 'DOC-F'}</p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0 pl-2">
+                          <span className="text-[11px] font-mono font-extrabold text-indigo-650 dark:text-indigo-400 block leading-tight">৳{inv.amount?.toLocaleString()}</span>
+                          <span className="text-[8.5px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/45 border border-emerald-100/50 dark:border-emerald-900/30 px-2 py-0.5 rounded-full mt-1 inline-block uppercase tracking-wider scale-90">PAID</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="py-8 text-center text-slate-400 dark:text-slate-500 text-xs italic border border-dashed border-slate-200/50 dark:border-slate-800 rounded-xl">
+                      কোনো সফল চালানের ইতিহাস পাওয়া যায়নি।
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-5 border-t border-slate-100 dark:border-slate-800 mt-5 flex justify-end font-sans">
+                <button 
+                  type="button" 
+                  onClick={() => setAdminActiveTab('records')}
+                  className="text-[10px] font-extrabold text-indigo-600 dark:text-indigo-400 hover:text-indigo-850 flex items-center gap-1 uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  <span>সব চালান বিস্তারিত দেখুন</span>
+                  <ChevronRight size={13} />
+                </button>
+              </div>
+            </div>
+
+            {/* Right Deck: Recent Admin Activity Logs */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 rounded-2xl p-6 shadow-3xs flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800 mb-5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-450 rounded-xl border border-amber-100/40 dark:border-amber-900/30">
+                      <Layers size={16} />
+                    </div>
+                    <div>
+                      <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white uppercase tracking-tight">সাম্প্রতিক অ্যাক্টিভিটি লগ (Admin Logs)</h3>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">নিবন্ধিত এডমিনদের সর্বশেষ ৫টি কাজের বিবরণীঃ</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {activities.slice(0, 5).length > 0 ? (
+                    activities.slice(0, 5).map((log) => {
+                      const rawUser = log.user || 'admin@master';
+                      const cleanUser = rawUser.split('@')[0];
+                      return (
+                        <div key={log.id} className="flex gap-3 text-left">
+                          <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/20 text-amber-650 dark:text-amber-400 text-[10px] font-bold uppercase flex items-center justify-center shrink-0 border border-amber-100/30 dark:border-amber-900/30">
+                            {cleanUser.substring(0, 2).toUpperCase()}
+                          </div>
+                          <div className="min-w-0 flex-1 text-left">
+                            <p className="text-[11.5px] font-semibold text-slate-700 dark:text-slate-300 leading-normal select-all">
+                              {log.message}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1 text-[8.5px] text-slate-400 dark:text-slate-500 font-mono font-bold uppercase pointer-events-none">
+                              <span className="bg-slate-50 dark:bg-slate-950 border border-slate-150 dark:border-slate-800 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded">{cleanUser}</span>
+                              <span>•</span>
+                              <span>{new Date(log.timestamp).toLocaleTimeString('bn-BD', { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="py-8 text-center text-slate-400 dark:text-slate-500 text-xs italic border border-dashed border-slate-200/50 dark:border-slate-800 rounded-xl">
+                      কোনো লগ রেকর্ড খুঁজে পাওয়া যায়নি।
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-5 border-t border-slate-100 dark:border-slate-800 mt-5 flex justify-end font-sans">
+                <button 
+                  type="button" 
+                  onClick={() => setAdminActiveTab('records')}
+                  className="text-[10px] font-extrabold text-amber-650 dark:text-amber-400 hover:text-amber-800 flex items-center gap-1 uppercase tracking-wider transition-colors cursor-pointer"
+                >
+                  <span>সব অ্যাক্টিভিটি লগ দেখুন</span>
+                  <ChevronRight size={13} />
+                </button>
               </div>
             </div>
 
@@ -1430,87 +1594,6 @@ export function AdminPanel({
           );
         })()}
       </Modal>
-
-      {/* Floating Action control widget */}
-      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-2 text-xs font-sans">
-        {isQuickActionsOpen && (
-          <div 
-            className="fixed inset-0 z-10 bg-transparent" 
-            onClick={() => setIsQuickActionsOpen(false)}
-          />
-        )}
-
-        {isQuickActionsOpen && (
-          <div className="relative z-20 flex flex-col gap-1.5 bg-white border border-slate-200 text-slate-700 shadow-xl rounded-xl p-2.5 min-w-[190px] animate-fade-in text-left">
-            <div className="px-1.5 py-0.5 border-b border-slate-100 mb-1 flex items-center justify-between text-[10px] font-bold uppercase text-slate-400">
-              <span>Quick Creation</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                setAdminActiveTab('create_invoice');
-                setActiveInlineForm('create_invoice_direct');
-                setIsQuickActionsOpen(false);
-              }}
-              className="flex items-center gap-2.5 w-full p-2 hover:bg-slate-50 rounded-lg transition-colors text-left group cursor-pointer"
-            >
-              <div className="p-1.5 rounded bg-indigo-50 text-indigo-650 shrink-0">
-                <FileText size={12} />
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-slate-800">Create Invoice</p>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setAdminActiveTab('create_invoice');
-                setActiveInlineForm('user');
-                setIsQuickActionsOpen(false);
-              }}
-              className="flex items-center gap-2.5 w-full p-2 hover:bg-slate-50 rounded-lg transition-colors text-left group cursor-pointer"
-            >
-              <div className="p-1.5 rounded bg-amber-50 text-amber-600 shrink-0">
-                <Users size={12} />
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-slate-800">Add Customer</p>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setAdminActiveTab('create_invoice');
-                setActiveInlineForm('decoder');
-                setIsQuickActionsOpen(false);
-              }}
-              className="flex items-center gap-2.5 w-full p-2 hover:bg-slate-50 rounded-lg transition-colors text-left group cursor-pointer"
-            >
-              <div className="p-1.5 rounded bg-emerald-50 text-emerald-600 shrink-0">
-                <Cpu size={12} />
-              </div>
-              <div>
-                <p className="text-[11px] font-bold text-slate-805">Register Decoder</p>
-              </div>
-            </button>
-          </div>
-        )}
-
-        <button
-          type="button"
-          onClick={() => setIsQuickActionsOpen(!isQuickActionsOpen)}
-          className="relative z-20 flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-950 text-white rounded-full shadow-md font-bold transition-all hover:scale-102 active:scale-95 group focus:outline-none cursor-pointer"
-        >
-          <div className={`transition-transform duration-250 ${isQuickActionsOpen ? 'rotate-45' : ''}`}>
-            <Plus size={16} />
-          </div>
-          <span className="text-[11px] font-extrabold uppercase tracking-wider">Quick actions</span>
-        </button>
-      </div>
 
     </div>
   );
