@@ -102,12 +102,15 @@
   .bg-slate-50,
   .bg-slate-100,
   .bg-slate-100\/50,
-  .bg-slate-200\/50,
+  .bg-slate-200\/50 {
+    background-color: #1f2937 !important;
+  }
+
   .hover\:bg-slate-100:hover,
   .hover\:text-indigo-600:hover,
   .group.hover\:bg-slate-50:hover {
     background-color: #1f2937 !important;
-    color: #ffd2fe !important; /* soft active indigo/violet glow */
+    color: #818cf8 !important; /* soft active indigo/violet glow */
   }
 
   /* Specific text override for slate-based texts */
@@ -132,14 +135,14 @@
 
   .text-slate-450,
   .text-slate-400 {
-    color: #6b7280 !important;
+    color: #94a3b8 !important;
   }
 
   .text-slate-350,
   .text-slate-300,
   .text-slate-250,
   .text-slate-200 {
-    color: #4b5563 !important;
+    color: #e2e8f0 !important;
   }
 
   .text-indigo-650,

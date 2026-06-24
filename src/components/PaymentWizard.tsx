@@ -57,6 +57,7 @@ interface PaymentWizardProps {
   setMyRejectedInvoices: React.Dispatch<React.SetStateAction<any[]>>;
   resubmittingInvoiceId: string | null;
   setResubmittingInvoiceId: (id: string | null) => void;
+  initialGateway?: string;
 }
 
 export function PaymentWizard({
@@ -74,7 +75,8 @@ export function PaymentWizard({
   myRejectedInvoices,
   setMyRejectedInvoices,
   resubmittingInvoiceId,
-  setResubmittingInvoiceId
+  setResubmittingInvoiceId,
+  initialGateway
 }: PaymentWizardProps) {
   
   // Base provider structures
@@ -90,13 +92,20 @@ export function PaymentWizard({
   ], [settings]);
 
   // States
-  const [paymentStep, setPaymentStep] = useState<number>(1);
-  const [selectedGateway, setSelectedGateway] = useState<string>('bKash');
+  const [paymentStep, setPaymentStep] = useState<number>(2);
+  const [selectedGateway, setSelectedGateway] = useState<string>(initialGateway || 'bKash');
   const [amountInput, setAmountInput] = useState<string>('1000');
   const [txnIdInput, setTxnIdInput] = useState<string>('');
   const [selectedCategoryTab, setSelectedCategoryTab] = useState<'all' | 'mfs' | 'bank' | 'global'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [copiedText, setCopiedText] = useState<string | null>(null);
+
+  // Sync initial gateway when changed
+  useEffect(() => {
+    if (initialGateway) {
+      setSelectedGateway(initialGateway);
+    }
+  }, [initialGateway]);
   
   // Core Invoice/Ticket form values (preserved for database sync)
   const [topUpPurpose, setTopUpPurpose] = useState<string>('Wallet Top-Up');
@@ -124,11 +133,11 @@ export function PaymentWizard({
   // Sync subtab to correct step
   useEffect(() => {
     if (activeSubTab === 'payment') {
-      setPaymentStep(2);
-    } else if (activeSubTab === 'account') {
-      setPaymentStep(1);
+      if (paymentStep !== 3) {
+        setPaymentStep(2);
+      }
     }
-  }, [activeSubTab]);
+  }, [activeSubTab, paymentStep]);
 
   // Fetch current provider details
   const activeProvider = useMemo(() => {
@@ -449,15 +458,22 @@ export function PaymentWizard({
             <div className="flex items-center gap-2.5">
               <button 
                 type="button"
-                onClick={() => setPaymentStep(1)}
+                onClick={() => {
+                  if (onTabChange) {
+                    onTabChange('client_account');
+                  } else {
+                    setPaymentStep(1);
+                  }
+                }}
                 className="p-2 hover:bg-slate-100 rounded-full text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                title="পেমেন্ট অ্যাকাউন্টসমূহ দেখুন"
               >
                 <ArrowLeft className="w-4 h-4" />
               </button>
               <div>
                 <h2 className="text-sm font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
                   <CreditCard className="w-4 h-4 text-indigo-650" />
-                  পেমেন্ট পাঠান / Send Money
+                  পেমেন্ট পাঠান / Send Money Form
                 </h2>
                 <p className="text-[10px] text-slate-500 font-bold mt-0.5">
                   কোম্পানির অফিশিয়াল অ্যাকাউন্টে পেমেন্ট প্রেরণ করে ফর্মটি পূরণ করুন
@@ -473,6 +489,33 @@ export function PaymentWizard({
             >
               <HelpCircle className="w-5 h-5" />
             </a>
+          </div>
+
+          {/* Dynamic Gateway Selector inside the Form */}
+          <div className="bg-slate-50/80 border border-slate-200/80 p-4 sm:p-5 rounded-2xl space-y-3">
+            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-wider">
+              পেমেন্ট মাধ্যম পরিবর্তন করুন / Choose Payment Method
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {allProviders.filter(p => p.enabled).map(p => {
+                const isSelected = selectedGateway === p.key;
+                return (
+                  <button
+                    key={p.key}
+                    type="button"
+                    onClick={() => setSelectedGateway(p.key)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all duration-150 active:scale-95 ${
+                      isSelected 
+                        ? 'border-indigo-600 bg-indigo-50/50 text-indigo-700 font-black' 
+                        : 'border-slate-200 bg-white text-slate-600 font-bold hover:bg-slate-100'
+                    }`}
+                  >
+                    <div className="scale-75 -mx-1 shrink-0">{p.logo}</div>
+                    <span className="text-[10.5px] font-sans font-black">{p.key}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Display Fee Charge Card */}
