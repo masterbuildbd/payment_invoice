@@ -23,7 +23,24 @@ import {
   ChevronDown,
   ChevronUp,
   ChevronRight,
-  Pin
+  Pin,
+  Home,
+  Bell,
+  Menu,
+  ArrowLeftRight,
+  Shield,
+  Coins,
+  CreditCard,
+  HelpCircle,
+  Phone,
+  LogOut,
+  Ticket,
+  Lock,
+  MessageCircle,
+  Settings,
+  ShieldCheck,
+  Terminal,
+  FileSpreadsheet
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -41,6 +58,7 @@ import {
 } from 'recharts';
 import { Modal } from './Modal';
 import { CreateAppForm, CreateDecoderForm, CreatePanelForm, CreateUserForm } from './CreateForms';
+import { AdminOverviewTab } from './AdminOverviewTab';
 import { InvoiceTemplate } from './InvoiceTemplate';
 import { CompanySettings } from '../types';
 
@@ -186,71 +204,90 @@ export function AdminPanel({
     <div className="space-y-7 pb-16 font-sans text-slate-800 dark:text-slate-100 animate-fade-in text-left">
       
       {/* 🌟 Simple and Elegant Dashboard Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/60 dark:border-slate-800/80">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
-            <span>{currentUserData?.name || user?.name || 'এডমিন ড্যাশবোর্ড'}</span>
-            <span className="text-lg sm:text-xl">👋</span>
-          </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">
-            কোম্পানির লেনদেন, চালান অনুমোদন এবং গ্রাহক লাইসেন্স পরিচালনা ও পর্যবেক্ষণ করুন।
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Active Status Badge */}
-          <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 dark:bg-slate-900 text-slate-650 dark:text-slate-400 text-xs font-bold rounded-full border border-slate-200 dark:border-slate-800">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-            </span>
-            <span>সিস্টেম অনলাইন (System Active)</span>
+      {adminActiveTab !== 'overview' && (
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/60 dark:border-slate-800/80">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+              <span>{currentUserData?.name || user?.name || 'এডমিন ড্যাশবোর্ড'}</span>
+              <span className="text-lg sm:text-xl">👋</span>
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">
+              কোম্পানির লেনদেন, চালান অনুমোদন এবং গ্রাহক লাইসেন্স পরিচালনা ও পর্যবেক্ষণ করুন।
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* Active Status Badge */}
+            <div className="flex items-center gap-2 px-3 py-1 bg-slate-50 dark:bg-slate-900 text-slate-650 dark:text-slate-400 text-xs font-bold rounded-full border border-slate-200 dark:border-slate-800">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+              </span>
+              <span>সিস্টেম অনলাইন (System Active)</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* 🚀 Sleek Swiss Capsule Navigation Bar */}
-      <div className="bg-slate-50/65 dark:bg-slate-900/40 p-3 sm:p-4 rounded-3xl border border-slate-200/50 dark:border-slate-800/55 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.03)] mb-4 flex flex-col md:flex-row gap-2 items-stretch md:items-center justify-between">
-        <div className="flex flex-wrap items-center gap-3 w-full">
-          {[
-            { id: 'overview', label: 'OVERVIEW', bng: 'সংक्षिप्त বিবরণী', icon: BarChart3 },
-            { id: 'approvals', label: 'APPROVALS', bng: 'লেনদেন অনুমোদন', icon: CheckCircle, badge: invoices.filter(inv => inv.status === 'pending').length },
-            { id: 'create_invoice', label: 'INVOICE CREATOR', bng: 'ইনভয়েস ফ্যাক্টরি', icon: Plus },
-            { id: 'records', label: 'LEDGERS & LOGS', bng: 'খতিয়ান ও লগ', icon: FileText },
-            { id: 'notes', label: 'MEMO NOTEPAD', bng: 'ব্যক্তিগত নোট', icon: Layers },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = adminActiveTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setAdminActiveTab(tab.id as any)}
-                className={`flex-1 sm:flex-initial flex items-center gap-3.5 px-5 py-4 rounded-2xl transition-all duration-200 cursor-pointer text-left border ${
-                  isActive 
-                    ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-[0_4px_16px_-3px_rgba(99,102,241,0.08)] border-slate-200 dark:border-slate-700/85 scale-[1.03]' 
-                    : 'text-slate-450 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white/40 dark:hover:bg-slate-900/35 border-transparent'
-                }`}
-              >
-                <div className={`p-2 rounded-xl shrink-0 ${isActive ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400' : 'bg-slate-100/50 dark:bg-slate-900/20 text-slate-400 dark:text-slate-505'}`}>
-                  <Icon size={16} />
-                </div>
-                <div className="flex flex-col leading-tight text-left min-w-0">
-                  <span className={`text-[10.5px] uppercase tracking-wider block font-black ${isActive ? 'text-slate-900 dark:text-white font-black' : 'text-slate-500 dark:text-slate-400 font-bold'}`}>{tab.label}</span>
-                  <span className="text-[8.5px] font-semibold text-slate-400 dark:text-slate-500 mt-1 block truncate">{tab.bng}</span>
-                </div>
-                {tab.badge && tab.badge > 0 ? (
-                  <span className="bg-rose-500 text-white font-extrabold px-1.5 py-0.5 rounded-full text-[9px] font-mono leading-none animate-bounce shrink-0 shadow-xs ml-2">
-                    {tab.badge}
-                  </span>
-                ) : null}
-              </button>
-            );
-          })}
+      {adminActiveTab !== 'overview' && (
+        <div className="bg-slate-50/65 dark:bg-slate-900/40 p-3 sm:p-4 rounded-3xl border border-slate-200/50 dark:border-slate-800/55 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.03)] mb-4 flex flex-col md:flex-row gap-2 items-stretch md:items-center justify-between">
+          <div className="flex flex-wrap items-center gap-3 w-full">
+            {[
+              { id: 'overview', label: 'OVERVIEW', bng: 'সংक्षिप्त বিবরণী', icon: BarChart3 },
+              { id: 'approvals', label: 'APPROVALS', bng: 'লেনদেন অনুমোদন', icon: CheckCircle, badge: invoices.filter(inv => inv.status === 'pending').length },
+              { id: 'create_invoice', label: 'INVOICE CREATOR', bng: 'ইনভয়েস ফ্যাক্টরি', icon: Plus },
+              { id: 'records', label: 'LEDGERS & LOGS', bng: 'খতিয়ান ও লগ', icon: FileText },
+              { id: 'notes', label: 'MEMO NOTEPAD', bng: 'ব্যক্তিগত নোট', icon: Layers },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const isActive = adminActiveTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setAdminActiveTab(tab.id as any)}
+                  className={`flex-1 sm:flex-initial flex items-center gap-3.5 px-5 py-4 rounded-2xl transition-all duration-200 cursor-pointer text-left border ${
+                    isActive 
+                      ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-[0_4px_16px_-3px_rgba(99,102,241,0.08)] border-slate-200 dark:border-slate-700/85 scale-[1.03]' 
+                      : 'text-slate-450 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-white/40 dark:hover:bg-slate-900/35 border-transparent'
+                  }`}
+                >
+                  <div className={`p-2 rounded-xl shrink-0 ${isActive ? 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-650 dark:text-indigo-400' : 'bg-slate-100/50 dark:bg-slate-900/20 text-slate-400 dark:text-slate-505'}`}>
+                    <Icon size={16} />
+                  </div>
+                  <div className="flex flex-col leading-tight text-left min-w-0">
+                    <span className={`text-[10.5px] uppercase tracking-wider block font-black ${isActive ? 'text-slate-900 dark:text-white font-black' : 'text-slate-500 dark:text-slate-400 font-bold'}`}>{tab.label}</span>
+                    <span className="text-[8.5px] font-semibold text-slate-400 dark:text-slate-500 mt-1 block truncate">{tab.bng}</span>
+                  </div>
+                  {tab.badge && tab.badge > 0 ? (
+                    <span className="bg-rose-500 text-white font-extrabold px-1.5 py-0.5 rounded-full text-[9px] font-mono leading-none animate-bounce shrink-0 shadow-xs ml-2">
+                      {tab.badge}
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Tab Content Cases */}
       {adminActiveTab === 'overview' && (
+        <AdminOverviewTab
+          stats={stats}
+          dailyRevenueData={dailyRevenueData}
+          chartMetricMode={chartMetricMode}
+          setChartMetricMode={setChartMetricMode}
+          healthScore={healthScore}
+          totalUsersCount={totalUsersCount}
+          invoices={invoices}
+          activities={activities}
+          setAdminActiveTab={setAdminActiveTab}
+          setActiveInlineForm={setActiveInlineForm}
+        />
+      )}
+
+      {adminActiveTab === 'overview_legacy' && (
         <div className="space-y-7 animate-fade-in text-left">
           
           {/* Quick Metrics Cards */}

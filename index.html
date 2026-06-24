@@ -15,58 +15,11 @@
           document.documentElement.classList.remove('dark');
         }
       } catch (e) {}
-
-      // Global error shield to prevent third-party scripts (like Tawk.to) from throwing noisy uncaught errors
-      window.addEventListener('error', function(event) {
-        try {
-          const msg = event.message || '';
-          const filename = event.filename || '';
-          if (
-            msg.includes('Tawk') || 
-            msg.includes('tawk') || 
-            msg.includes('getForm') || 
-            msg.includes('Socket server') ||
-            filename.includes('tawk.to')
-          ) {
-            event.stopImmediatePropagation();
-            event.preventDefault();
-            return true;
-          }
-        } catch (e) {}
-      }, true);
-
-      window.addEventListener('unhandledrejection', function(event) {
-        try {
-          const msg = (event.reason && event.reason.message) || '';
-          if (
-            msg.includes('Tawk') || 
-            msg.includes('tawk') || 
-            msg.includes('getForm') || 
-            msg.includes('Socket server')
-          ) {
-            event.stopImmediatePropagation();
-            event.preventDefault();
-          }
-        } catch (e) {}
-      }, true);
     </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <!--Start of Tawk.to Script-->
-    <script type="text/javascript">
-    var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-    (function(){
-    var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
-    s1.async=true;
-    s1.src='https://embed.tawk.to/6a1c8efd75643d1c2d678f99/1jpvot4lt';
-    s1.charset='UTF-8';
-    s1.setAttribute('crossorigin','*');
-    s0.parentNode.insertBefore(s1,s0);
-    })();
-    </script>
-    <!--End of Tawk.to Script-->
   </body>
 </html>
 

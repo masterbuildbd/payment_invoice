@@ -329,11 +329,11 @@ export const subscribeToSettings = (callback: (settings: CompanySettings) => voi
           callback({ ...remoteData, id: snapshot.id });
         }
       }, (error) => {
-        console.warn('Firestore settings fetch denied or offline, using offline settings:', error);
+        console.warn('Firestore settings fetch denied or offline, using offline settings:', error instanceof Error ? error.message : String(error));
       });
     }
   } catch (error) {
-    console.warn('Firestore settings subscription failed:', error);
+    console.warn('Firestore settings subscription failed:', error instanceof Error ? error.message : String(error));
   }
 
   return () => {
@@ -363,7 +363,7 @@ export const saveSettings = async (settings: CompanySettings) => {
       // Use setDoc with merge: true which safely creates or updates the settings document
       await setDoc(doc(db, 'settings', 'global'), cleanSettings, { merge: true });
     } catch (error) {
-      console.warn('Failed to save settings to Firestore:', error);
+      console.warn('Failed to save settings to Firestore:', error instanceof Error ? error.message : String(error));
       // We don't propagate this error to the UI as long as it successfully saved locally
     }
   }
@@ -594,7 +594,7 @@ export const createDocument = async <T extends { id: string }>(collectionName: s
       docId = docRef.id;
       savedToFirestore = true;
     } catch (dbErr) {
-      console.warn(`Firestore write failed for ${collectionName}, falling back to local storage:`, dbErr);
+      console.warn(`Firestore write failed for ${collectionName}, falling back to local storage:`, dbErr instanceof Error ? dbErr.message : String(dbErr));
     }
   }
 
@@ -808,7 +808,7 @@ export const createSystemNotification = async (notification: {
       createdAt: new Date().toISOString()
     } as any);
   } catch (error) {
-    console.error('Error creating system notification:', error);
+    console.error('Error creating system notification:', error instanceof Error ? error.message : String(error));
     return null;
   }
 };
@@ -817,7 +817,7 @@ export const markNotificationRead = async (id: string) => {
   try {
     return await updateDocument<SystemNotification>('notifications', id, { read: true } as any);
   } catch (error) {
-    console.error('Error marking notification read:', error);
+    console.error('Error marking notification read:', error instanceof Error ? error.message : String(error));
   }
 };
 
@@ -828,7 +828,7 @@ export const markAllNotificationsRead = async (notifications: SystemNotification
       .map(n => updateDocument<SystemNotification>('notifications', n.id, { read: true } as any));
     await Promise.all(promises);
   } catch (error) {
-    console.error('Error marking all notifications read:', error);
+    console.error('Error marking all notifications read:', error instanceof Error ? error.message : String(error));
   }
 };
 
@@ -836,7 +836,7 @@ export const deleteSystemNotification = async (id: string) => {
   try {
     return await deleteDocument('notifications', id);
   } catch (error) {
-    console.error('Error deleting notification:', error);
+    console.error('Error deleting notification:', error instanceof Error ? error.message : String(error));
   }
 };
 
@@ -845,7 +845,7 @@ export const clearAllNotifications = async (notifications: SystemNotification[])
     const promises = notifications.map(n => deleteDocument('notifications', n.id));
     await Promise.all(promises);
   } catch (error) {
-    console.error('Error clearing all notifications:', error);
+    console.error('Error clearing all notifications:', error instanceof Error ? error.message : String(error));
   }
 };
 
@@ -885,7 +885,7 @@ export const runDailyBackup = async (
         const usersSnap = await getDocs(collection(db, 'users'));
         users = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       } catch (err) {
-        console.warn('Error fetching users for backup, checking fallback:', err);
+        console.warn('Error fetching users for backup, checking fallback:', err instanceof Error ? err.message : String(err));
         const savedUsers = localStorage.getItem('local_users');
         if (savedUsers) {
           try { users = JSON.parse(savedUsers); } catch (e) {}
@@ -936,7 +936,7 @@ export const runDailyBackup = async (
 
     return { success: true, date: todayDateStr };
   } catch (error) {
-    console.error('Backup failure:', error);
+    console.error('Backup failure:', error instanceof Error ? error.message : String(error));
     return { success: false, error: error instanceof Error ? error.message : String(error) };
   }
 };

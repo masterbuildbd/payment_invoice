@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, LogOut, Info, Sun, Moon, Bell, BellOff, X, Check, Trash2 } from 'lucide-react';
+import { Menu, LogOut, Info, Sun, Moon, Bell, BellOff, X, Check, Trash2, Shield, User as UserIcon } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { useLanguage, Language } from '../lib/language';
 import { 
@@ -198,11 +198,24 @@ export function Layout({ children, activeTab, onMenuToggle, onLogoutRequest }: L
             <Menu size={20} />
           </button>
           
-          <div className="flex flex-col">
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.2em] leading-none">Master Admin</span>
+          <div className="flex items-center gap-2.5">
+            {isAdmin ? (
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-xs shrink-0">
+                <Shield size={16} className="fill-white/10" />
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-500 flex items-center justify-center text-white shadow-xs shrink-0">
+                <UserIcon size={16} className="fill-white/10" />
+              </div>
+            )}
+            <div className="flex flex-col text-left leading-tight">
+              <span className="text-[11px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-[0.15em] leading-none">
+                {isAdmin ? 'Master Admin' : (currentUserData?.name || user?.name || 'Client')}
+              </span>
+              <span className="text-[9.5px] font-bold text-slate-450 dark:text-slate-500 mt-1 leading-none">
+                {getLabel(activeTab)}
+              </span>
             </div>
-            <span className="text-[13px] font-bold text-slate-800 dark:text-slate-100 tracking-tight mt-0.5">{getLabel(activeTab)}</span>
           </div>
         </div>
 
@@ -235,6 +248,17 @@ export function Layout({ children, activeTab, onMenuToggle, onLogoutRequest }: L
               </span>
             )}
           </button>
+
+          {/* User/Admin Profile Avatar */}
+          <img 
+            src={isAdmin 
+              ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=256&auto=format&fit=crop"
+              : "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?q=80&w=256&auto=format&fit=crop"
+            } 
+            alt="User Avatar" 
+            className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700 shadow-xs shrink-0"
+            referrerPolicy="no-referrer"
+          />
 
           <div className="flex items-center gap-1.5 bg-slate-100/50 dark:bg-slate-800/50 p-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-inner">
             {/* Language Selector */}

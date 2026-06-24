@@ -27,6 +27,7 @@ import { useLanguage } from '../lib/language';
 import { CompanySettings } from '../types';
 import { InvoiceTemplate } from '../components/InvoiceTemplate';
 import { AIInvoiceHelper } from '../components/AIInvoiceHelper';
+import { PaymentWizard } from '../components/PaymentWizard';
 import jsPDF from 'jspdf';
 import { toPng } from 'html-to-image';
 
@@ -289,7 +290,14 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
   // Generate when subtab is loaded
   useEffect(() => {
     if (activeSubTab === 'payment') {
+      setPaymentWizardStep(2);
+      if (!topUpMethod) {
+        setTopUpMethod('bKash');
+        setSelectedAccountTab('bKash');
+      }
       generateNewInvoiceMeta();
+    } else if (activeSubTab === 'account') {
+      setPaymentWizardStep(1);
     }
   }, [activeSubTab]);
 
@@ -1301,6 +1309,33 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
       const successTemplate = settings.clientPaymentSuccessMessage || 'পেমেন্ট রিকোয়েস্ট ("{purpose}") এডমিনের কাছে জমা হয়েছে! এডমিন শীঘ্রই এটি ভেরিফাই করে ব্যালেন্স আপডেট করে দেবেন।';
       const resolvedSuccess = successTemplate.replace('{purpose}', topUpPurpose);
       setTopUpSuccess(resolvedSuccess);
+
+      // Save submission details for Step 3 Success screen
+      const feesMap: Record<string, number> = {
+        bKash: 1.85,
+        Nagad: 1.50,
+        Upay: 1.40,
+        Rocket: 1.80,
+        Mcash: 1.50
+      };
+      const activeFeePercent = feesMap[topUpMethod] || 0;
+      const computedCharge = (Number(topUpAmount) * activeFeePercent) / 100;
+      const computedTotal = (Number(topUpAmount) || 0) + computedCharge;
+
+      setLastSubmittedInvoice({
+        invoiceNumber: finalInvoiceNumber,
+        amount: Number(topUpAmount) || 0,
+        feePercent: activeFeePercent,
+        chargeAmount: computedCharge,
+        totalAmount: computedTotal,
+        method: topUpMethod,
+        transactionId: topUpTxn,
+        date: `${finalDate} ${finalTimeStr}`,
+        purpose: topUpPurpose,
+      });
+
+      setPaymentWizardStep(3);
+
       generateNewInvoiceMeta(); // Auto-change the invoice number for the next submit ticket!
       setTopUpAmount('');
       setTicketPaidAmount('');
@@ -1550,6 +1585,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [customEstimatorAmount, setCustomEstimatorAmount] = useState<string>('');
   const [paymentWizardStep, setPaymentWizardStep] = useState<number>(1);
+  const [lastSubmittedInvoice, setLastSubmittedInvoice] = useState<any>(null);
   const [activeSystemTab, setActiveSystemTab] = useState<'apps' | 'panels' | 'decoders'>('apps');
 
   const pendingFees = React.useMemo(() => {
@@ -2310,7 +2346,26 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
         )}
 
         {/* 3. ACCOUNT OPTIONS SUB-TAB: SHOW BKASH, NAGAD, BANK ACCOUNT, BINANCE, PAYPAL DETAILS */}
-        {(activeSubTab === 'account' || activeSubTab === 'payment') && (() => {
+        {(activeSubTab === 'account' || activeSubTab === 'payment') && (
+          <PaymentWizard
+            settings={settings}
+            activeSubTab={activeSubTab}
+            onTabChange={onTabChange}
+            currentUserData={currentUserData}
+            user={user}
+            clientInvoiceNumber={clientInvoiceNumber}
+            clientInvoiceDate={clientInvoiceDate}
+            clientInvoiceTime={clientInvoiceTime}
+            generateNewInvoiceMeta={generateNewInvoiceMeta}
+            createInvoice={createInvoice}
+            setMyInvoices={setMyInvoices}
+            myRejectedInvoices={myRejectedInvoices}
+            setMyRejectedInvoices={setMyRejectedInvoices}
+            resubmittingInvoiceId={resubmittingInvoiceId}
+            setResubmittingInvoiceId={setResubmittingInvoiceId}
+          />
+        )}
+        {false && (activeSubTab === 'account' || activeSubTab === 'payment') && (() => {
           const enabledProviders = allProviders.filter(p => p.enabled);
           const filteredProviders = enabledProviders.filter(provider => {
             if (selectedCategoryTab !== 'all' && provider.category !== selectedCategoryTab) return false;
@@ -2832,7 +2887,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
       })()}
 
               {/* Step 3: Top-Up Ticket details with live provider help card */}
-              {activeSubTab === 'payment' && (
+              {false && activeSubTab === 'payment' && (
                 <>
                   {topUpMethod && (() => {
                 return (

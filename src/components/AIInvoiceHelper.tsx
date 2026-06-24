@@ -124,7 +124,7 @@ Keep the content insightful and motivating. Use Markdown format.`;
         throw new Error('এআই কোনো ফলাফল তৈরি করতে পারেনি। দয়া করে আবার চেষ্টা করুন।');
       }
     } catch (err: any) {
-      console.error('Gemini call error:', err);
+      console.error('Gemini call error:', err instanceof Error ? err.message : String(err));
       setErrorMsg(err?.message || 'একটি অনাকাঙ্ক্ষিত ত্রুটি ঘটেছে। অনুগ্রহ করে পুনরায় চেষ্টা করুন।');
     } finally {
       setIsLoading(false);
