@@ -1882,7 +1882,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
         )}
 
         {/* 1.6.5 SMS INBOX HANDLER - SUB-TAB (tawk sms system) */}
-        {activeSubTab === 'sms' && (
+        {activeSubTab === 'client_sms' && (
           <div className="bg-white border border-slate-200 rounded-[1.5rem] p-6 shadow-xs relative animate-fade-in space-y-6 text-left">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
               <div>
