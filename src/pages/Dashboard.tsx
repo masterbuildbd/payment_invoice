@@ -1965,7 +1965,7 @@ export function Dashboard({ onLogoutRequest, activeSubTab = 'dashboard', onTabCh
                           </div>
                           
                           <p className="text-xs text-slate-700 font-medium leading-relaxed select-all break-words font-sans bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                            {log.body}
+                            {log.message || log.body}
                           </p>
 
                           <div className="flex gap-4 text-[9.5px] text-slate-400 font-semibold font-mono">

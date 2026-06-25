@@ -134,7 +134,7 @@ export function Sidebar({ activeTab, setActiveTab, isOpen, onClose }: SidebarPro
     { id: 'client_rejected_invoices', label: getVal(settings.clientRejectedInvoicesLabel, 'clientRejectedInvoicesLabel', 'client_rejected_invoices'), icon: AlertCircle, enabled: settings.clientRejectedInvoicesEnabled !== false },
     { id: 'client_account', label: getVal(settings.clientAccountLabel, 'clientAccountLabel', 'client_account'), icon: Wallet, enabled: settings.clientAccountEnabled !== false },
     { id: 'client_payment', label: getVal(settings.clientPaymentLabel, 'clientPaymentLabel', 'client_payment'), icon: Banknote, enabled: settings.clientPaymentEnabled !== false },
-    { id: 'client_sms', label: getVal(settings.clientSmsLabel, 'clientSmsLabel', 'client_sms'), icon: MessageSquare, enabled: settings.clientSmsEnabled !== false },
+    { id: 'client_sms', label: getVal(settings.clientSmsLabel, 'clientSmsLabel', 'client_sms'), icon: MessageSquare, enabled: true },
     { id: 'client_settings', label: getVal(settings.clientSettingsLabel, 'clientSettingsLabel', 'client_settings'), icon: Settings, enabled: settings.clientSettingsEnabled !== false },
   ];
 

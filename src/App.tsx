@@ -212,7 +212,7 @@ function ProtectedApp() {
         { id: 'client_rejected_invoices', enabled: settings.clientRejectedInvoicesEnabled !== false },
         { id: 'client_account', enabled: settings.clientAccountEnabled !== false },
         { id: 'client_payment', enabled: settings.clientPaymentEnabled !== false },
-        { id: 'client_sms', enabled: settings.clientSmsEnabled !== false },
+        { id: 'client_sms', enabled: true },
         { id: 'client_settings', enabled: settings.clientSettingsEnabled !== false }
       ];
 
